@@ -19,8 +19,6 @@ pub trait Comodule {
     fn cofree_comodule(hopf: impl HopfAlgebra, module: impl Module) -> impl Comodule;
     // !!! Note: We want to return the injection from the coker to the cofree comodule, not just the comod itself.
 
-    fn get_zero_morphism_to(&self) -> impl ComoduleMorphism;
-
     fn create_tensor_product(left: &Self, right: &Self) -> Self;
 }
 
@@ -33,8 +31,7 @@ pub trait ComoduleMorphism {
 
     fn compute_cokernel(&self) -> impl ComoduleMorphism;
 
-    // I couldn't put this function here because it started a fight with the compiler.
-    // fn get_zero_morphism_to(comod: impl Comodule) -> impl ComoduleMorphism;
+    fn get_zero_morphism_to(comod: impl Comodule) -> Self;
 }
 
 pub struct BasicComodule<M: Module, MM: ModuleMorphism, H: HopfAlgebra> {
@@ -60,10 +57,6 @@ impl<M: Module, MM: ModuleMorphism, H: HopfAlgebra> Comodule for BasicComodule<M
     }
 
     fn cofree_comodule(hopf: impl HopfAlgebra, module: impl Module) -> impl Comodule {
-        todo!()
-    }
-
-    fn get_zero_morphism_to(&self) -> impl ComoduleMorphism {
         todo!()
     }
 
@@ -94,6 +87,10 @@ impl <M: Module, MM: ModuleMorphism, H: HopfAlgebra> ComoduleMorphism for BasicC
     }
 
     fn compute_cokernel(&self) -> impl ComoduleMorphism {
+        todo!()
+    }
+    
+    fn get_zero_morphism_to(comod: BasicComodule<M, MM, H>) -> Self {
         todo!()
     }
 }
