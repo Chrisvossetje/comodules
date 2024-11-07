@@ -2,6 +2,9 @@
 use comodule::{Comodule, ComoduleMorphism};
 use hopfalgebra::HopfAlgebra;
 
+
+#[allow(unused)]
+mod linearalgebra;
 #[allow(unused)]
 mod module;
 #[allow(unused)]
