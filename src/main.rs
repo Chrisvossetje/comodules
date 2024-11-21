@@ -4,6 +4,8 @@ use hopfalgebra::HopfAlgebra;
 
 
 #[allow(unused)]
+mod fp;
+#[allow(unused)]
 mod linearalgebra;
 #[allow(unused)]
 mod module;

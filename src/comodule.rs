@@ -10,7 +10,7 @@ pub trait Comodule {
     // Let \Delta(x) = \sum_i (a_i \otimes y_i),
     // if the coefficient of y is non-zero, we say that x 'cogenerates' y
     // We define cogeneration to be the smallest transitive relation with the above property.
-    fn get_cogenerating_module(&self) -> impl Module;
+    fn get_cogenerating_module(&self) -> impl ModuleMorphism;
     // !!! Note: We want morphisms instead of modules, so we eventually get the injection to the cofree module
     // fn get_cogenerating_module(&self) -> impl ModuleMorphism;
 
@@ -52,7 +52,7 @@ impl<M: Module, MM: ModuleMorphism, H: HopfAlgebra> Comodule for BasicComodule<M
         &self.underlying_hopf_algebra
     }
 
-    fn get_cogenerating_module(&self) -> impl Module {
+    fn get_cogenerating_module(&self) -> impl ModuleMorphism {
         todo!()
     }
 
@@ -87,7 +87,18 @@ impl <M: Module, MM: ModuleMorphism, H: HopfAlgebra> ComoduleMorphism for BasicC
     }
 
     fn compute_cokernel(&self) -> impl ComoduleMorphism {
+        let mod_coker = &self.morphism.get_cokernel();
+
+        //    f      q
+        // C  ->  D  ->  K
+        // |      |      |
+        // v      v      v
+        //CxC -> DxD -> KxK
+
+        // let k be a basis element in K
+        // q is surjective, thus we get an element b in D which maps to k
         todo!()
+        
     }
     
     fn get_zero_morphism_to(comod: BasicComodule<M, MM, H>) -> Self {
