@@ -7,15 +7,8 @@ pub trait Field : Debug + Sized + PartialEq + Copy + Add<Output = Self> + Sub<Ou
     fn is_zero(&self) -> bool;
     fn one() -> Self;
     fn zero() -> Self;
-
-
 }
 
-pub trait PrimeField : Field {
-    fn get_degree(&self) -> usize;
-    fn get_order(&self) -> usize { self.get_characteristic().pow(self.get_degree() as u32) }
-    
-}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct F2 {
@@ -110,14 +103,5 @@ impl Field for F2 {
         F2 {
             value: 0
         }
-    }
-}
-
-impl F2 {
-}
-
-impl PrimeField for F2 {
-    fn get_degree(&self) -> usize {
-        1
     }
 }
