@@ -1,6 +1,23 @@
 use crate::fp::Field;
 
 
+pub trait Matrix<F: Field> {
+    fn kernel(&self);
+
+    // Faster but requires self to be in rref ?
+    fn rref_kernel(&self);
+    
+    fn transpose(&mut self);
+    fn rref(&mut self);
+
+    // OR JUST A USIZE, NOT KNOWING WHICH COLUMN IT ORIGINATED FROM ?
+    fn pivots(&mut self) -> Vec<(usize,usize)>; 
+
+    fn block_sum(&mut self, other: &impl Matrix<F>);
+
+    fn identity(d: usize) -> impl Matrix<F>;
+}
+
 
 impl Field for f64 {
     fn inv(self) -> Self {
@@ -117,7 +134,7 @@ fn kernel_from_rref<F: Field>(matrix: &Vec<Vec<F>>) -> Vec<Vec<F>> {
 
         // Back-substitute to calculate the dependent variables
         for i in 0..rows {
-            if matrix[i][j].is
+            // if matrix[i][j].is
 
             for j in 0..cols {
                 match pivots[j] {
@@ -129,7 +146,7 @@ fn kernel_from_rref<F: Field>(matrix: &Vec<Vec<F>>) -> Vec<Vec<F>> {
                 }
             }
         }
-        
+
 
         kernel.push(kernel_vector);
     }
