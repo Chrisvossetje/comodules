@@ -13,7 +13,8 @@ pub trait Matrix<F: Field> {
     // OR JUST A USIZE, NOT KNOWING WHICH COLUMN IT ORIGINATED FROM ?
     fn pivots(&mut self) -> Vec<(usize,usize)>; 
 
-    fn block_sum(&mut self, other: &impl Matrix<F>);
+    fn vstack(&mut self, other: &Self);
+    fn block_sum(&mut self, other: &Self);
 
     fn identity(d: usize) -> impl Matrix<F>;
 }
@@ -82,7 +83,7 @@ fn row_reduce_to_rref<F: Field>(matrix: &mut Vec<Vec<F>>) {
             pivots.push((id, i));
             id += 1;
         }
-        if id+1 == rows {
+        if id == rows {
             break;
         }
     }
@@ -134,16 +135,20 @@ fn kernel_from_rref<F: Field>(matrix: &Vec<Vec<F>>) -> Vec<Vec<F>> {
 
         // Back-substitute to calculate the dependent variables
         for i in 0..rows {
-            // if matrix[i][j].is
-
-            for j in 0..cols {
-                match pivots[j] {
-                    None => {},
-                    Some(i) => {
-                        let res =  matrix[i][free_var] * kernel_vector[free_var];
-                        kernel_vector[j] -= res;
+            if !matrix[i][free_var].is_zero() {
+                for j in 0..free_var {
+                    match pivots[j] {
+                        None => {},
+                        Some(k) => {
+                            if i == k {
+                                let res =  matrix[i][free_var] * kernel_vector[free_var];
+                                kernel_vector[j] -= res;
+                                break;
+                            }
+                        }
                     }
                 }
+                break;
             }
         }
 
@@ -158,7 +163,6 @@ fn kernel_from_rref<F: Field>(matrix: &Vec<Vec<F>>) -> Vec<Vec<F>> {
 #[cfg(test)]
 mod tests {
     use crate::{fp::{Field, F2}, matrix::{kernel_from_rref, row_reduce_to_rref}};
-
     
     #[test]
     pub fn kernel_simple() {
