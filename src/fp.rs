@@ -1,14 +1,23 @@
-use std::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::{fmt::Debug, ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign}};
 
-pub trait PrimeField : Sized + Eq + Copy + Add<Output = Self> + Sub<Output = Self> + Neg<Output = Self> + Mul<Output = Self> + AddAssign + SubAssign + MulAssign + From<u64>  {
+
+pub trait Field : Debug + Sized + PartialEq + Copy + Add<Output = Self> + Sub<Output = Self> + Neg<Output = Self> + Mul<Output = Self> + AddAssign + SubAssign + MulAssign {
+    fn inv(self) -> Self;
     fn get_characteristic(&self) -> usize;
+    fn is_zero(&self) -> bool;
+    fn one() -> Self;
+    fn zero() -> Self;
+
+
+}
+
+pub trait PrimeField : Field {
     fn get_degree(&self) -> usize;
     fn get_order(&self) -> usize { self.get_characteristic().pow(self.get_degree() as u32) }
-
     
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct F2 {
     value: u8
 }
@@ -71,11 +80,43 @@ impl From<u64> for F2 {
     }
 }
 
-impl PrimeField for F2 {
+impl std::fmt::Debug for F2 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.value)
+    }
+}
+
+impl Field for F2 {
     fn get_characteristic(&self) -> usize {
         2
     }
 
+    
+    fn inv(self) -> Self {
+        self
+    }
+    
+    fn is_zero(&self) -> bool {
+        self.value == 0
+    }
+
+    fn one() -> F2 {
+        F2 {
+            value: 1
+        }
+    }
+
+    fn zero() -> F2 {
+        F2 {
+            value: 0
+        }
+    }
+}
+
+impl F2 {
+}
+
+impl PrimeField for F2 {
     fn get_degree(&self) -> usize {
         1
     }

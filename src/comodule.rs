@@ -1,6 +1,6 @@
 use crate::{hopfalgebra::HopfAlgebra, module::{Module, ModuleMorphism, TensorModule}};
 
-pub trait Comodule {
+pub trait Comodule<A: HopfAlgebra> {
     // Applies forgetful functor
     fn get_underlying_module(&self) -> &impl Module;
     

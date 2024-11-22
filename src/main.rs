@@ -1,20 +1,24 @@
 
-use comodule::{Comodule, ComoduleMorphism};
-use hopfalgebra::HopfAlgebra;
+// use comodule::{Comodule, ComoduleMorphism};
+// use hopfalgebra::HopfAlgebra;
 
 
 #[allow(unused)]
 mod fp;
+// #[allow(unused)]
+// mod linearalgebra;
+// #[allow(unused)]
+// mod module;
+// #[allow(unused)]
+// mod hopfalgebra;
+// #[allow(unused)]
+// mod comodule;
+// #[allow(unused)]
+// mod resolution;
+
+
 #[allow(unused)]
-mod linearalgebra;
-#[allow(unused)]
-mod module;
-#[allow(unused)]
-mod hopfalgebra;
-#[allow(unused)]
-mod comodule;
-#[allow(unused)]
-mod resolution;
+mod matrix;
 
 
 fn main() {
