@@ -1,3 +1,4 @@
+use core::panic;
 use std::{fmt::Debug, ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign}};
 
 
@@ -10,16 +11,65 @@ pub trait Field : Debug + Sized + PartialEq + Copy + Add<Output = Self> + Sub<Ou
 }
 
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub struct F2 {
-    value: u8
+impl Field for f64 {
+    fn inv(self) -> Self {
+        1.0 / self
+    }
+
+    fn get_characteristic(&self) -> usize {
+        0
+    }
+    
+    fn is_zero(&self) -> bool {
+        return self.is_normal();
+    }
+    
+    fn one() -> Self {
+        1.0f64
+    }
+    
+    fn zero() -> Self {
+        0.0f64
+    }
 }
+
+
+pub struct Fp<const P: u8>(u8);
+
+impl<const P: u8> Field for Fp<P> {
+    fn inv(self) -> Self {
+        match P {
+            2 | 3 => { self }
+            _ => {panic!("inverses not implemented for this prime")}
+        }
+    }
+
+    fn get_characteristic(&self) -> usize {
+        P as usize
+    }
+
+    fn is_zero(&self) -> bool {
+        self.0 == 0
+    }
+
+    fn one() -> Self {
+        Fp(1)
+    }
+    
+    fn zero() -> Self {
+        Fp(0)
+    }
+}
+
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub struct F2(u8);
 
 impl Add for F2 {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self {
-        F2 { value: self.value ^ rhs.value }
+        F2(self.0 ^ rhs.0)
     }
 }
 
@@ -27,7 +77,7 @@ impl Sub for F2 {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self {
-        F2 { value: self.value ^ rhs.value }
+        self.add(rhs)
     }
     
 }
@@ -45,7 +95,7 @@ impl Mul for F2 {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self {
-        F2 { value: self.value & rhs.value }
+        F2(self.0 & rhs.0)
     }
 }
 
@@ -69,13 +119,13 @@ impl MulAssign for F2 {
 
 impl From<u64> for F2 {
     fn from(value: u64) -> Self {
-        F2 { value: (value % 2) as u8 }
+        F2((value & 1) as u8)
     }
 }
 
 impl std::fmt::Debug for F2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.value)
+        write!(f, "{}", self.0)
     }
 }
 
@@ -90,18 +140,14 @@ impl Field for F2 {
     }
     
     fn is_zero(&self) -> bool {
-        self.value == 0
+        self.0 == 0
     }
 
     fn one() -> F2 {
-        F2 {
-            value: 1
-        }
+        F2(1)
     }
 
     fn zero() -> F2 {
-        F2 {
-            value: 0
-        }
+        F2(0)
     }
 }

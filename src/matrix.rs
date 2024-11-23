@@ -16,31 +16,14 @@ pub trait Matrix<F: Field> {
     fn vstack(&mut self, other: &Self);
     fn block_sum(&mut self, other: &Self);
 
-    fn identity(d: usize) -> impl Matrix<F>;
+    fn identity(d: usize) -> Self;
 }
 
 
-impl Field for f64 {
-    fn inv(self) -> Self {
-        1.0 / self
-    }
+pub struct FieldMatrix<F: Field> {
 
-    fn get_characteristic(&self) -> usize {
-        0
-    }
-    
-    fn is_zero(&self) -> bool {
-        return self.is_normal();
-    }
-    
-    fn one() -> Self {
-        1.0f64
-    }
-    
-    fn zero() -> Self {
-        0.0f64
-    }
 }
+
 
 fn row_reduce_to_rref<F: Field>(matrix: &mut Vec<Vec<F>>) {
     let rows = matrix.len();
