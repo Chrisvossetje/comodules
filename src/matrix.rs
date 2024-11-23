@@ -2,12 +2,14 @@ use crate::fp::Field;
 
 
 pub trait Matrix<F: Field> {
-    fn kernel(&self);
+    fn kernel(&self) -> Self;
 
     // Faster but requires self to be in rref ?
-    fn rref_kernel(&self);
+    fn rref_kernel(&self) -> Self;
     
     fn transpose(&mut self);
+    fn get_transpose(&self) -> Self;
+
     fn rref(&mut self);
 
     // OR JUST A USIZE, NOT KNOWING WHICH COLUMN IT ORIGINATED FROM ?
@@ -20,8 +22,98 @@ pub trait Matrix<F: Field> {
 }
 
 
-pub struct FieldMatrix<F: Field> {
+impl Field for f64 {
+    fn inv(self) -> Self {
+        1.0 / self
+    }
 
+    fn get_characteristic(&self) -> usize {
+        0
+    }
+    
+    fn is_zero(&self) -> bool {
+        return self.is_normal();
+    }
+    
+    fn one() -> Self {
+        1.0f64
+    }
+    
+    fn zero() -> Self {
+        0.0f64
+    }
+}
+
+
+impl<F: Field> Matrix<F> for Vec<Vec<F>> {
+    fn kernel(&self) -> Self {
+        unimplemented!()
+    }
+
+    fn rref_kernel(&self) -> Self {
+        kernel_from_rref(&self)
+    }
+
+    fn transpose(&mut self) {
+        let rows = self.len();
+        let cols = self[0].len();
+        let mut new_matrix = vec![vec![F::zero(); rows]; cols];
+
+        for i in 0..rows {
+            for j in 0..cols {
+                new_matrix[j][i] = self[i][j];
+            }
+        }
+
+        *self = new_matrix;
+    }
+
+    fn get_transpose(&self) -> Self {
+        let rows = self.len();
+        let cols = self[0].len();
+        let mut new_matrix = vec![vec![F::zero(); rows]; cols];
+
+        for i in 0..rows {
+            for j in 0..cols {
+                new_matrix[j][i] = self[i][j];
+            }
+        }
+
+        new_matrix
+    }
+
+    fn rref(&mut self) {
+        row_reduce_to_rref(self);
+    }
+
+    fn pivots(&mut self) -> Vec<(usize,usize)> {
+        let mut id = 0;
+        let mut pivots = vec![];
+        for i in (0..self[0].len()) {
+            if !self[id][i].is_zero() {
+                pivots.push((id, i));
+                id += 1;
+            }
+            if id+1 == self.len() {
+                break;
+            }
+        }
+        pivots
+    }
+
+    fn block_sum(&mut self, other: &Self) -> Self {
+        todo!()
+    }
+
+    fn identity(d: usize) -> Self {
+        let mut matrix = vec![vec![F::zero(); d]; d];
+        for i in 0..d {
+            matrix[i][i] = F::one();
+        }
+        matrix
+    }
+    
+    
 }
 
 

@@ -2,7 +2,7 @@ use core::panic;
 use std::{fmt::Debug, ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign}};
 
 
-pub trait Field : Debug + Sized + PartialEq + Copy + Add<Output = Self> + Sub<Output = Self> + Neg<Output = Self> + Mul<Output = Self> + AddAssign + SubAssign + MulAssign {
+pub trait Field : Clone + Copy + Debug + Sized + PartialEq + Add<Output = Self> + Sub<Output = Self> + Neg<Output = Self> + Mul<Output = Self> + AddAssign + SubAssign + MulAssign {
     fn inv(self) -> Self;
     fn get_characteristic(&self) -> usize;
     fn is_zero(&self) -> bool;
