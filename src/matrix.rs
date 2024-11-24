@@ -1,5 +1,10 @@
-use crate::fp::Field;
+use crate::fp::{Field, F2,  Fp};
 
+pub type FieldMatrix<F: Field> = Vec<Vec<F>>;
+
+pub fn lol() {
+    let a: FieldMatrix<Fp<3>> = FieldMatrix::new();
+}
 
 pub trait Matrix<F: Field> {
     fn kernel(&self) -> Self;
@@ -19,31 +24,11 @@ pub trait Matrix<F: Field> {
     fn block_sum(&mut self, other: &Self);
 
     fn identity(d: usize) -> Self;
+
+    fn get(&self, x: usize, y: usize) -> F;
+
+    fn mult(&mut self, scalar: F);
 }
-
-
-impl Field for f64 {
-    fn inv(self) -> Self {
-        1.0 / self
-    }
-
-    fn get_characteristic(&self) -> usize {
-        0
-    }
-    
-    fn is_zero(&self) -> bool {
-        return self.is_normal();
-    }
-    
-    fn one() -> Self {
-        1.0f64
-    }
-    
-    fn zero() -> Self {
-        0.0f64
-    }
-}
-
 
 impl<F: Field> Matrix<F> for Vec<Vec<F>> {
     fn kernel(&self) -> Self {
@@ -101,7 +86,11 @@ impl<F: Field> Matrix<F> for Vec<Vec<F>> {
         pivots
     }
 
-    fn block_sum(&mut self, other: &Self) -> Self {
+    fn vstack(&mut self, other: &Self) {
+        todo!()
+    }
+    
+    fn block_sum(&mut self, other: &Self) {
         todo!()
     }
 
@@ -113,6 +102,13 @@ impl<F: Field> Matrix<F> for Vec<Vec<F>> {
         matrix
     }
     
+    fn get(&self, x: usize, y: usize) -> F {
+        self[x][y]
+    }
+    
+    fn mult(&mut self, scalar: F) {
+        todo!();    
+    }
     
 }
 

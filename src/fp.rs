@@ -36,30 +36,30 @@ impl Field for f64 {
 
 pub struct Fp<const P: u8>(u8);
 
-impl<const P: u8> Field for Fp<P> {
-    fn inv(self) -> Self {
-        match P {
-            2 | 3 => { self }
-            _ => {panic!("inverses not implemented for this prime")}
-        }
-    }
+// impl<const P: u8> Field for Fp<P> {
+//     fn inv(self) -> Self {
+//         match P {
+//             2 | 3 => { self }
+//             _ => {panic!("inverses not implemented for this prime")}
+//         }
+//     }
 
-    fn get_characteristic(&self) -> usize {
-        P as usize
-    }
+//     fn get_characteristic(&self) -> usize {
+//         P as usize
+//     }
 
-    fn is_zero(&self) -> bool {
-        self.0 == 0
-    }
+//     fn is_zero(&self) -> bool {
+//         self.0 == 0
+//     }
 
-    fn one() -> Self {
-        Fp(1)
-    }
+//     fn one() -> Self {
+//         Fp(1)
+//     }
     
-    fn zero() -> Self {
-        Fp(0)
-    }
-}
+//     fn zero() -> Self {
+//         Fp(0)
+//     }
+// }
 
 
 #[derive(Clone, Copy, PartialEq, Eq)]
