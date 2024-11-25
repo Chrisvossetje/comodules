@@ -33,33 +33,87 @@ impl Field for f64 {
     }
 }
 
-
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Fp<const P: u8>(u8);
 
-// impl<const P: u8> Field for Fp<P> {
-//     fn inv(self) -> Self {
-//         match P {
-//             2 | 3 => { self }
-//             _ => {panic!("inverses not implemented for this prime")}
-//         }
-//     }
+impl<const P: u8> Add for Fp<P> {
+    type Output = Self;
 
-//     fn get_characteristic(&self) -> usize {
-//         P as usize
-//     }
+    fn add(self, rhs: Self) -> Self::Output {
+        Fp(((self.0 as u64 + rhs.0 as u64) % P as u64) as u8)
+    }
+} 
+impl<const P: u8> Mul for Fp<P> {
+    type Output = Self;
 
-//     fn is_zero(&self) -> bool {
-//         self.0 == 0
-//     }
+    fn mul(self, rhs: Self) -> Self::Output {
+        Fp(((self.0 as u64 * rhs.0 as u64) % P as u64) as u8)
+    }
+} 
 
-//     fn one() -> Self {
-//         Fp(1)
-//     }
+impl<const P: u8> Sub for Fp<P> {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Fp(((P as u64 + self.0 as u64 - rhs.0 as u64) % P as u64) as u8)
+    }
+}
+
+impl<const P: u8> Neg for Fp<P> {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Fp(((P as u64 - self.0 as u64) % P as u64) as u8)
+    }
+} 
+
+impl<const P: u8> AddAssign for Fp<P> {
+    fn add_assign(&mut self, rhs: Self) {
+        self.0 = ((self.0 as u64 + rhs.0 as u64) % P as u64) as u8;
+    }
+} 
+impl<const P: u8> MulAssign for Fp<P> {
+    fn mul_assign(&mut self, rhs: Self) {
+        self.0 = ((self.0 as u64 * rhs.0 as u64) % P as u64) as u8;
+    }
+} 
+
+impl<const P: u8> SubAssign for Fp<P> {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.0 = ((P as u64 + self.0 as u64 - rhs.0 as u64) % P as u64) as u8;
+    }
+} 
+
+impl<const P: u8> std::fmt::Debug for Fp<P> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl<const P: u8> Field for Fp<P> {
+    fn inv(self) -> Self {
+        match P {
+            2 | 3 => { self }
+            _ => {panic!("inverses not implemented for this prime")}
+        }
+    }
+
+    fn get_characteristic(&self) -> usize {
+        P as usize
+    }
+
+    fn is_zero(&self) -> bool {
+        self.0 == 0
+    }
+
+    fn one() -> Self {
+        Fp(1)
+    }
     
-//     fn zero() -> Self {
-//         Fp(0)
-//     }
-// }
+    fn zero() -> Self {
+        Fp(0)
+    }
+}
 
 
 #[derive(Clone, Copy, PartialEq, Eq)]

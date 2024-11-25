@@ -2,11 +2,11 @@
 // use comodule::{Comodule, ComoduleMorphism};
 // use hopfalgebra::HopfAlgebra;
 
-use fp::Field;
+use field::Field;
 
 
 #[allow(unused)]
-mod fp;
+mod field;
 // #[allow(unused)]
 // mod linearalgebra;
 #[allow(unused)]
@@ -26,7 +26,7 @@ mod matrix;
 
 
 fn main() {
-    dbg!(fp::F2::zero());
+    dbg!(field::F2::zero());
 }
 
 // #[allow(unused)]

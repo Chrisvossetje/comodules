@@ -1,6 +1,6 @@
 use std::{hash::Hash, clone, collections::{hash_map, HashMap}, fmt::{Debug, Display}, marker::PhantomData, ops::{Add, AddAssign, Sub, SubAssign}};
 
-use crate::{fp::{Field, Fp, F2}, matrix::{Matrix, FieldMatrix}};
+use crate::{field::{Field, Fp, F2}, matrix::{Matrix, FieldMatrix}};
 
 pub trait Grading : 'static + Clone + Hash + Copy + Debug + Sized + Add<Output=Self> + Sub<Output=Self> + PartialEq + Eq + AddAssign + SubAssign + PartialOrd  {}
 impl Grading for i32 {}
@@ -46,7 +46,9 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G,F,M> {
          GradedLinearMap { maps: kernel, __: PhantomData }
     }
 
+    // Do we want this ?
     fn transpose() {
+        
         todo!()
     }
 }

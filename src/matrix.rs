@@ -1,4 +1,4 @@
-use crate::fp::{Field, F2,  Fp};
+use crate::field::{Field, F2,  Fp};
 
 pub type FieldMatrix<F: Field> = Vec<Vec<F>>;
 
@@ -233,7 +233,7 @@ fn kernel_from_rref<F: Field>(matrix: &Vec<Vec<F>>) -> Vec<Vec<F>> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{fp::{Field, F2}, matrix::{kernel_from_rref, row_reduce_to_rref}};
+    use crate::{field::{Field, F2}, matrix::{kernel_from_rref, row_reduce_to_rref}};
     
     #[test]
     pub fn kernel_simple() {
