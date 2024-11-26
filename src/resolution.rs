@@ -1,20 +1,36 @@
 
 
 
-pub struct Resolution<M: Morphism, A: CoAlgebra, C: CoModule<A>> {
+
+
+// pub struct Resolution<M: Morphism, A: CoAlgebra, C: CoModule<A>> {
+//     comodule: C,
+//     coalgebra: A,
+//     resolution: Vec<M>,
+// }
+
+use std::marker::PhantomData;
+
+use crate::{coalgebra::Coalgebra, comodule::{Comodule, ComoduleMorphism}, field::Field, graded::Grading, matrix::Matrix};
+pub struct Resolution<G: Grading, F: Field, M: Matrix<F>, A: Coalgebra<G, F, M>, C: Comodule<G, F, M>, CM: ComoduleMorphism<G, F, M>> {
     comodule: C,
     coalgebra: A,
-    resolution: Vec<M>,
+    resolution: Vec<CM>,
+
+    grading: PhantomData<G>,
+    field: PhantomData<F>,
+    matrix: PhantomData<M>,
 }
 
 
-impl<M, A, C> Resolution<M,A,C> 
-where 
-A: CoAlgebra, 
-C: CoModule<A>,
-M: Morphism<C> {
+impl <G: Grading, F: Field, M: Matrix<F>, A: Coalgebra<G, F, M>, C: Comodule<G, F, M>, CM: ComoduleMorphism<G, F, M>> Resolution<G, F, M, A, C, CM>{
     pub fn new(comodule: C) {
-
+        let coalgebra = comodule.get_coalgebra();
+        Resolution {
+            comodule,
+            coalgebra,
+            resolution: vec![],
+        }
     }
 
     pub fn resolve(self, s: usize) {

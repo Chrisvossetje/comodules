@@ -3,7 +3,7 @@ use std::{fmt::Debug, ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign}
 
 
 pub trait Field : Clone + Copy + Debug + Sized + PartialEq + Add<Output = Self> + Sub<Output = Self> + Neg<Output = Self> + Mul<Output = Self> + AddAssign + SubAssign + MulAssign {
-    fn inv(self) -> Self;
+    fn inv(self) -> Option<Self>;
     fn get_characteristic(&self) -> usize;
     fn is_zero(&self) -> bool;
     fn one() -> Self;
@@ -12,8 +12,12 @@ pub trait Field : Clone + Copy + Debug + Sized + PartialEq + Add<Output = Self> 
 
 
 impl Field for f64 {
-    fn inv(self) -> Self {
-        1.0 / self
+    fn inv(self) -> Option<Self> {
+        if self.is_zero() {
+            None
+        } else {
+            Some(1.0f64 / self)
+        }
     }
 
     fn get_characteristic(&self) -> usize {
@@ -91,10 +95,11 @@ impl<const P: u8> std::fmt::Debug for Fp<P> {
 }
 
 impl<const P: u8> Field for Fp<P> {
-    fn inv(self) -> Self {
-        match P {
-            2 | 3 => { self }
-            _ => {panic!("inverses not implemented for this prime")}
+    fn inv(self) -> Option<Self> {
+        if self.is_zero() {
+            None
+        } else {
+            Some(Fp((self.0 as u64).pow(P as u32 - 2) as u8)) // a^(n-2) = a^(-1) mod P, Fermat's little theorem
         }
     }
 
@@ -189,8 +194,12 @@ impl Field for F2 {
     }
 
     
-    fn inv(self) -> Self {
-        self
+    fn inv(self) -> Option<Self> {
+        if self.is_zero() {
+            None
+        } else {
+            Some(self)
+        }
     }
     
     fn is_zero(&self) -> bool {

@@ -12,17 +12,18 @@ mod field;
 #[allow(unused)]
 mod graded;
 #[allow(unused)]
-// mod module;
-// #[allow(unused)]
-// mod hopfalgebra;
-// #[allow(unused)]
-// mod comodule;
-// #[allow(unused)]
-// mod resolution;
+mod module;
+#[allow(unused)]
+mod coalgebra;
+#[allow(unused)]
+mod comodule;
+#[allow(unused)]
+mod resolution;
 
 
 #[allow(unused)]
 mod matrix;
+mod field_case_implementation;
 
 
 fn main() {

@@ -19,20 +19,21 @@ pub type BasisIndex<G: Grading> = (G, usize);
 
 // A VectorSpace should be naive / simple, just a list of basis elements!
 // Specific modules can implement their own "basis" type which encodes the information they need
-pub type VectorSpace<B: BasisElement> = Vec<B>;
+pub type VectorSpace<G: Grading> = Vec<BasisIndex<G>>;
 
 
 // Maybe make this its own type ???
 // This is probably fine, as modules will always direct use this type
-pub type GradedVectorSpace<G: Grading, B: BasisElement> = HashMap<G, VectorSpace<B>>;
+pub type GradedVectorSpace<G: Grading> = HashMap<G, VectorSpace<G>>;
 
+#[derive(Debug, Clone)]
 pub struct GradedLinearMap<G: Grading, F: Field, M: Matrix<F>> {
     maps: HashMap<G, M>,
     __: PhantomData<F>,
 }
 
 impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G,F,M> {
-    fn get_cokernel(&self) -> Self {
+    pub fn get_cokernel(&self) -> Self {
        let kernel: HashMap<G, M> = self.maps.iter().map(|(k,v) | {
            todo!("KERNEL SHOULD BE COKERNEL");
            (*k, v.kernel())
@@ -40,11 +41,11 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G,F,M> {
         GradedLinearMap { maps: kernel, __: PhantomData }
     }
     
-    fn get_map(&self, grade: G) -> Option<&M> {
+    pub fn get_map(&self, grade: G) -> Option<&M> {
         self.maps.get(&grade)
     }
     
-    fn get_kernel(&self) -> Self {
+    pub fn get_kernel(&self) -> Self {
         let kernel: HashMap<G, M> = self.maps.iter().map(|(k,v) | {
             (*k, v.kernel())
          }).collect();
@@ -52,7 +53,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G,F,M> {
     }
 
     // Do we want this ?
-    fn transpose() {
+    pub fn transpose(&self) -> Self {
         
         todo!()
     }

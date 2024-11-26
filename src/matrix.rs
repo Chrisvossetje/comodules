@@ -6,7 +6,7 @@ pub fn lol() {
     let a: FieldMatrix<Fp<3>> = FieldMatrix::new();
 }
 
-pub trait Matrix<F: Field> {
+pub trait Matrix<F: Field> : Clone {
     fn kernel(&self) -> Self;
 
     // Faster but requires self to be in rref ?
@@ -130,10 +130,12 @@ fn row_reduce_to_rref<F: Field>(matrix: &mut Vec<Vec<F>>) {
 
         // Step 1: Normalize the pivot row
         let pivot = matrix[i][i];
-        if !pivot.is_zero() {
-            let inv = pivot.inv();
-            for j in 0..cols {
-                matrix[i][j] *= inv;
+        match pivot.inv() {
+            None => continue,
+            Some(inv) => {
+                for j in 0..cols { // speedup?: start from i
+                    matrix[i][j] *= inv;
+                }
             }
         }
 
