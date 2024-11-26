@@ -56,6 +56,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G,F,M> {
 
 
 // EXAMPLE OF A kt MODULE 
+// BRO WHY DO THIS HERE?!?! there is litterally a file called module.rs
 
 #[derive(Debug, Clone)]
 pub struct ktBasisElement {
