@@ -3,9 +3,13 @@ use std::{hash::Hash, clone, collections::{hash_map, HashMap}, fmt::{Debug, Disp
 use crate::{field::{Field, Fp, F2}, matrix::{Matrix, FieldMatrix}};
 
 pub trait Grading : 'static + Clone + Hash + Copy + Debug + Sized + Add<Output=Self> + Sub<Output=Self> + PartialEq + Eq + AddAssign + SubAssign + PartialOrd  {}
-impl Grading for i32 {}
-impl Grading for (i32,i32) {}
 
+impl Grading for i32 {}
+
+pub type UniGrading = i32;
+
+#[derive(Debug, Clone, Copy, Hash)]
+pub struct BiGrading(i32,i32);
 
 
 pub trait BasisElement : 'static + Debug + Clone {}
@@ -13,13 +17,14 @@ pub trait BasisElement : 'static + Debug + Clone {}
 
 pub type BasisIndex<G: Grading> = (G, usize);
 
-// A VectorSpace should be naive / simple
+// A VectorSpace should be naive / simple, just a list of basis elements!
+// Specific modules can implement their own "basis" type which encodes the information they need
 pub type VectorSpace<B: BasisElement> = Vec<B>;
 
 
 // Maybe make this its own type ???
+// This is probably fine, as modules will always direct use this type
 pub type GradedVectorSpace<G: Grading, B: BasisElement> = HashMap<G, VectorSpace<B>>;
-
 
 pub struct GradedLinearMap<G: Grading, F: Field, M: Matrix<F>> {
     maps: HashMap<G, M>,
@@ -55,17 +60,6 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G,F,M> {
 
 
 
-// EXAMPLE OF A kt MODULE 
-
-#[derive(Debug, Clone)]
-pub struct ktBasisElement {
-
-}
-
-pub struct ktModule {
-    space: GradedVectorSpace<(i32, i32), ktBasisElement>,
-    t: GradedLinearMap<(i32, i32), F2, FieldMatrix<F2>>
-}
 
 
 

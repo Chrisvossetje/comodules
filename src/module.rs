@@ -1,5 +1,21 @@
 use crate::{fp::Field, graded::{GradedBasisElement, GradedVectorSpace, Grading}};
 
+
+// EXAMPLE OF A kt MODULE 
+
+#[derive(Debug, Clone)]
+pub struct ktBasisElement {
+
+}
+
+pub struct ktModule {
+    space: GradedVectorSpace<(i32, i32), ktBasisElement>,
+    t: GradedLinearMap<UniGrading, F2, FieldMatrix<F2>>
+}
+
+
+
+
 pub trait Module<G: Grading, F: Field> {
     fn get_vector_space(&self) -> &impl GradedVectorSpace<G, F>;
     fn get_basis(&self) -> &Vec<&impl GradedBasisElement<G>> { self.get_vector_space().get_basis() }
