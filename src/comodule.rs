@@ -1,46 +1,46 @@
 use crate::{coalgebra::Coalgebra, field::Field, graded::Grading, matrix::Matrix, module::{Module, ModuleMorphism, TensorModule}};
 
-pub trait Comodule<G: Grading, F: Field, M: Matrix<F>> {
-    // Applies forgetful functor
-    // haha, "fancy math boy"
-    fn get_underlying_module(&self) -> &impl Module<G, F, M>;
+// pub trait Comodule<G: Grading, F: Field, M: Matrix<F>> {
+//     // Applies forgetful functor
+//     // haha, "fancy math boy"
+//     fn get_underlying_module(&self) -> &impl Module<G, F, M>;
     
-    fn get_coalgebra(&self) -> &impl Coalgebra<G, F, M>;
+//     fn get_coalgebra(&self) -> &impl Coalgebra<G, F, M>;
 
-    // returns the smallest submodule of which 'cogenerates' the entire comodule.
-    // Let \Delta(x) = \sum_i (a_i \otimes y_i),
-    // if the coefficient of y is non-zero, we say that x 'cogenerates' y
-    // We define cogeneration to be the smallest transitive relation with the above property.
-    fn get_cogenerating_module(&self) -> impl ModuleMorphism<G, F, M>;
-    // !!! Note: We want morphisms instead of modules, so we eventually get the injection to the cofree module
-    // fn get_cogenerating_module(&self) -> impl ModuleMorphism;
+//     // returns the smallest submodule of which 'cogenerates' the entire comodule.
+//     // Let \Delta(x) = \sum_i (a_i \otimes y_i),
+//     // if the coefficient of y is non-zero, we say that x 'cogenerates' y
+//     // We define cogeneration to be the smallest transitive relation with the above property.
+//     fn get_cogenerating_module(&self) -> impl ModuleMorphism<G, F, M>;
+//     // !!! Note: We want morphisms instead of modules, so we eventually get the injection to the cofree module
+//     // fn get_cogenerating_module(&self) -> impl ModuleMorphism;
 
-    // Produces the tensor product of given the Hopf algebra A with the given module V.
-    // This therefore returns the A-comodule: A \otimes V
-    fn cofree_comodule(hopf: impl Coalgebra<G, F, M>, module: impl Module<G, F, M>) -> Self;
-    // !!! Note: We want to return the injection from the coker to the cofree comodule, not just the comod itself.
+//     // Produces the tensor product of given the Hopf algebra A with the given module V.
+//     // This therefore returns the A-comodule: A \otimes V
+//     fn cofree_comodule(hopf: impl Coalgebra<G, F, M>, module: impl Module<G, F, M>) -> Self;
+//     // !!! Note: We want to return the injection from the coker to the cofree comodule, not just the comod itself.
 
-    fn create_tensor_product(left: &Self, right: &Self) -> Self;
+//     fn create_tensor_product(left: &Self, right: &Self) -> Self;
+// }
+
+// pub trait ComoduleMorphism<G: Grading, F: Field, M: Matrix<F>> {
+//     // Applies forgetful functor
+//     fn get_underlying_morphism(&self) -> &impl ModuleMorphism<G, F, M>;
+
+//     fn get_domain(&self) -> &impl Comodule<G, F, M>;
+//     fn get_codomain(&self) -> &impl Comodule<G, F, M>;
+
+//     fn compute_cokernel(&self) -> Self;
+
+//     fn get_zero_morphism_to(comod: impl Comodule<G, F, M>) -> Self; 
+// }
+
+
+pub trait Comodule {
+
 }
 
-pub trait ComoduleMorphism<G: Grading, F: Field, M: Matrix<F>> {
-    // Applies forgetful functor
-    fn get_underlying_morphism(&self) -> &impl ModuleMorphism<G, F, M>;
-
-    fn get_domain(&self) -> &impl Comodule<G, F, M>;
-    fn get_codomain(&self) -> &impl Comodule<G, F, M>;
-
-    fn compute_cokernel(&self) -> Self;
-
-    fn get_zero_morphism_to(comod: impl Comodule<G, F, M>) -> Self; 
-}
-
-
-pub trait SimpleComodule {
-
-}
-
-pub trait SimpleComoduleMorphism<M: SimpleComodule> {
+pub trait ComoduleMorphism<M: Comodule> {
     fn cokernel(&self) -> Self;
     fn injection_codomain_to_cofree(&self) -> Self;
 
