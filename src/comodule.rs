@@ -2,6 +2,7 @@ use crate::{coalgebra::Coalgebra, field::Field, graded::Grading, matrix::Matrix,
 
 pub trait Comodule<G: Grading, F: Field, M: Matrix<F>> {
     // Applies forgetful functor
+    // haha, "fancy math boy"
     fn get_underlying_module(&self) -> &impl Module<G, F, M>;
     
     fn get_coalgebra(&self) -> &impl Coalgebra<G, F, M>;
@@ -31,9 +32,23 @@ pub trait ComoduleMorphism<G: Grading, F: Field, M: Matrix<F>> {
 
     fn compute_cokernel(&self) -> Self;
 
-    fn get_zero_morphism_to(comod: impl Comodule<G, F, M>) -> Self;
+    fn get_zero_morphism_to(comod: impl Comodule<G, F, M>) -> Self; 
 }
 
+
+pub trait SimpleComodule {
+
+}
+
+pub trait SimpleComoduleMorphism<M: SimpleComodule> {
+    fn cokernel(&self) -> Self;
+    fn injection_codomain_to_cofree(&self) -> Self;
+
+    fn zero_morphism(comodule: M) -> Self;
+
+    // codomain r == codomain l, l \circ r
+    fn compose(l: Self, r: Self) -> Self;
+}
 
 
 

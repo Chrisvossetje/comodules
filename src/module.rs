@@ -24,6 +24,7 @@ pub trait Module<G: Grading, F: Field, M: Matrix<F>> : Clone {
     fn get_action(&self) -> &GradedLinearMap<G, F, M>;
 }
 
+
 pub trait TensorModule<G: Grading, F: Field, M: Matrix<F>> : Module<G, F, M> {
     fn get_left_module(&self) -> &impl Module<G, F, M>;
     fn get_right_module(&self) -> &impl Module<G, F, M>;
