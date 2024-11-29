@@ -39,6 +39,8 @@ use crate::{field::Field, graded::{BasisElement, BasisIndex, GradedLinearMap, Gr
 
 
 pub trait Comodule<G: Grading> {
+    type Element: BasisElement;
+    // This is not the correct type yet
     fn get_generators() -> Vec<BasisIndex<G>>;
 }
 
@@ -60,11 +62,16 @@ pub trait ComoduleMorphism<G: Grading, M: Comodule<G>> {
 pub type RefType<'a, T> = &'a T;
 
 
+#[derive(Debug, Clone)]
 pub struct kBasisElement {
     name: String,
     generator: bool,
     primitive: Option<usize>,
     generated_index: usize,
+}
+
+impl BasisElement for kBasisElement {
+
 }
 
 pub struct kComodule<'a, G: Grading, F: Field> {
@@ -85,6 +92,8 @@ impl<G: Grading, F: Field> Comodule<G> for kComodule<'_, G, F> {
     fn get_generators() -> Vec<BasisIndex<G>> {
         todo!()
     }
+    
+    type Element = kBasisElement;
 }
 
 

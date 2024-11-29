@@ -39,15 +39,17 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
     } 
 
     pub fn generate_page(&self) -> Page {
+        let (x_formula, y_formula) = G::default_formulas();
+
         Page {
             name: " ?? ".to_string(),
             id: 2,
-            degrees: todo!(),
-            x_formula: todo!(),
-            y_formula: todo!(),
+            degrees: G::degree_names(),
+            x_formula,
+            y_formula,
             generators: todo!(),
             structure_lines: todo!(),
-            differentials: todo!(),
+            differentials: vec![],
         }
     }
 }
