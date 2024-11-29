@@ -1,22 +1,26 @@
-use crate::comodule::{Comodule, ComoduleMorphism};
+use std::marker::PhantomData;
+
+use crate::{comodule::{Comodule, ComoduleMorphism}, graded::Grading, page::Page};
 
 
-pub struct Resolution<M: Comodule, F: ComoduleMorphism<M>> {
+pub struct Resolution<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> {
     comodule: M,
-    resolution: Vec<F>,
+    resolution: Vec<Morph>,
+    _grading: PhantomData<G>,
 }
 
 
-impl<M: Comodule, F: ComoduleMorphism<M>> Resolution<M, F>{
+impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M, Morph>{
     pub fn new(comodule: M) -> Self {
         Resolution {
             comodule,
             resolution: vec![],
+            _grading: PhantomData,
         }
     }
 
     pub fn resolve_to_s(mut self, s: usize) {
-        let zero_morph = F::zero_morphism(self.comodule);
+        let zero_morph = Morph::zero_morphism(self.comodule);
 
         let initial_inject = zero_morph.injection_codomain_to_cofree();
         self.resolution.push(initial_inject);
@@ -28,9 +32,22 @@ impl<M: Comodule, F: ComoduleMorphism<M>> Resolution<M, F>{
 
             let inject = last_morph.injection_codomain_to_cofree();
 
-            let combine = F::compose(coker, inject);
+            let combine = Morph::compose(coker, inject);
 
             self.resolution.push(combine);
         }
     } 
+
+    pub fn generate_page(&self) -> Page {
+        Page {
+            name: " ?? ".to_string(),
+            id: 2,
+            degrees: todo!(),
+            x_formula: todo!(),
+            y_formula: todo!(),
+            generators: todo!(),
+            structure_lines: todo!(),
+            differentials: todo!(),
+        }
+    }
 }

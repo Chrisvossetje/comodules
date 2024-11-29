@@ -27,7 +27,7 @@ pub trait Matrix<F: Field> : Clone {
 
     fn get(&self, x: usize, y: usize) -> F;
 
-    fn mult(&mut self, scalar: F);
+    fn compose(self, rhs: &mut Self);
 }
 
 impl<F: Field> Matrix<F> for Vec<Vec<F>> {
@@ -106,8 +106,8 @@ impl<F: Field> Matrix<F> for Vec<Vec<F>> {
         self[x][y]
     }
     
-    fn mult(&mut self, scalar: F) {
-        todo!();    
+    fn compose(self, rhs: &mut Self) {
+        todo!()
     }
     
 }

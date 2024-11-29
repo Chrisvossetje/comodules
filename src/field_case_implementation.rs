@@ -83,59 +83,59 @@ pub struct FieldComodule<G: Grading, F: Field, M: Matrix<F>> {
     coaction: FieldModuleMorphism<G, F, M>
 }
 
-impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G, F, M> for FieldComodule<G, F, M> {
-    fn get_underlying_module(&self) -> &impl Module<G, F, M> {
-        &self.module
-    }
+// impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G, F, M> for FieldComodule<G, F, M> {
+//     fn get_underlying_module(&self) -> &impl Module<G, F, M> {
+//         &self.module
+//     }
     
-    fn get_coalgebra(&self) -> &impl Coalgebra<G, F, M> {
-        &self.coalgebra
-    }
+//     fn get_coalgebra(&self) -> &impl Coalgebra<G, F, M> {
+//         &self.coalgebra
+//     }
     
-    fn get_cogenerating_module(&self) -> impl ModuleMorphism<G, F, M> {
-        unimplemented!();
-        self.coaction
-    }
+//     fn get_cogenerating_module(&self) -> impl ModuleMorphism<G, F, M> {
+//         unimplemented!();
+//         self.coaction
+//     }
     
-    fn cofree_comodule(hopf: impl Coalgebra<G, F, M>, module: impl Module<G, F, M>) -> Self {
-        todo!()
-    }
+//     fn cofree_comodule(hopf: impl Coalgebra<G, F, M>, module: impl Module<G, F, M>) -> Self {
+//         todo!()
+//     }
     
-    fn create_tensor_product(left: &Self, right: &Self) -> Self {
-        todo!()
-    }
+//     fn create_tensor_product(left: &Self, right: &Self) -> Self {
+//         todo!()
+//     }
 
-}
+// }
 
 
-#[derive(Clone)]
-pub struct FieldComoduleMorphism<'a, G: Grading, F: Field, M: Matrix<F>> {
-    map: FieldModuleMorphism<G, F, M>,
-    domain: &'a FieldComodule<G, F, M>,
-    codomain: &'a FieldComodule<G, F, M>
-}
+// #[derive(Clone)]
+// pub struct FieldComoduleMorphism<'a, G: Grading, F: Field, M: Matrix<F>> {
+//     map: FieldModuleMorphism<G, F, M>,
+//     domain: &'a FieldComodule<G, F, M>,
+//     codomain: &'a FieldComodule<G, F, M>
+// }
 
-impl<'a, G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, F, M> for FieldComoduleMorphism<'a, G, F, M> {
-    fn get_underlying_morphism(&self) -> &impl ModuleMorphism<G, F, M> {
-        &self.map
-    }
+// impl<'a, G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, F, M> for FieldComoduleMorphism<'a, G, F, M> {
+//     fn get_underlying_morphism(&self) -> &impl ModuleMorphism<G, F, M> {
+//         &self.map
+//     }
 
-    fn get_domain(&self) -> &impl Comodule<G, F, M> {
-        &self.domain
-    }
+//     fn get_domain(&self) -> &impl Comodule<G, F, M> {
+//         &self.domain
+//     }
 
-    fn get_codomain(&self) -> &impl Comodule<G, F, M> {
-        &self.codomain
-    }
+//     fn get_codomain(&self) -> &impl Comodule<G, F, M> {
+//         &self.codomain
+//     }
 
-    fn compute_cokernel(&self) -> Self {
-        todo!()
-    }
+//     fn compute_cokernel(&self) -> Self {
+//         todo!()
+//     }
 
-    fn get_zero_morphism_to(comod: impl Comodule<G, F, M>) -> Self {
-        todo!()
-    }
-}
+//     fn get_zero_morphism_to(comod: impl Comodule<G, F, M>) -> Self {
+//         todo!()
+//     }
+// }
 
 
 

@@ -1,4 +1,6 @@
-use crate::{coalgebra::Coalgebra, field::Field, graded::Grading, matrix::Matrix, module::{Module, ModuleMorphism, TensorModule}};
+use std::{ops::Mul, primitive};
+
+use crate::{field::Field, graded::{BasisElement, BasisIndex, GradedLinearMap, GradedVectorSpace, Grading, UniGrading}, matrix::{FieldMatrix, Matrix}, module::{Module, ModuleMorphism, TensorModule}};
 
 // pub trait Comodule<G: Grading, F: Field, M: Matrix<F>> {
 //     // Applies forgetful functor
@@ -36,11 +38,11 @@ use crate::{coalgebra::Coalgebra, field::Field, graded::Grading, matrix::Matrix,
 // }
 
 
-pub trait Comodule {
-
+pub trait Comodule<G: Grading> {
+    fn get_generators() -> Vec<BasisIndex<G>>;
 }
 
-pub trait ComoduleMorphism<M: Comodule> {
+pub trait ComoduleMorphism<G: Grading, M: Comodule<G>> {
     fn cokernel(&self) -> Self;
     fn injection_codomain_to_cofree(&self) -> Self;
 
@@ -48,13 +50,74 @@ pub trait ComoduleMorphism<M: Comodule> {
 
     // codomain r == codomain l, l \circ r
     fn compose(l: Self, r: Self) -> Self;
+
+    fn get_structure_lines() -> Vec<(BasisIndex<G>, BasisIndex<G>, usize)>;
 }
 
 
 
 
+pub type RefType<'a, T> = &'a T;
 
 
+pub struct kBasisElement {
+    name: String,
+    generator: bool,
+    primitive: Option<usize>,
+    generated_index: usize,
+}
+
+pub struct kComodule<'a, G: Grading, F: Field> {
+    coalgebra: RefType<'a, GradedVectorSpace<G, kBasisElement>>,
+    space: GradedVectorSpace<G, kBasisElement>,
+    coaction: GradedLinearMap<G, F, FieldMatrix<F>>,
+    // tensor: kTensor,
+} 
+
+pub struct kComoduleMorphism<'a, G: Grading, F: Field> {
+    domain: RefType<'a, kComodule<'a, G, F>>,
+    codomain: RefType<'a, kComodule<'a, G, F>>,
+
+    map: GradedLinearMap<G,F, FieldMatrix<F>>
+}
+
+impl<G: Grading, F: Field> Comodule<G> for kComodule<'_, G, F> {
+    fn get_generators() -> Vec<BasisIndex<G>> {
+        todo!()
+    }
+}
+
+
+impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<'_, G, F>> for kComoduleMorphism<'_, G, F> {
+    fn cokernel(&self) -> Self {
+        todo!()
+    }
+
+    fn injection_codomain_to_cofree(&self) -> Self {
+        todo!()
+    }
+
+    fn zero_morphism(comodule: kComodule<G, F>) -> Self {
+        todo!()
+    }
+
+    fn compose(l: Self, r: Self) -> Self {
+        let codomain = l.codomain.clone();
+        let domain = r.domain.clone();
+
+        let map = l.map.compose(r.map);
+
+        Self {
+            domain,
+            codomain,
+            map,
+        }
+    }
+    
+    fn get_structure_lines() -> Vec<(BasisIndex<G>, BasisIndex<G>, usize)> {
+        todo!()
+    }
+}
 
 
 
