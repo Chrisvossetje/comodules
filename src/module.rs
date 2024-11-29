@@ -1,4 +1,4 @@
-use crate::{field::Field, graded::{GradedLinearMap, GradedVectorSpace, Grading}, matrix::Matrix};
+use crate::{field::Field, graded::{GradedLinearMap, GradedVectorSpace, Grading}, matrix::{FieldMatrix, Matrix}};
 
 
 // EXAMPLE OF A kt MODULE 
@@ -40,4 +40,23 @@ pub trait ModuleMorphism<G: Grading, F: Field, M: Matrix<F>> {
     fn get_kernel(&self) -> Self;
     fn get_cokernel(&self) -> Self;
     fn transpose(&self) -> Self;
+}
+
+
+
+
+
+
+
+
+pub struct kModule<G: Grading, F: Field> {
+    space: GradedVectorSpace<G, G>,
+    action: GradedLinearMap<G, F, FieldMatrix<F>>
+}
+
+pub struct kModuleMorphism<'a, G: Grading, F: Field> {
+    domain: &'a kModule<G, F>,
+    codomain: &'a kModule<G, F>,
+
+    map: GradedLinearMap<G, F, FieldMatrix<F>>
 }

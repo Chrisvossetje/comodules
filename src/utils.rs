@@ -1,0 +1,1 @@
+pub type RefType<'a, T> = &'a T;

@@ -46,14 +46,14 @@ pub trait Comodule<G: Grading> {
 
 pub trait ComoduleMorphism<G: Grading, M: Comodule<G>> {
     fn cokernel(&self) -> Self;
-    fn injection_codomain_to_cofree(&self) -> Self;
+    fn injection_codomain_to_cofree(&self) -> Self; // Question: Shouldn't 'codomain' be 'cokernel'/'comodule'?
 
     fn zero_morphism(comodule: M) -> Self;
 
     // codomain r == codomain l, l \circ r
     fn compose(l: Self, r: Self) -> Self;
 
-    fn get_structure_lines() -> Vec<(BasisIndex<G>, BasisIndex<G>, usize)>;
+    fn get_structure_lines() -> Vec<(BasisIndex<G>, BasisIndex<G>, usize)>; // Question: Should usize here be Field?
 }
 
 
@@ -85,7 +85,7 @@ pub struct kComoduleMorphism<'a, G: Grading, F: Field> {
     domain: RefType<'a, kComodule<'a, G, F>>,
     codomain: RefType<'a, kComodule<'a, G, F>>,
 
-    map: GradedLinearMap<G,F, FieldMatrix<F>>
+    map: GradedLinearMap<G,F, FieldMatrix<F>> // Question: Shouldn't this be a module morphism?
 }
 
 impl<G: Grading, F: Field> Comodule<G> for kComodule<'_, G, F> {
