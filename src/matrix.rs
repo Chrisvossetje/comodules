@@ -7,6 +7,7 @@ pub fn lol() {
 }
 
 pub trait Matrix<F: Field> : Clone {
+    fn cokernel(&self) -> Self;
     fn kernel(&self) -> Self;
 
     // Faster but requires self to be in rref ?
@@ -27,10 +28,14 @@ pub trait Matrix<F: Field> : Clone {
 
     fn get(&self, x: usize, y: usize) -> F;
 
-    fn compose(self, rhs: &mut Self);
+    fn compose(self, rhs: &mut Self) -> Self;
 }
 
 impl<F: Field> Matrix<F> for Vec<Vec<F>> {
+    fn cokernel(&self) -> Self {
+        unimplemented!()
+    }
+
     fn kernel(&self) -> Self {
         unimplemented!()
     }
@@ -106,7 +111,7 @@ impl<F: Field> Matrix<F> for Vec<Vec<F>> {
         self[x][y]
     }
     
-    fn compose(self, rhs: &mut Self) {
+    fn compose(self, rhs: &mut Self) -> Self {
         todo!()
     }
     
@@ -266,9 +271,9 @@ mod tests {
     pub fn rref_simple() {
         
         let mut matrix = vec![
-        vec![F2::one(), F2::one(), F2::zero(), F2::one()],
-        vec![F2::one(), F2::one(), F2::zero(), F2::zero()],
-        vec![F2::one(), F2::zero(), F2::zero(), F2::one()],
+        vec![F2(1), F2(1), F2(0), F2(1)],
+        vec![F2(1), F2(1), F2(0), F2(0)],
+        vec![F2(1), F2(0), F2(0), F2(1)],
         ];
         
         println!("Original Matrix:");

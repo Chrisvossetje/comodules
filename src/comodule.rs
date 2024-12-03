@@ -1,65 +1,36 @@
-use std::{ops::Mul, primitive};
+use std::{cell::Ref, ops::Mul, primitive, rc::Rc, sync::Arc};
 
-use crate::{field::Field, graded::{BasisElement, BasisIndex, GradedLinearMap, GradedVectorSpace, Grading, UniGrading}, matrix::{FieldMatrix, Matrix}, module::{Module, ModuleMorphism, TensorModule}};
-
-// pub trait Comodule<G: Grading, F: Field, M: Matrix<F>> {
-//     // Applies forgetful functor
-//     // haha, "fancy math boy"
-//     fn get_underlying_module(&self) -> &impl Module<G, F, M>;
-    
-//     fn get_coalgebra(&self) -> &impl Coalgebra<G, F, M>;
-
-//     // returns the smallest submodule of which 'cogenerates' the entire comodule.
-//     // Let \Delta(x) = \sum_i (a_i \otimes y_i),
-//     // if the coefficient of y is non-zero, we say that x 'cogenerates' y
-//     // We define cogeneration to be the smallest transitive relation with the above property.
-//     fn get_cogenerating_module(&self) -> impl ModuleMorphism<G, F, M>;
-//     // !!! Note: We want morphisms instead of modules, so we eventually get the injection to the cofree module
-//     // fn get_cogenerating_module(&self) -> impl ModuleMorphism;
-
-//     // Produces the tensor product of given the Hopf algebra A with the given module V.
-//     // This therefore returns the A-comodule: A \otimes V
-//     fn cofree_comodule(hopf: impl Coalgebra<G, F, M>, module: impl Module<G, F, M>) -> Self;
-//     // !!! Note: We want to return the injection from the coker to the cofree comodule, not just the comod itself.
-
-//     fn create_tensor_product(left: &Self, right: &Self) -> Self;
-// }
-
-// pub trait ComoduleMorphism<G: Grading, F: Field, M: Matrix<F>> {
-//     // Applies forgetful functor
-//     fn get_underlying_morphism(&self) -> &impl ModuleMorphism<G, F, M>;
-
-//     fn get_domain(&self) -> &impl Comodule<G, F, M>;
-//     fn get_codomain(&self) -> &impl Comodule<G, F, M>;
-
-//     fn compute_cokernel(&self) -> Self;
-
-//     fn get_zero_morphism_to(comod: impl Comodule<G, F, M>) -> Self; 
-// }
-
+use crate::{field::Field, graded::{BasisElement, BasisIndex, GradedLinearMap, GradedVectorSpace, Grading, UniGrading}, matrix::{FieldMatrix, Matrix}};
 
 pub trait Comodule<G: Grading> {
     type Element: BasisElement;
+
+    
+    fn zero_comodule(comodule: RefType<Self>) -> Self;
+    
     // This is not the correct type yet
-    fn get_generators() -> Vec<BasisIndex<G>>;
+    fn get_generators(&self) -> Vec<BasisIndex<G>>;
 }
 
 pub trait ComoduleMorphism<G: Grading, M: Comodule<G>> {
     fn cokernel(&self) -> Self;
-    fn injection_codomain_to_cofree(&self) -> Self; // Question: Shouldn't 'codomain' be 'cokernel'/'comodule'?
+    fn inject_codomain_to_cofree(&self) -> Self; // Question: Shouldn't 'codomain' be 'cokernel'/'comodule'?
 
-    fn zero_morphism(comodule: M) -> Self;
+    fn zero_morphism(comodule: RefType<M>) -> Self;
 
     // codomain r == codomain l, l \circ r
     fn compose(l: Self, r: Self) -> Self;
 
-    fn get_structure_lines() -> Vec<(BasisIndex<G>, BasisIndex<G>, usize)>; // Question: Should usize here be Field?
+    fn get_structure_lines(&self) -> Vec<(BasisIndex<G>, BasisIndex<G>, usize)>; // Question: Should usize here be Field?
 }
 
 
 
 
-pub type RefType<'a, T> = &'a T;
+
+
+
+pub type RefType<'a, T> = Arc<T>;
 
 
 #[derive(Debug, Clone)]
@@ -89,30 +60,51 @@ pub struct kComoduleMorphism<'a, G: Grading, F: Field> {
 }
 
 impl<G: Grading, F: Field> Comodule<G> for kComodule<'_, G, F> {
-    fn get_generators() -> Vec<BasisIndex<G>> {
+    type Element = kBasisElement;
+
+    fn get_generators(&self) -> Vec<BasisIndex<G>> {
         todo!()
     }
     
-    type Element = kBasisElement;
+    
+    fn zero_comodule(comodule: RefType<Self>) -> Self {
+        Self {
+            coalgebra: comodule.coalgebra.clone(),
+            space: GradedVectorSpace::new(),
+            coaction: GradedLinearMap::empty(),
+        }
+    }
 }
 
 
 impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<'_, G, F>> for kComoduleMorphism<'_, G, F> {
     fn cokernel(&self) -> Self {
+        let cokernel = self.map.get_cokernel();
+        
+        
+
+    }
+
+    fn inject_codomain_to_cofree(&self) -> Self {
         todo!()
     }
 
-    fn injection_codomain_to_cofree(&self) -> Self {
-        todo!()
-    }
+    fn zero_morphism(comodule: RefType<kComodule<G, F>>) -> Self {
+        let codomain = comodule.clone();
+        let zero = RefType::new(kComodule::zero_comodule(comodule));
 
-    fn zero_morphism(comodule: kComodule<G, F>) -> Self {
-        todo!()
+        // Verify how we want to handle this zero map
+        let zero_map = GradedLinearMap::empty();
+        Self {
+            domain: zero,
+            codomain: codomain,
+            map: zero_map,
+        }
     }
 
     fn compose(l: Self, r: Self) -> Self {
-        let codomain = l.codomain.clone();
-        let domain = r.domain.clone();
+        let codomain = l.codomain;
+        let domain = r.domain;
 
         let map = l.map.compose(r.map);
 
@@ -123,7 +115,7 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<'_, G, F>> for kComodul
         }
     }
     
-    fn get_structure_lines() -> Vec<(BasisIndex<G>, BasisIndex<G>, usize)> {
+    fn get_structure_lines(&self) -> Vec<(BasisIndex<G>, BasisIndex<G>, usize)> {
         todo!()
     }
 }

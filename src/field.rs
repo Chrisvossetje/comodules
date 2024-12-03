@@ -38,7 +38,7 @@ impl Field for f64 {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Fp<const P: u8>(u8);
+pub struct Fp<const P: u8>(pub u8);
 
 impl<const P: u8> Add for Fp<P> {
     type Output = Self;
@@ -122,7 +122,7 @@ impl<const P: u8> Field for Fp<P> {
 
 
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct F2(u8);
+pub struct F2(pub u8);
 
 impl Add for F2 {
     type Output = Self;

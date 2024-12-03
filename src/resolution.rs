@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{comodule::{Comodule, ComoduleMorphism}, graded::Grading, page::Page};
+use crate::{comodule::{Comodule, ComoduleMorphism, RefType}, graded::Grading, page::Page};
 
 
 pub struct Resolution<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> {
@@ -20,9 +20,10 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
     }
 
     pub fn resolve_to_s(mut self, s: usize) {
-        let zero_morph = Morph::zero_morphism(self.comodule);
+        let comod = RefType::new(self.comodule);
+        let zero_morph = Morph::zero_morphism(comod);
 
-        let initial_inject = zero_morph.injection_codomain_to_cofree();
+        let initial_inject = zero_morph.inject_codomain_to_cofree();
         self.resolution.push(initial_inject);
         
         for i in (0..s) {
@@ -30,7 +31,7 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
 
             let coker = last_morph.cokernel();
 
-            let inject = last_morph.injection_codomain_to_cofree();
+            let inject = last_morph.inject_codomain_to_cofree();
 
             let combine = Morph::compose(coker, inject);
 
