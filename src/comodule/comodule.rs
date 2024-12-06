@@ -18,7 +18,7 @@ pub trait ComoduleMorphism<G: Grading, M: Comodule<G>> {
 
     fn zero_morphism(comodule: Arc<M>) -> Self;
 
-    // codomain r == codomain l, l \circ r
+    // domain l == codomain r, l \circ r
     fn compose(l: Self, r: Self) -> Self;
 
     fn get_codomain(&self) -> &M;

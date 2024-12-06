@@ -1,48 +1,116 @@
-use crate::linalg::field::{Field, F2,  Fp};
+use crate::linalg::field::{Field};
 
 pub type FieldMatrix<F: Field> = Vec<Vec<F>>;
 
-pub fn lol() {
-    let a: FieldMatrix<Fp<3>> = FieldMatrix::new();
-}
-
 pub trait Matrix<F: Field> : Clone {
-    fn cokernel(&self) -> Self;
-    fn kernel(&self) -> Self;
-
-    // Faster but requires self to be in rref ?
-    fn rref_kernel(&self) -> Self;
+    fn zero(domain: usize, codomain: usize) -> Self;
+    fn identity(d: usize) -> Self;
     
+    fn get(&self, x: usize, y: usize) -> F;
+    fn set(&mut self, x: usize, y: usize, f: F);
+    
+    // domain l == codomain r, l \circ r
+    fn compose(self, rhs: &mut Self) -> Self;
+
     fn transpose(&mut self);
     fn get_transpose(&self) -> Self;
 
-    fn rref(&mut self);
+    fn domain(&self) -> usize;
+    fn codomain(&self) -> usize;
 
     // OR JUST A USIZE, NOT KNOWING WHICH COLUMN IT ORIGINATED FROM ?
     // nah, both
     fn pivots(&self) -> Vec<(usize,usize)>; 
 
-    fn vstack(&mut self, other: &Self);
-    fn block_sum(&mut self, other: &Self);
+    fn vstack(&mut self, other: &mut Self);
+    fn block_sum(&mut self, other: &mut Self);
 
-    fn identity(d: usize) -> Self;
-
-    fn get(&self, x: usize, y: usize) -> F;
-
-    fn compose(self, rhs: &mut Self) -> Self;
+    
+    fn rref(&mut self);
+    
+    // Faster but requires self to be in rref ?
+    fn rref_kernel(&self) -> Self;
+    
+    fn cokernel(&self) -> Self;
+    fn kernel(&self) -> Self;
 }
 
 impl<F: Field> Matrix<F> for Vec<Vec<F>> {
+    // TODO: THIS DOES NOT WORK
+    // See comment at kernel
     fn cokernel(&self) -> Self {
-        unimplemented!()
+        let mut trans = self.get_transpose();
+        trans.rref();
+        trans.rref_kernel()
     }
 
+    // TODO: THIS DOES NOT WORK
+    // This gives back the kernel of rref of self
+    // rref should include the translation to make this work ?
     fn kernel(&self) -> Self {
-        unimplemented!()
+        let mut clone = self.clone();
+        clone.rref();
+        clone.rref_kernel()
     }
 
     fn rref_kernel(&self) -> Self {
-        kernel_from_rref(&self)
+        let rows = self.len();
+        let cols = self[0].len();
+        let mut pivots = vec![None; cols]; // Track pivot columns (exclude last column for augmented matrix)
+        let mut free_vars = Vec::new();
+        
+        // Identify pivot columns
+        for i in 0..rows {
+            for j in 0..cols - 1 {
+                if self[i][j] == F::one() && pivots[j].is_none() {
+                    pivots[j] = Some(i);
+                    break;
+                }
+            }
+        }
+
+        // Identify free variables (non-pivot columns)
+        for j in 0..cols {
+            if pivots[j].is_none() {
+                free_vars.push(j);
+            }
+        }
+
+        println!("{:?}", pivots);
+        println!("{:?}", free_vars);
+
+        // Generate kernel basis vectors
+        let mut kernel = Vec::new();
+        for &free_var in &free_vars {
+            let mut kernel_vector = vec![F::zero(); cols];
+            kernel_vector[free_var] = F::one(); // Free variable set to 1
+
+            // Back-substitute to calculate the dependent variables
+            for i in 0..rows {
+                match self[i][free_var].inv() {
+                    None => {},
+                    Some(inv) => {
+                        for j in 0..free_var {
+                            match pivots[j] {
+                                None => {},
+                                Some(k) => {
+                                    if i == k {
+                                        kernel_vector[j] += inv;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    },
+                }
+            }
+
+
+            kernel.push(kernel_vector);
+        }
+
+        kernel
     }
 
     fn transpose(&mut self) {
@@ -72,9 +140,55 @@ impl<F: Field> Matrix<F> for Vec<Vec<F>> {
 
         new_matrix
     }
-
+    
     fn rref(&mut self) {
-        row_reduce_to_rref(self);
+        let rows = self.len();
+        let cols = if rows > 0 { self[0].len() } else { 0 };
+    
+        let mut lead = 0; // Index of the leading column
+    
+        for r in 0..rows {
+            if lead >= cols {
+                break;
+            }
+    
+            let mut i = r;
+            while self[i][lead].is_zero() {
+                i += 1;
+                if i == rows {
+                    i = r;
+                    lead += 1;
+                    if lead == cols {
+                        return;
+                    }
+                }
+            }
+    
+            // Swap rows to move the pivot row to the current row
+            self.swap(i, r);
+    
+            // Normalize the pivot row (make the leading coefficient 1)
+            let pivot = self[r][lead];
+            if !pivot.is_zero() {
+                let pivot_inv = pivot.inv().expect("Pivot should be invertible");
+                for j in 0..cols {
+                    self[r][j] *= pivot_inv;
+                }
+            }
+    
+            // Eliminate all other entries in the leading column
+            for i in 0..rows {
+                if i != r {
+                    let factor = self[i][lead];
+                    for j in 0..cols {
+                        let temp = factor * self[r][j];
+                        self[i][j] -= temp;
+                    }
+                }
+            }
+    
+            lead += 1;
+        }
     }
 
     fn pivots(&self) -> Vec<(usize,usize)> {
@@ -85,19 +199,37 @@ impl<F: Field> Matrix<F> for Vec<Vec<F>> {
                 pivots.push((id, i));
                 id += 1;
             }
-            if id+1 == self.len() {
+            if id == self.len() {
                 break;
             }
         }
         pivots
     }
 
-    fn vstack(&mut self, other: &Self) {
-        todo!()
+    fn vstack(&mut self, other: &mut Self) {
+        assert_eq!(self.domain(), other.domain(), "Domains of the two matrices do not have the same dimension");
+
+        self.append(other);
     }
     
-    fn block_sum(&mut self, other: &Self) {
-        todo!()
+    fn block_sum(&mut self, other: &mut Self) {
+        if other[0].len() == 0 {
+            return;
+        }
+
+        let self_domain = self[0].len();
+        let other_domain = other[0].len();
+        for el in self.iter_mut() {
+            let mut zeros = vec![F::zero(); other_domain]; 
+            el.append(&mut zeros);
+        };
+
+        for oth in other.iter_mut() {
+            let mut zeros = vec![F::zero(); self_domain];
+            zeros.append(oth);
+            
+            self.push(zeros);
+        }
     }
 
     fn identity(d: usize) -> Self {
@@ -109,132 +241,43 @@ impl<F: Field> Matrix<F> for Vec<Vec<F>> {
     }
     
     fn get(&self, x: usize, y: usize) -> F {
-        self[x][y]
+        self[y][x]
     }
     
+    fn set(&mut self, x: usize, y: usize, f: F) {
+        self[y][x] = f;
+    }
+    
+    fn domain(&self) -> usize {
+        self.len()
+    }
+    fn codomain(&self) -> usize {
+        self.len()
+    }
+
+    // domain l == codomain r, l \circ r
     fn compose(self, rhs: &mut Self) -> Self {
-        todo!()
+        assert_eq!(self.domain(), rhs.codomain(), "Matrix domain not equal to codomain");
+        
+        rhs.transpose();
+        let mut compose = vec![vec![F::zero(); self.codomain()]; rhs.domain()];
+
+        for x in (0..self.codomain()) {
+            for y in (0..rhs.domain()) {
+                compose[x][y] = dot_product(&self[x] , &rhs[y])
+            }
+        }
+
+        compose
     }
+    
+    fn zero(domain: usize, codomain: usize) -> Self {
+        vec![vec![F::zero(); domain]; codomain]
+    }
+    
     
 }
 
-
-pub fn row_reduce_to_rref<F: Field>(matrix: &mut Vec<Vec<F>>) {
-    let rows = matrix.len();
-    let cols = matrix[0].len();
-
-    for i in 0..rows {
-        // Step 0: Ensure the pivot is nonzero by swapping rows if needed
-        if matrix[i][i].is_zero() {
-            for k in (i + 1)..rows {
-                if !matrix[k][i].is_zero() {
-                    matrix.swap(i, k); // Swap rows
-                    break;
-                }
-            }
-        }
-
-        // Step 1: Normalize the pivot row
-        let pivot = matrix[i][i];
-        match pivot.inv() {
-            None => continue,
-            Some(inv) => {
-                for j in 0..cols { // speedup?: start from i
-                    matrix[i][j] *= inv;
-                }
-            }
-        }
-
-        // Step 2: Eliminate all entries below the pivot
-        for k in (i + 1)..rows {
-            let factor = matrix[k][i];
-            for j in 0..cols {
-                let res = factor * matrix[i][j];
-                matrix[k][j] -= res;
-            }
-        }
-    }
-
-    let mut id = 0;
-    let mut pivots = vec![];
-    for i in (0..cols) {
-        if !matrix[id][i].is_zero() {
-            pivots.push((id, i));
-            id += 1;
-        }
-        if id == rows {
-            break;
-        }
-    }
-
-    // Step 3: Eliminate entries above each pivot
-    for (id, i) in pivots {
-        for k in (0..id) {
-            let factor = matrix[k][i];
-            for j in (i..cols) {
-                let res = factor * matrix[id][j];
-                matrix[k][j] -= res;
-
-            }
-        }
-    }
+fn dot_product<F: Field>(l: &Vec<F>, r: &Vec<F>) -> F {
+    l.iter().zip(r.iter()).map(|(x,y)| *x * *y).sum()
 }
-
-pub fn kernel_from_rref<F: Field>(matrix: &Vec<Vec<F>>) -> Vec<Vec<F>> {
-    let rows = matrix.len();
-    let cols = matrix[0].len();
-    let mut pivots = vec![None; cols]; // Track pivot columns (exclude last column for augmented matrix)
-    let mut free_vars = Vec::new();
-    
-    // Identify pivot columns
-    for i in 0..rows {
-        for j in 0..cols - 1 {
-            if matrix[i][j] == F::one() && pivots[j].is_none() {
-                pivots[j] = Some(i);
-                break;
-            }
-        }
-    }
-
-    // Identify free variables (non-pivot columns)
-    for j in 0..cols {
-        if pivots[j].is_none() {
-            free_vars.push(j);
-        }
-    }
-
-    println!("{:?}", pivots);
-    println!("{:?}", free_vars);
-
-    // Generate kernel basis vectors
-    let mut kernel = Vec::new();
-    for &free_var in &free_vars {
-        let mut kernel_vector = vec![F::zero(); cols];
-        kernel_vector[free_var] = F::one(); // Free variable set to 1
-
-        // Back-substitute to calculate the dependent variables
-        for i in 0..rows {
-            if !matrix[i][free_var].is_zero() {
-                for j in 0..free_var {
-                    match pivots[j] {
-                        None => {},
-                        Some(k) => {
-                            if i == k {
-                                let res =  matrix[i][free_var] * kernel_vector[free_var];
-                                kernel_vector[j] -= res;
-                                break;
-                            }
-                        }
-                    }
-                }
-                break;
-            }
-        }
-
-
-        kernel.push(kernel_vector);
-    }
-
-    kernel
-}
-

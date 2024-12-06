@@ -15,6 +15,5 @@ name = "comdule"
 path = "src/bin/main.rs"
 
 [dependencies]
-rayon = "*"
 
 

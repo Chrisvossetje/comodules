@@ -2,7 +2,7 @@ use core::panic;
 use std::{fmt::Debug, ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign}};
 
 
-pub trait Field : Clone + Copy + Debug + Sized + PartialEq + Add<Output = Self> + Sub<Output = Self> + Neg<Output = Self> + Mul<Output = Self> + AddAssign + SubAssign + MulAssign {
+pub trait Field : Clone + Copy + Debug + Sized + PartialEq + Add<Output = Self> + Sub<Output = Self> + Neg<Output = Self> + Mul<Output = Self> + AddAssign + SubAssign + MulAssign + std::iter::Sum {
     fn inv(self) -> Option<Self>;
     fn get_characteristic(&self) -> usize;
     fn is_zero(&self) -> bool;
@@ -63,6 +63,8 @@ impl<const P: u8> Sub for Fp<P> {
     }
 }
 
+
+
 impl<const P: u8> Neg for Fp<P> {
     type Output = Self;
 
@@ -94,6 +96,16 @@ impl<const P: u8> std::fmt::Debug for Fp<P> {
     }
 }
 
+impl<const P: u8> std::iter::Sum for Fp<P> {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        let mut sum: u64 = 0;
+        for a in iter {
+            sum += a.0 as u64;
+        }
+        Fp((sum % (P as u64)) as u8)
+    }
+}
+
 impl<const P: u8> Field for Fp<P> {
     fn inv(self) -> Option<Self> {
         if self.is_zero() {
@@ -102,13 +114,26 @@ impl<const P: u8> Field for Fp<P> {
             match P {
                 2 | 3  => { Some(self) },
                 _  => { 
-                    // a^(p-2) = a^(-1) mod P, Fermat's little theorem },
-                    let res = (self.0 as u64).pow(P as u32 - 2) as u8;
-                    Some(Fp((res % P) as u8)) 
-                }   
-            }
+                    let mut result: u64 = 1;
+                    let mut exp = P - 2;
+                    let mut base = self.0 as u64;
+                    while exp > 0 {
+                        // If the current bit of the exponent is 1, multiply the result by the current base.
+                        if exp % 2 == 1 {
+                            result = (result * base) % P as u64;
+                        }
+                        // Square the base and reduce it modulo the modulus.
+                        base = (base * base) % P as u64;
+                        // Shift the exponent right by 1 bit (divide by 2).
+                        exp /= 2;
+                    }
+                    
+                    Some(Fp(result as u8))
+                }  
+            }   
         }
     }
+    
 
     fn get_characteristic(&self) -> usize {
         P as usize
@@ -192,6 +217,16 @@ impl From<u64> for F2 {
 impl std::fmt::Debug for F2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+impl std::iter::Sum for F2 {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        let mut sum: u32 = 0;
+        for a in iter {
+            sum += a.0 as u32;
+        }
+        F2((sum & 1) as u8)
     }
 }
 
