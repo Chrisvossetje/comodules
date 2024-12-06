@@ -99,7 +99,14 @@ impl<const P: u8> Field for Fp<P> {
         if self.is_zero() {
             None
         } else {
-            Some(Fp((self.0 as u64).pow(P as u32 - 2) as u8)) // a^(n-2) = a^(-1) mod P, Fermat's little theorem
+            match P {
+                2 | 3  => { Some(self) },
+                _  => { 
+                    // a^(p-2) = a^(-1) mod P, Fermat's little theorem },
+                    let res = (self.0 as u64).pow(P as u32 - 2) as u8;
+                    Some(Fp((res % P) as u8)) 
+                }   
+            }
         }
     }
 

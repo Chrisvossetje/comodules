@@ -1,6 +1,6 @@
 use std::{clone, collections::{hash_map::{self, IntoIter}, HashMap}, fmt::{Debug, Display}, hash::Hash, marker::PhantomData, ops::{Add, AddAssign, Sub, SubAssign}};
 
-use crate::{field::{Field, Fp, F2}, matrix::{Matrix, FieldMatrix}};
+use super::{field::Field, matrix::Matrix};
 
 pub trait Grading : 'static + Clone + Hash + Copy + Debug + Sized + Add<Output=Self> + Sub<Output=Self> + PartialEq + Eq + AddAssign + SubAssign + PartialOrd  {
     fn degree_names() -> Vec<char>;
@@ -42,33 +42,24 @@ pub type VectorSpace<B: BasisElement> = Vec<B>;
 // This is probably fine, as modules will always direct use this type
 // pub type GradedVectorSpace<G: Grading, B: BasisElement> = HashMap<G, VectorSpace<B>>;
 
+#[derive(Debug, Clone)]
 pub struct GradedVectorSpace<G: Grading, B: BasisElement>(
     pub HashMap<G, VectorSpace<B>>,
 );
-
-impl<G: Grading, B: BasisElement> IntoIterator for GradedVectorSpace<G,B>{
-    type Item = (G,Vec<B>);
-    
-    type IntoIter = IntoIter<G, Vec<B>>;
-    
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
-
-impl<G: Grading, B: BasisElement> GradedVectorSpace<G,B> {
-    pub fn new() -> Self {
-        Self(HashMap::new())
-    }
-
-
-}
 
 #[derive(Debug, Clone)]
 pub struct GradedLinearMap<G: Grading, F: Field, M: Matrix<F>> {
     maps: HashMap<G, M>,
     __: PhantomData<F>,
 }
+
+impl<G: Grading, B: BasisElement> GradedVectorSpace<G,B> {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+}
+
+
 
 impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G,F,M> {
     pub fn get_cokernel(&self) -> Self {
