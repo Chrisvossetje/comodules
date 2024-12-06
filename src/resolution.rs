@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{comodule::{Comodule, ComoduleMorphism, RefType}, graded::Grading, page::Page};
+use crate::{comodule::{Comodule, ComoduleMorphism}, graded::Grading, page::Page, utils::RefType};
 
 
 pub struct Resolution<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> {
@@ -41,6 +41,13 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
 
     pub fn generate_page(&self) -> Page {
         let (x_formula, y_formula) = G::default_formulas();
+        
+        let gens = self.resolution.iter().enumerate().flat_map(|(s, x)| {
+            let g = x.get_codomain().get_generators();
+            g.into_iter().map(move |(id, g, name)| { 
+                (s, id, g.export_grade(), name)
+            })
+        }).collect();
 
         Page {
             name: " ?? ".to_string(),
@@ -48,7 +55,7 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
             degrees: G::degree_names(),
             x_formula,
             y_formula,
-            generators: todo!(),
+            generators: gens,
             structure_lines: todo!(),
             differentials: vec![],
         }

@@ -19,7 +19,8 @@ pub trait Matrix<F: Field> : Clone {
     fn rref(&mut self);
 
     // OR JUST A USIZE, NOT KNOWING WHICH COLUMN IT ORIGINATED FROM ?
-    fn pivots(&mut self) -> Vec<(usize,usize)>; 
+    // nah, both
+    fn pivots(&self) -> Vec<(usize,usize)>; 
 
     fn vstack(&mut self, other: &Self);
     fn block_sum(&mut self, other: &Self);
@@ -76,7 +77,7 @@ impl<F: Field> Matrix<F> for Vec<Vec<F>> {
         row_reduce_to_rref(self);
     }
 
-    fn pivots(&mut self) -> Vec<(usize,usize)> {
+    fn pivots(&self) -> Vec<(usize,usize)> {
         let mut id = 0;
         let mut pivots = vec![];
         for i in (0..self[0].len()) {

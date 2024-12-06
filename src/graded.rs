@@ -1,10 +1,11 @@
-use std::{hash::Hash, clone, collections::{hash_map, HashMap}, fmt::{Debug, Display}, marker::PhantomData, ops::{Add, AddAssign, Sub, SubAssign}};
+use std::{clone, collections::{hash_map::{self, IntoIter}, HashMap}, fmt::{Debug, Display}, hash::Hash, marker::PhantomData, ops::{Add, AddAssign, Sub, SubAssign}};
 
 use crate::{field::{Field, Fp, F2}, matrix::{Matrix, FieldMatrix}};
 
 pub trait Grading : 'static + Clone + Hash + Copy + Debug + Sized + Add<Output=Self> + Sub<Output=Self> + PartialEq + Eq + AddAssign + SubAssign + PartialOrd  {
     fn degree_names() -> Vec<char>;
     fn default_formulas() -> (String, String);
+    fn export_grade(self) -> Vec<i32>;
 }
 
 impl Grading for i32 {
@@ -14,6 +15,10 @@ impl Grading for i32 {
     
     fn default_formulas() -> (String, String) {
         ("t-s".to_string(), "s".to_string())
+    }
+
+    fn export_grade(self) -> Vec<i32> {
+        vec![self]
     }
 }
 
@@ -35,12 +40,29 @@ pub type VectorSpace<B: BasisElement> = Vec<B>;
 
 // Maybe make this its own type ???
 // This is probably fine, as modules will always direct use this type
-pub type GradedVectorSpace<G: Grading, B: BasisElement> = HashMap<G, VectorSpace<B>>;
+// pub type GradedVectorSpace<G: Grading, B: BasisElement> = HashMap<G, VectorSpace<B>>;
+
+pub struct GradedVectorSpace<G: Grading, B: BasisElement>(
+    pub HashMap<G, VectorSpace<B>>,
+);
+
+impl<G: Grading, B: BasisElement> IntoIterator for GradedVectorSpace<G,B>{
+    type Item = (G,Vec<B>);
+    
+    type IntoIter = IntoIter<G, Vec<B>>;
+    
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+impl<G: Grading, B: BasisElement> GradedVectorSpace<G,B> {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
 
 
-// impl<G: Grading, B: BasisElement> GradedVectorSpace<G,B> {
-
-// }
+}
 
 #[derive(Debug, Clone)]
 pub struct GradedLinearMap<G: Grading, F: Field, M: Matrix<F>> {
@@ -50,7 +72,8 @@ pub struct GradedLinearMap<G: Grading, F: Field, M: Matrix<F>> {
 
 impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G,F,M> {
     pub fn get_cokernel(&self) -> Self {
-       let kernel: HashMap<G, M> = self.maps.iter().map(|(k,v) | {
+        todo!("IF DOMAIN DOES NOT HAVE A GRADE THIS IS WRONGGGG");
+        let kernel: HashMap<G, M> = self.maps.iter().map(|(k,v) | {
            todo!("KERNEL SHOULD BE COKERNEL");
            (*k, v.kernel())
         }).collect();
@@ -75,6 +98,12 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G,F,M> {
         }).collect();
         GradedLinearMap { maps: compose, __: PhantomData }
     }
+    
+    pub fn pivots(&self) -> HashMap<G, Vec<(usize,usize)>> {
+        self.maps.iter().map(|(k, v)| {
+            (*k, v.pivots())
+        }).collect()
+    }
 
     pub fn empty() -> Self {
         GradedLinearMap {
@@ -84,7 +113,12 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G,F,M> {
         }
     }
 
-    pub fn zero<B>(domain: GradedVectorSpace<G, B>, codomain: GradedVectorSpace<G, B>) -> Self {
+
+    pub fn zero<B: BasisElement>(domain: GradedVectorSpace<G, B>, codomain: GradedVectorSpace<G, B>) -> Self {
+        todo!()
+    }
+
+    pub fn codomain_space<B: BasisElement>(&self) -> GradedVectorSpace<G, B> {
         todo!()
     }
 }

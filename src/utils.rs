@@ -1,1 +1,3 @@
-pub type RefType<'a, T> = &'a T;
+use std::sync::Arc;
+
+pub type RefType<'a, T> = Arc<T>;

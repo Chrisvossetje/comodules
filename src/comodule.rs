@@ -1,6 +1,6 @@
-use std::{cell::Ref, ops::Mul, primitive, rc::Rc, sync::Arc};
+use std::{cell::Ref, collections::HashMap, ops::Mul, primitive, rc::Rc, sync::Arc};
 
-use crate::{field::Field, graded::{BasisElement, BasisIndex, GradedLinearMap, GradedVectorSpace, Grading, UniGrading}, matrix::{FieldMatrix, Matrix}};
+use crate::{field::Field, graded::{BasisElement, BasisIndex, GradedLinearMap, GradedVectorSpace, Grading, UniGrading}, matrix::{FieldMatrix, Matrix}, utils::RefType};
 
 pub trait Comodule<G: Grading> {
     type Element: BasisElement;
@@ -9,7 +9,7 @@ pub trait Comodule<G: Grading> {
     fn zero_comodule(comodule: RefType<Self>) -> Self;
     
     // This is not the correct type yet
-    fn get_generators(&self) -> Vec<BasisIndex<G>>;
+    fn get_generators(&self) -> Vec<(usize, G, Option<String>)>;
 }
 
 pub trait ComoduleMorphism<G: Grading, M: Comodule<G>> {
@@ -21,6 +21,8 @@ pub trait ComoduleMorphism<G: Grading, M: Comodule<G>> {
     // codomain r == codomain l, l \circ r
     fn compose(l: Self, r: Self) -> Self;
 
+    fn get_codomain(&self) -> &M;
+
     fn get_structure_lines(&self) -> Vec<(BasisIndex<G>, BasisIndex<G>, usize)>; // Question: Should usize here be Field?
 }
 
@@ -30,7 +32,6 @@ pub trait ComoduleMorphism<G: Grading, M: Comodule<G>> {
 
 
 
-pub type RefType<'a, T> = Arc<T>;
 
 
 #[derive(Debug, Clone)]
@@ -46,11 +47,48 @@ impl BasisElement for kBasisElement {
 }
 
 pub struct kComodule<'a, G: Grading, F: Field> {
-    coalgebra: RefType<'a, GradedVectorSpace<G, kBasisElement>>,
+    coalgebra: RefType<'a, kComodule<'a, G, F>>,
     space: GradedVectorSpace<G, kBasisElement>,
     coaction: GradedLinearMap<G, F, FieldMatrix<F>>,
-    // tensor: kTensor,
+    tensor: kTensor<G>,
 } 
+
+pub trait Tensor<G: Grading> {
+    fn tensor_to_base();
+    fn base_to_tensor();
+}
+
+pub struct kTensor<G: Grading> {
+    construct: HashMap<G,G>,
+    deconstruct: HashMap<G,G>, 
+}
+
+impl<G: Grading> Tensor<G> for kTensor<G> {
+    fn tensor_to_base() {
+        todo!()
+    }
+
+    fn base_to_tensor() {
+        todo!()
+    }
+}
+
+impl<G: Grading> Default for kTensor<G> {
+    fn default() -> Self {
+        Self { construct: Default::default(), deconstruct: Default::default() }
+    }
+}
+
+impl<G: Grading> kTensor<G> {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn generate<B: BasisElement>(left: &GradedVectorSpace<G, B>, right: &GradedVectorSpace<G, B>) -> Self {
+        todo!()
+    }
+}
+
 
 pub struct kComoduleMorphism<'a, G: Grading, F: Field> {
     domain: RefType<'a, kComodule<'a, G, F>>,
@@ -62,8 +100,16 @@ pub struct kComoduleMorphism<'a, G: Grading, F: Field> {
 impl<G: Grading, F: Field> Comodule<G> for kComodule<'_, G, F> {
     type Element = kBasisElement;
 
-    fn get_generators(&self) -> Vec<BasisIndex<G>> {
-        todo!()
+    fn get_generators(&self) -> Vec<(usize, G, Option<String>)> {
+        self.space.0.iter().flat_map(|(k,v)| {
+            v.iter().filter_map(|b| {
+                if b.generator {
+                    Some((b.generated_index, *k, Some(b.name.clone())))
+                } else {
+                    None
+                }
+            })
+        }).collect()
     }
     
     
@@ -72,6 +118,7 @@ impl<G: Grading, F: Field> Comodule<G> for kComodule<'_, G, F> {
             coalgebra: comodule.coalgebra.clone(),
             space: GradedVectorSpace::new(),
             coaction: GradedLinearMap::empty(),
+            tensor: kTensor::new()
         }
     }
 }
@@ -79,10 +126,17 @@ impl<G: Grading, F: Field> Comodule<G> for kComodule<'_, G, F> {
 
 impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<'_, G, F>> for kComoduleMorphism<'_, G, F> {
     fn cokernel(&self) -> Self {
-        let cokernel = self.map.get_cokernel();
-        
-        
+        let cokernel_map = self.map.get_cokernel();
+    
+        let coker_space = cokernel_map.codomain_space();
 
+        let pivots = cokernel_map.pivots();
+        let coalg = self.codomain.coalgebra.as_ref();
+        
+        let tensor = kTensor::generate(&coalg.space, &coker_space);
+
+        
+        todo!()
     }
 
     fn inject_codomain_to_cofree(&self) -> Self {
@@ -116,6 +170,10 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<'_, G, F>> for kComodul
     }
     
     fn get_structure_lines(&self) -> Vec<(BasisIndex<G>, BasisIndex<G>, usize)> {
+        todo!()
+    }
+    
+    fn get_codomain(&self) -> &kComodule<'_, G, F> {
         todo!()
     }
 }
