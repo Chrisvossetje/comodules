@@ -1,6 +1,11 @@
 use crate::linalg::field::{Field};
 
-pub type FieldMatrix<F: Field> = Vec<Vec<F>>;
+#[derive(Debug, Clone, PartialEq)]
+pub struct FieldMatrix<F: Field> {
+    pub data: Vec<Vec<F>>,
+    pub domain: usize,
+    pub codomain: usize,
+}
 
 pub trait Matrix<F: Field> : Clone {
     fn zero(domain: usize, codomain: usize) -> Self;
@@ -35,7 +40,7 @@ pub trait Matrix<F: Field> : Clone {
     fn kernel(&self) -> Self;
 }
 
-impl<F: Field> Matrix<F> for Vec<Vec<F>> {
+impl<F: Field> Matrix<F> for FieldMatrix<F> {
     // TODO: THIS DOES NOT WORK
     // See comment at kernel
     fn cokernel(&self) -> Self {
@@ -54,15 +59,15 @@ impl<F: Field> Matrix<F> for Vec<Vec<F>> {
     }
 
     fn rref_kernel(&self) -> Self {
-        let rows = self.len();
-        let cols = self[0].len();
+        let rows = self.codomain;
+        let cols = self.domain;
         let mut pivots = vec![None; cols]; // Track pivot columns (exclude last column for augmented matrix)
         let mut free_vars = Vec::new();
         
         // Identify pivot columns
         for i in 0..rows {
             for j in 0..cols - 1 {
-                if self[i][j] == F::one() && pivots[j].is_none() {
+                if self.data[i][j] == F::one() && pivots[j].is_none() {
                     pivots[j] = Some(i);
                     break;
                 }
@@ -87,7 +92,7 @@ impl<F: Field> Matrix<F> for Vec<Vec<F>> {
 
             // Back-substitute to calculate the dependent variables
             for i in 0..rows {
-                match self[i][free_var].inv() {
+                match self.data[i][free_var].inv() {
                     None => {},
                     Some(inv) => {
                         for j in 0..free_var {
@@ -109,41 +114,51 @@ impl<F: Field> Matrix<F> for Vec<Vec<F>> {
 
             kernel.push(kernel_vector);
         }
-
-        kernel
+        let codomain = kernel.len();
+        Self {
+            data: kernel,
+            domain: cols,
+            codomain,
+        }
     }
 
     fn transpose(&mut self) {
-        let rows = self.len();
-        let cols = self[0].len();
+        let rows = self.codomain;
+        let cols = self.domain;
         let mut new_matrix = vec![vec![F::zero(); rows]; cols];
 
         for i in 0..rows {
             for j in 0..cols {
-                new_matrix[j][i] = self[i][j];
+                new_matrix[j][i] = self.data[i][j];
             }
         }
 
-        *self = new_matrix;
+        self.data = new_matrix;
+        self.codomain = cols;
+        self.domain = rows;
     }
 
     fn get_transpose(&self) -> Self {
-        let rows = self.len();
-        let cols = self[0].len();
+        let rows = self.codomain;
+        let cols = self.domain;
         let mut new_matrix = vec![vec![F::zero(); rows]; cols];
 
         for i in 0..rows {
             for j in 0..cols {
-                new_matrix[j][i] = self[i][j];
+                new_matrix[j][i] = self.data[i][j];
             }
         }
 
-        new_matrix
+        Self {
+            data: new_matrix,
+            domain: rows,
+            codomain: cols,
+        }
     }
     
     fn rref(&mut self) {
-        let rows = self.len();
-        let cols = if rows > 0 { self[0].len() } else { 0 };
+        let rows = self.codomain;
+        let cols = self.domain;
     
         let mut lead = 0; // Index of the leading column
     
@@ -153,7 +168,7 @@ impl<F: Field> Matrix<F> for Vec<Vec<F>> {
             }
     
             let mut i = r;
-            while self[i][lead].is_zero() {
+            while self.data[i][lead].is_zero() {
                 i += 1;
                 if i == rows {
                     i = r;
@@ -165,24 +180,24 @@ impl<F: Field> Matrix<F> for Vec<Vec<F>> {
             }
     
             // Swap rows to move the pivot row to the current row
-            self.swap(i, r);
+            self.data.swap(i, r);
     
             // Normalize the pivot row (make the leading coefficient 1)
-            let pivot = self[r][lead];
+            let pivot = self.data[r][lead];
             if !pivot.is_zero() {
                 let pivot_inv = pivot.inv().expect("Pivot should be invertible");
                 for j in 0..cols {
-                    self[r][j] *= pivot_inv;
+                    self.data[r][j] *= pivot_inv;
                 }
             }
     
             // Eliminate all other entries in the leading column
             for i in 0..rows {
                 if i != r {
-                    let factor = self[i][lead];
+                    let factor = self.data[i][lead];
                     for j in 0..cols {
-                        let temp = factor * self[r][j];
-                        self[i][j] -= temp;
+                        let temp = factor * self.data[r][j];
+                        self.data[i][j] -= temp;
                     }
                 }
             }
@@ -191,15 +206,16 @@ impl<F: Field> Matrix<F> for Vec<Vec<F>> {
         }
     }
 
+    // (Row, Column)
     fn pivots(&self) -> Vec<(usize,usize)> {
         let mut id = 0;
         let mut pivots = vec![];
-        for i in (0..self[0].len()) {
-            if !self[id][i].is_zero() {
+        for i in (0..self.data[0].len()) {
+            if !self.data[id][i].is_zero() {
                 pivots.push((id, i));
                 id += 1;
             }
-            if id == self.len() {
+            if id == self.data.len() {
                 break;
             }
         }
@@ -209,27 +225,27 @@ impl<F: Field> Matrix<F> for Vec<Vec<F>> {
     fn vstack(&mut self, other: &mut Self) {
         assert_eq!(self.domain(), other.domain(), "Domains of the two matrices do not have the same dimension");
 
-        self.append(other);
+        self.data.append(&mut other.data);
+        self.codomain += other.codomain;
     }
     
     fn block_sum(&mut self, other: &mut Self) {
-        if other[0].len() == 0 {
-            return;
-        }
-
-        let self_domain = self[0].len();
-        let other_domain = other[0].len();
-        for el in self.iter_mut() {
+        let self_domain = self.domain;
+        let other_domain = other.domain;
+        for el in self.data.iter_mut() {
             let mut zeros = vec![F::zero(); other_domain]; 
             el.append(&mut zeros);
         };
 
-        for oth in other.iter_mut() {
+        for oth in other.data.iter_mut() {
             let mut zeros = vec![F::zero(); self_domain];
             zeros.append(oth);
             
-            self.push(zeros);
+            self.data.push(zeros);
         }
+
+        self.domain += other_domain;
+        self.codomain += other.codomain; 
     }
 
     fn identity(d: usize) -> Self {
@@ -237,22 +253,26 @@ impl<F: Field> Matrix<F> for Vec<Vec<F>> {
         for i in 0..d {
             matrix[i][i] = F::one();
         }
-        matrix
+        Self {
+            data: matrix,
+            domain: d,
+            codomain: d,
+        }
     }
     
     fn get(&self, x: usize, y: usize) -> F {
-        self[y][x]
+        self.data[y][x]
     }
     
     fn set(&mut self, x: usize, y: usize, f: F) {
-        self[y][x] = f;
+        self.data[y][x] = f;
     }
     
     fn domain(&self) -> usize {
-        self.len()
+        self.data.len()
     }
     fn codomain(&self) -> usize {
-        self.len()
+        self.data.len()
     }
 
     // domain l == codomain r, l \circ r
@@ -264,15 +284,23 @@ impl<F: Field> Matrix<F> for Vec<Vec<F>> {
 
         for x in (0..self.codomain()) {
             for y in (0..rhs.domain()) {
-                compose[x][y] = dot_product(&self[x] , &rhs[y])
+                compose[x][y] = dot_product(&self.data[x] , &rhs.data[y])
             }
         }
-
-        compose
+        Self {
+            data: compose,
+            domain: rhs.domain,
+            codomain: self.codomain,
+        }
     }
     
     fn zero(domain: usize, codomain: usize) -> Self {
-        vec![vec![F::zero(); domain]; codomain]
+        Self {
+            data: vec![vec![F::zero(); domain]; codomain],
+            domain,
+            codomain,
+        }
+        
     }
     
     

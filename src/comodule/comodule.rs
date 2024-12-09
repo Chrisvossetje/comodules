@@ -1,15 +1,17 @@
 use std::{cell::Ref, collections::HashMap, ops::Mul, primitive, rc::Rc, sync::Arc};
 
-use crate::{linalg::{field::Field, graded::{BasisElement, BasisIndex, GradedLinearMap, GradedVectorSpace, Grading}, matrix::FieldMatrix}};
+use crate::linalg::{field::Field, graded::{BasisElement, BasisIndex, GradedLinearMap, GradedVectorSpace, Grading}, matrix::{FieldMatrix, Matrix}};
 
 pub trait Comodule<G: Grading> {
     type Element: BasisElement;
+    type Coalgebra;
 
-    
-    fn zero_comodule(comodule: Arc<Self>) -> Self;
+    fn zero_comodule(coalgebra: Arc<Self::Coalgebra>) -> Self;
     
     // This is not the correct type yet
     fn get_generators(&self) -> Vec<(usize, G, Option<String>)>;
+
+    fn fp_comodule(coalgebra: Arc<Self::Coalgebra>) -> Self;
 }
 
 pub trait ComoduleMorphism<G: Grading, M: Comodule<G>> {
@@ -21,7 +23,7 @@ pub trait ComoduleMorphism<G: Grading, M: Comodule<G>> {
     // domain l == codomain r, l \circ r
     fn compose(l: Self, r: Self) -> Self;
 
-    fn get_codomain(&self) -> &M;
+    fn get_codomain(&self) -> Arc<M>;
 
     fn get_structure_lines(&self) -> Vec<(BasisIndex<G>, BasisIndex<G>, usize)>; // Question: Should usize here be Field?
 }
@@ -29,6 +31,8 @@ pub trait ComoduleMorphism<G: Grading, M: Comodule<G>> {
 pub trait Tensor<G: Grading> {
     fn tensor_to_base();
     fn base_to_tensor();
+
+    fn get_dimension(&self, grading: &G) -> usize;
 }
 
 

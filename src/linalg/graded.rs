@@ -6,6 +6,8 @@ pub trait Grading : 'static + Clone + Hash + Copy + Debug + Sized + Add<Output=S
     fn degree_names() -> Vec<char>;
     fn default_formulas() -> (String, String);
     fn export_grade(self) -> Vec<i32>;
+
+    fn zero() -> Self;
 }
 
 impl Grading for i32 {
@@ -19,6 +21,10 @@ impl Grading for i32 {
 
     fn export_grade(self) -> Vec<i32> {
         vec![self]
+    }
+    
+    fn zero() -> Self {
+        0
     }
 }
 
@@ -49,7 +55,7 @@ pub struct GradedVectorSpace<G: Grading, B: BasisElement>(
 
 #[derive(Debug, Clone)]
 pub struct GradedLinearMap<G: Grading, F: Field, M: Matrix<F>> {
-    maps: HashMap<G, M>,
+    pub maps: HashMap<G, M>,
     __: PhantomData<F>,
 }
 
@@ -60,13 +66,25 @@ impl<G: Grading, B: BasisElement> GradedVectorSpace<G,B> {
 }
 
 
+impl<G: Grading, B: BasisElement> From<HashMap<G, Vec<B>>> for GradedVectorSpace<G,B> {
+    fn from(value: HashMap<G, Vec<B>>) -> Self {
+        Self(value)
+    }
+}
+
+impl<G: Grading, F: Field, M: Matrix<F>> From<HashMap<G, M>> for GradedLinearMap<G,F,M> {
+    fn from(value: HashMap<G, M>) -> Self {
+        Self {
+            maps: value,
+            __: PhantomData,
+        }
+    }
+}
 
 impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G,F,M> {
     pub fn get_cokernel(&self) -> Self {
-        todo!("IF DOMAIN DOES NOT HAVE A GRADE THIS IS WRONGGGG");
-        let kernel: HashMap<G, M> = self.maps.iter().map(|(k,v) | {
-           todo!("KERNEL SHOULD BE COKERNEL");
-           (*k, v.kernel())
+        let mut kernel: HashMap<G, M> = self.maps.iter().map(|(k,v) | {   
+           (*k, v.cokernel())
         }).collect();
         GradedLinearMap { maps: kernel, __: PhantomData }
     }
@@ -109,7 +127,10 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G,F,M> {
         todo!()
     }
 
-    pub fn codomain_space<B: BasisElement>(&self) -> GradedVectorSpace<G, B> {
-        todo!()
+    pub fn codomain_space<B: BasisElement>(&self, b: B) -> GradedVectorSpace<G, B> {
+        let space: HashMap<G,Vec<B>> = self.maps.iter().map(|(g,m)| {
+            (*g, vec![b.clone(); m.codomain()])
+        }).collect();
+        GradedVectorSpace(space)
     }
 }

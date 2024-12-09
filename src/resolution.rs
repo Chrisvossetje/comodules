@@ -43,7 +43,7 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
         let (x_formula, y_formula) = G::default_formulas();
         
         let gens = self.resolution.iter().enumerate().flat_map(|(s, x)| {
-            let g = x.get_codomain().get_generators();
+            let g = x.get_codomain().as_ref().get_generators();
             g.into_iter().map(move |(id, g, name)| { 
                 (s, id, g.export_grade(), name)
             })
