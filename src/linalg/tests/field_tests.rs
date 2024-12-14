@@ -2,8 +2,6 @@
 mod tests {
     use crate::linalg::field::{Field, Fp};
 
-    use super::*;
-
     type Fp23 = Fp<23>;
 
     #[test]
@@ -86,11 +84,7 @@ mod tests {
 
     #[test]
     fn test_fp23_sum() {
-        let values = vec![
-            Fp23 { 0: 3 },
-            Fp23 { 0: 5 },
-            Fp23 { 0: 17 },
-        ];
+        let values = vec![Fp23 { 0: 3 }, Fp23 { 0: 5 }, Fp23 { 0: 17 }];
         let sum: Fp23 = values.into_iter().sum();
         assert_eq!(sum, Fp23 { 0: 2 }); // (3 + 5 + 17) mod 23 = 25 mod 23 = 2
     }

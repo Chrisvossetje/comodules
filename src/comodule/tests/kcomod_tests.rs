@@ -2,75 +2,118 @@
 mod tests {
     use std::{collections::HashMap, sync::Arc};
 
-    use crate::{comodule::{comodule::{Comodule, ComoduleMorphism}, kcomodule::{kBasisElement, kCoalgebra, kComodule, kComoduleMorphism, kTensor}}, linalg::{field::{Field, F2}, graded::{GradedLinearMap, GradedVectorSpace, UniGrading}, matrix::FieldMatrix}};
+    use crate::{
+        comodule::{
+            comodule::{Comodule, ComoduleMorphism},
+            kcomodule::{kBasisElement, kCoalgebra, kComodule, A0_coalgebra},
+            kmorphism::kComoduleMorphism,
+            ktensor::kTensor,
+        },
+        linalg::{
+            field::F2,
+            graded::{GradedLinearMap, GradedVectorSpace},
+            matrix::{FieldMatrix, Matrix},
+        },
+    };
 
+    // Test for kComodule::zero_comodule
+    #[test]
+    fn test_zero_comodule() {
+        let coalgebra = Arc::new(A0_coalgebra());
+        let comodule = kComodule::zero_comodule(coalgebra.clone());
 
-    fn simple_kcomod() {
-
+        assert_eq!(
+            comodule.coalgebra.clone().as_ref(),
+            coalgebra.clone().as_ref()
+        );
+        assert!(comodule.space.0.is_empty());
+        assert!(comodule.coaction.maps.is_empty());
     }
 
+    // Test for kComodule::fp_comodule
+    #[test]
+    fn test_fp_comodule() {
+        let coalgebra = Arc::new(A0_coalgebra());
+        let comodule = kComodule::fp_comodule(coalgebra.clone());
 
-    fn simple_kcomorph() {
+        assert_eq!(comodule.space.0.len(), 1);
+        assert!(comodule.space.0.contains_key(&0));
 
+        let elements = comodule.space.0.get(&0).unwrap();
+        assert_eq!(elements.len(), 1);
+        assert_eq!(elements[0].name, "fp");
+        assert_eq!(elements[0].generator, false);
+
+        assert!(comodule.coaction.maps.contains_key(&0));
+        assert_eq!(comodule.coaction.maps.len(), 1);
+        assert_eq!(comodule.coaction.maps[&0], FieldMatrix::<F2>::identity(1));
     }
 
-    fn A0_coalgebra() -> kCoalgebra<UniGrading, F2> {
-        let mut space = GradedVectorSpace::new();
-        space.0.insert(0, vec![kBasisElement { 
-            name: "0".to_owned(), 
-            generator: true, 
-            primitive: None, 
-            generated_index: 0, 
-        }]);
+    // Test for kComodule::direct_sum
+    #[test]
+    fn test_direct_sum() {
+        let coalgebra = Arc::new(A0_coalgebra());
+        let mut comodule1 = kComodule::fp_comodule(coalgebra.clone());
+        let mut comodule2 = kComodule::cofree_comodule(coalgebra.clone(), 0, 0, 4);
 
-        space.0.insert(1, vec![kBasisElement { 
-            name: "xi1".to_owned(), 
-            generator: false, 
-            primitive: Some(0), 
-            generated_index: 0, 
-        }]);
+        assert_eq!(comodule2.tensor.dimensions.get(&1).unwrap(), &2);
 
+        comodule1.direct_sum(&mut comodule2);
 
-        let mut dimensions = HashMap::new();
-        dimensions.insert(0, 1);
-        dimensions.insert(1, 1);
-        
-        let mut construct = HashMap::new();
-        let mut first_entry = HashMap::new();
-        first_entry.insert((0,0), (0, 0));
-        first_entry.insert((1,0), (1, 0));
+        assert_eq!(comodule1.space.0.get(&0).unwrap().len(), 2);
+        assert_eq!(comodule1.space.0.get(&1).unwrap().len(), 1);
 
-        let mut second_entry = HashMap::new();
-        second_entry.insert((0,0), (1, 1));
+        let elements = &comodule1.space.0[&0];
+        assert_eq!(elements[0].name, "fp");
+        assert_eq!(elements[1].name, "1");
 
-        construct.insert((0, 0), first_entry);
-        construct.insert((1, 0), second_entry);
+        let elements = &comodule1.space.0[&1];
+        assert_eq!(elements[0].name, "xi1");
 
-        let mut deconstruct = HashMap::new();
-        deconstruct.insert((0,0), ((0,0), (0,0)));
-        deconstruct.insert((1,0), ((1,0), (0,0)));
-        deconstruct.insert((1,1), ((0,0), (1,0)));
+        assert_eq!(comodule2.tensor.dimensions[&1], 2);
 
-        let tensor = kTensor { construct, deconstruct, dimensions };
+        let dims = &comodule1.tensor.dimensions;
+        assert_eq!(dims.get(&0), Some(&2));
+        assert_eq!(dims.get(&1), Some(&2));
+        assert!(comodule1.tensor.is_correct());
+    }
 
-        let mut coaction = GradedLinearMap::empty();
-        coaction.maps.insert(0, FieldMatrix {
-            data: vec![vec![F2::one()]],
-            domain: 1,
-            codomain: 1,  
-        });
-        coaction.maps.insert(1, FieldMatrix {
-            data: vec![vec![F2::one()],vec![F2::one()]],
-            domain: 1,
-            codomain: 2,
-        });
+    // Test for kComodule::get_generators
+    #[test]
+    fn test_get_generators() {
+        let mut space_map = HashMap::new();
+        space_map.insert(
+            0,
+            vec![
+                kBasisElement {
+                    name: "gen1".to_string(),
+                    generator: true,
+                    primitive: None,
+                    generated_index: 0,
+                },
+                kBasisElement {
+                    name: "non_gen".to_string(),
+                    generator: false,
+                    primitive: None,
+                    generated_index: 1,
+                },
+            ],
+        );
 
-        kCoalgebra {
-            space,
-            coaction,
-            tensor,
-        }
+        let coalgebra = Arc::new(A0_coalgebra());
 
+        let comodule = kComodule {
+            coalgebra,
+            space: GradedVectorSpace::from(space_map),
+            coaction: GradedLinearMap::empty(),
+            tensor: kTensor::new(),
+        };
+
+        let generators = comodule.get_generators();
+
+        assert_eq!(generators.len(), 1);
+        assert_eq!(generators[0].1, 0);
+        assert_eq!(generators[0].2, Some("gen1".to_string()));
     }
 
     #[test]
@@ -80,7 +123,5 @@ mod tests {
         let fp = Arc::new(kComodule::fp_comodule(coalgebra));
 
         let initial = kComoduleMorphism::zero_morphism(fp);
-        
-        dbg!(initial.cokernel());
     }
 }

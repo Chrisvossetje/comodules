@@ -1,54 +1,62 @@
 use std::{marker::PhantomData, sync::Arc};
 
-use crate::{comodule::comodule::{Comodule, ComoduleMorphism}, linalg::graded::Grading, page::Page};
+use crate::{
+    comodule::comodule::{Comodule, ComoduleMorphism},
+    linalg::graded::Grading,
+    page::Page,
+};
 
-
+#[derive(Debug, Clone, PartialEq)]
 pub struct Resolution<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> {
-    comodule: M,
+    comodule: Arc<M>,
     resolution: Vec<Morph>,
     _grading: PhantomData<G>,
 }
 
-
-impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M, Morph>{
+impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M, Morph> {
     pub fn new(comodule: M) -> Self {
         Resolution {
-            comodule,
+            comodule: Arc::new(comodule),
             resolution: vec![],
             _grading: PhantomData,
         }
     }
 
-    pub fn resolve_to_s(mut self, s: usize) {
-        let comod = Arc::new(self.comodule);
-        let zero_morph = Morph::zero_morphism(comod);
+    pub fn resolve_to_s(&mut self, s: usize, mut limit: G) {
+        let zero_morph = Morph::zero_morphism(self.comodule.clone());
 
-        let initial_inject = zero_morph.inject_codomain_to_cofree();
+        let initial_inject = zero_morph.inject_codomain_to_cofree(limit);
         self.resolution.push(initial_inject);
-        
-        for i in (0..s) {
+
+        for _ in 0..s {
+            limit = limit.incr();
             let last_morph = self.resolution.last().unwrap();
 
             let coker = last_morph.cokernel();
 
-            let inject = last_morph.inject_codomain_to_cofree();
+            let inject = coker.inject_codomain_to_cofree(limit);
 
-            let combine = Morph::compose(coker, inject);
+            let combine = Morph::compose(inject, coker);
 
             self.resolution.push(combine);
         }
-    } 
+    }
 
     pub fn generate_page(&self) -> Page {
         let (x_formula, y_formula) = G::default_formulas();
-        
-        let gens = self.resolution.iter().enumerate().flat_map(|(s, x)| {
-            let g = x.get_codomain().as_ref().get_generators();
-            g.into_iter().map(move |(id, g, name)| { 
-                (s, id, g.export_grade(), name)
-            })
-        }).collect();
 
+        let gens = self
+            .resolution
+            .iter()
+            .enumerate()
+            .flat_map(|(s, x)| {
+                let g = x.get_codomain().as_ref().get_generators();
+                g.into_iter()
+                    .map(move |(id, g, name)| (s, id, g.export_grade(), name))
+            })
+            .collect();
+
+        // TODO: Structure Lines
         Page {
             name: " ?? ".to_string(),
             id: 2,
@@ -56,7 +64,7 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
             x_formula,
             y_formula,
             generators: gens,
-            structure_lines: todo!(),
+            structure_lines: vec![],
             differentials: vec![],
         }
     }

@@ -1,22 +1,26 @@
-use std::{cell::Ref, collections::HashMap, ops::Mul, primitive, rc::Rc, sync::Arc};
+use std::sync::Arc;
 
-use crate::linalg::{field::Field, graded::{BasisElement, BasisIndex, GradedLinearMap, GradedVectorSpace, Grading}, matrix::{FieldMatrix, Matrix}};
+use crate::linalg::graded::{BasisElement, BasisIndex, Grading};
 
 pub trait Comodule<G: Grading> {
     type Element: BasisElement;
     type Coalgebra;
 
     fn zero_comodule(coalgebra: Arc<Self::Coalgebra>) -> Self;
-    
+
     // This is not the correct type yet
     fn get_generators(&self) -> Vec<(usize, G, Option<String>)>;
 
     fn fp_comodule(coalgebra: Arc<Self::Coalgebra>) -> Self;
+
+    fn direct_sum(&mut self, other: &mut Self);
+
+    fn cofree_comodule(coalgebra: Arc<Self::Coalgebra>, index: usize, grade: G, limit: G) -> Self;
 }
 
 pub trait ComoduleMorphism<G: Grading, M: Comodule<G>> {
     fn cokernel(&self) -> Self;
-    fn inject_codomain_to_cofree(&self) -> Self; // Question: Shouldn't 'codomain' be 'cokernel'/'comodule'?
+    fn inject_codomain_to_cofree(&self, limit: G) -> Self; // Question: Shouldn't 'codomain' be 'cokernel'/'comodule'?
 
     fn zero_morphism(comodule: Arc<M>) -> Self;
 
@@ -35,18 +39,12 @@ pub trait Tensor<G: Grading> {
     fn get_dimension(&self, grading: &G) -> usize;
 }
 
-
-
-
-
-
 // pub struct BasicComodule<M: Module, MM: ModuleMorphism, H: HopfAlgebra> {
 //     underlying_module: M,
 //     underlying_hopf_algebra: H,
 
 //     coaction: MM,
 // }
-
 
 // impl<M: Module, MM: ModuleMorphism, H: HopfAlgebra> Comodule for BasicComodule<M, MM, H> {
 
@@ -67,7 +65,6 @@ pub trait Tensor<G: Grading> {
 //     }
 
 // }
-
 
 // pub struct BasicComoduleMorphism<M: Module, MM: ModuleMorphism, H: HopfAlgebra> {
 //     domain: BasicComodule<M, MM, H>,
@@ -101,9 +98,9 @@ pub trait Tensor<G: Grading> {
 //         // let k be a basis element in K
 //         // q is surjective, thus we get an element b in D which maps to k
 //         todo!()
-        
+
 //     }
-    
+
 //     fn get_zero_morphism_to(comod: BasicComodule<M, MM, H>) -> Self {
 //         todo!()
 //     }

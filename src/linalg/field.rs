@@ -1,15 +1,29 @@
-use core::panic;
-use std::{fmt::Debug, ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign}};
+use std::{
+    fmt::Debug,
+    ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
+};
 
-
-pub trait Field : Clone + Copy + Debug + Sized + PartialEq + Add<Output = Self> + Sub<Output = Self> + Neg<Output = Self> + Mul<Output = Self> + AddAssign + SubAssign + MulAssign + std::iter::Sum {
+pub trait Field:
+    Clone
+    + Copy
+    + Debug
+    + Sized
+    + PartialEq
+    + Add<Output = Self>
+    + Sub<Output = Self>
+    + Neg<Output = Self>
+    + Mul<Output = Self>
+    + AddAssign
+    + SubAssign
+    + MulAssign
+    + std::iter::Sum
+{
     fn inv(self) -> Option<Self>;
     fn get_characteristic(&self) -> usize;
     fn is_zero(&self) -> bool;
     fn one() -> Self;
     fn zero() -> Self;
 }
-
 
 impl Field for f64 {
     fn inv(self) -> Option<Self> {
@@ -23,15 +37,15 @@ impl Field for f64 {
     fn get_characteristic(&self) -> usize {
         0
     }
-    
+
     fn is_zero(&self) -> bool {
         return self.is_normal();
     }
-    
+
     fn one() -> Self {
         1.0f64
     }
-    
+
     fn zero() -> Self {
         0.0f64
     }
@@ -46,14 +60,14 @@ impl<const P: u8> Add for Fp<P> {
     fn add(self, rhs: Self) -> Self::Output {
         Fp(((self.0 as u64 + rhs.0 as u64) % P as u64) as u8)
     }
-} 
+}
 impl<const P: u8> Mul for Fp<P> {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self::Output {
         Fp(((self.0 as u64 * rhs.0 as u64) % P as u64) as u8)
     }
-} 
+}
 
 impl<const P: u8> Sub for Fp<P> {
     type Output = Self;
@@ -63,32 +77,30 @@ impl<const P: u8> Sub for Fp<P> {
     }
 }
 
-
-
 impl<const P: u8> Neg for Fp<P> {
     type Output = Self;
 
     fn neg(self) -> Self::Output {
         Fp(((P as u64 - self.0 as u64) % P as u64) as u8)
     }
-} 
+}
 
 impl<const P: u8> AddAssign for Fp<P> {
     fn add_assign(&mut self, rhs: Self) {
         self.0 = ((self.0 as u64 + rhs.0 as u64) % P as u64) as u8;
     }
-} 
+}
 impl<const P: u8> MulAssign for Fp<P> {
     fn mul_assign(&mut self, rhs: Self) {
         self.0 = ((self.0 as u64 * rhs.0 as u64) % P as u64) as u8;
     }
-} 
+}
 
 impl<const P: u8> SubAssign for Fp<P> {
     fn sub_assign(&mut self, rhs: Self) {
         self.0 = ((P as u64 + self.0 as u64 - rhs.0 as u64) % P as u64) as u8;
     }
-} 
+}
 
 impl<const P: u8> std::fmt::Debug for Fp<P> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -112,8 +124,8 @@ impl<const P: u8> Field for Fp<P> {
             None
         } else {
             match P {
-                2 | 3  => { Some(self) },
-                _  => { 
+                2 | 3 => Some(self),
+                _ => {
                     let mut result: u64 = 1;
                     let mut exp = P - 2;
                     let mut base = self.0 as u64;
@@ -127,13 +139,12 @@ impl<const P: u8> Field for Fp<P> {
                         // Shift the exponent right by 1 bit (divide by 2).
                         exp /= 2;
                     }
-                    
+
                     Some(Fp(result as u8))
-                }  
-            }   
+                }
+            }
         }
     }
-    
 
     fn get_characteristic(&self) -> usize {
         P as usize
@@ -146,12 +157,11 @@ impl<const P: u8> Field for Fp<P> {
     fn one() -> Self {
         Fp(1)
     }
-    
+
     fn zero() -> Self {
         Fp(0)
     }
 }
-
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct F2(pub u8);
@@ -170,7 +180,6 @@ impl Sub for F2 {
     fn sub(self, rhs: Self) -> Self {
         self.add(rhs)
     }
-    
 }
 
 impl Neg for F2 {
@@ -179,7 +188,6 @@ impl Neg for F2 {
     fn neg(self) -> Self {
         self
     }
-    
 }
 
 impl Mul for F2 {
@@ -235,7 +243,6 @@ impl Field for F2 {
         2
     }
 
-    
     fn inv(self) -> Option<Self> {
         if self.is_zero() {
             None
@@ -243,7 +250,7 @@ impl Field for F2 {
             Some(self)
         }
     }
-    
+
     fn is_zero(&self) -> bool {
         self.0 == 0
     }

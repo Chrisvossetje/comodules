@@ -1,6 +1,3 @@
-
-
-
 // Library modules
 pub mod comodule;
 pub mod linalg;

@@ -14,4 +14,7 @@ name = "comodules"
 name = "comdule"      
 path = "src/bin/main.rs"
 
+[dependencies]
+itertools = "0.13.0"
+
 
