@@ -23,6 +23,7 @@ pub trait Field:
     fn is_zero(&self) -> bool;
     fn one() -> Self;
     fn zero() -> Self;
+    fn as_usize(self) -> usize;
 }
 
 impl Field for f64 {
@@ -48,6 +49,10 @@ impl Field for f64 {
 
     fn zero() -> Self {
         0.0f64
+    }
+
+    fn as_usize(self) -> usize {
+        self as usize
     }
 }
 
@@ -161,6 +166,10 @@ impl<const P: u8> Field for Fp<P> {
     fn zero() -> Self {
         Fp(0)
     }
+
+    fn as_usize(self) -> usize {
+        self.0 as usize
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -261,5 +270,9 @@ impl Field for F2 {
 
     fn zero() -> F2 {
         F2(0)
+    }
+
+    fn as_usize(self) -> usize {
+        self.0 as usize
     }
 }

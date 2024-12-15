@@ -85,7 +85,7 @@ impl<G: Grading, B: BasisElement> GradedVectorSpace<G, B> {
         Self(HashMap::new())
     }
     pub fn dimension_in_grade(&self, grade: &G) -> usize {
-        self.0.get(grade).map(|x| {x.len()}).unwrap_or(0)
+        self.0.get(grade).map(|x| x.len()).unwrap_or(0)
     }
 }
 
@@ -194,7 +194,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
                 (*g, Matrix::zero(els.len(), codom_len))
             })
             .collect();
-        codomain.0.iter().for_each(|(g,v)| {
+        codomain.0.iter().for_each(|(g, v)| {
             if !maps.contains_key(g) {
                 maps.insert(*g, Matrix::zero(0, v.len()));
             }
@@ -221,11 +221,9 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
         let space: HashMap<G, Vec<B>> = self
             .maps
             .iter()
-            .filter_map(|(g, m)| {
-                match m.codomain() {
-                    0 => {None},
-                    s => {Some((*g, vec![b.clone(); s]))},
-                }
+            .filter_map(|(g, m)| match m.codomain() {
+                0 => None,
+                s => Some((*g, vec![b.clone(); s])),
             })
             .collect();
         GradedVectorSpace(space)

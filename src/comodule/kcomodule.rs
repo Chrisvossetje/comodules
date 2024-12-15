@@ -36,7 +36,7 @@ pub struct kComodule<G: Grading, F: Field> {
     pub tensor: kTensor<G>,
 }
 
-impl<G: Grading, F: Field>  std::fmt::Debug for kComodule<G,F> {
+impl<G: Grading, F: Field> std::fmt::Debug for kComodule<G, F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.space.0)
     }

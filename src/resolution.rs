@@ -50,9 +50,21 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
             .iter()
             .enumerate()
             .flat_map(|(s, x)| {
-                let g = x.get_codomain().as_ref().get_generators();
+                let g = x.get_codomain().get_generators();
                 g.into_iter()
                     .map(move |(id, g, name)| (s, id, g.export_grade(), name))
+            })
+            .collect();
+
+        let lines = self
+            .resolution
+            .iter()
+            .enumerate()
+            .flat_map(|(s, x)| {
+                let g = x.get_structure_lines();
+                g.into_iter().map(move |(from_gen, to_gen, value, prim_type)| {
+                    ((s - 1, from_gen), (s, to_gen), value, prim_type)
+                })
             })
             .collect();
 
@@ -64,7 +76,7 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
             x_formula,
             y_formula,
             generators: gens,
-            structure_lines: vec![],
+            structure_lines: lines,
             differentials: vec![],
         }
     }

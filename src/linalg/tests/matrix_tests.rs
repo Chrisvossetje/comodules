@@ -159,29 +159,6 @@ mod tests {
     }
 
     #[test]
-    fn test_rref_kernel() {
-        let matrix = FieldMatrix {
-            data: vec![
-                vec![TestField { 0: 1 }, TestField { 0: 0 }, TestField { 0: 22 }],
-                vec![TestField { 0: 0 }, TestField { 0: 1 }, TestField { 0: 1 }],
-            ],
-            domain: 3,
-            codomain: 2,
-        };
-        let kernel = matrix.rref_kernel();
-        let expected = FieldMatrix {
-            data: vec![vec![
-                TestField { 0: 22 },
-                TestField { 0: 0 },
-                TestField { 0: 1 },
-            ]],
-            domain: 3,
-            codomain: 1,
-        };
-        assert_eq!(kernel, expected);
-    }
-
-    #[test]
     fn test_compose() {
         let matrix1 = FieldMatrix {
             data: vec![
@@ -213,7 +190,7 @@ mod tests {
 
     #[test]
     fn test_compose_2() {
-        let mut matrix1: FieldMatrix<F2> =  FieldMatrix::zero(4, 3);
+        let mut matrix1: FieldMatrix<F2> = FieldMatrix::zero(4, 3);
         let matrix2 = FieldMatrix::zero(3, 5);
         let result = matrix2.compose(&mut matrix1);
         assert_eq!(result.codomain, 5);

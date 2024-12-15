@@ -1,18 +1,16 @@
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
+    use crate::linalg::field::F2;
     use crate::linalg::graded::{BasisElement, GradedLinearMap, GradedVectorSpace};
     use crate::linalg::matrix::{FieldMatrix, Matrix};
-    use crate::linalg::field::F2; // Assuming F2 is implemented as a Field type.
+    use std::collections::HashMap; // Assuming F2 is implemented as a Field type.
 
-    type G = i32;               // Grading type
-    type F = F2;                // Field type
-    type M = FieldMatrix<F>;    // Matrix type
+    type G = i32; // Grading type
+    type F = F2; // Field type
+    type M = FieldMatrix<F>; // Matrix type
 
-    impl BasisElement for usize {
-        
-    }
+    impl BasisElement for usize {}
 
     #[test]
     fn test_graded_vector_space_new() {
@@ -153,7 +151,7 @@ mod tests {
 
         assert!(pivots.get(&0).is_some());
         assert!(pivots.get(&1).is_some());
-        assert_eq!(pivots[&0], vec![(0, 0),(1, 1),(2, 2)]);
+        assert_eq!(pivots[&0], vec![(0, 0), (1, 1), (2, 2)]);
         assert_eq!(pivots[&1], vec![]);
     }
 

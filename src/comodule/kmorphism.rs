@@ -9,6 +9,7 @@ use crate::{
         graded::{BasisIndex, GradedLinearMap, Grading},
         matrix::{FieldMatrix, Matrix},
     },
+    resolution,
 };
 
 use super::{
@@ -25,7 +26,7 @@ pub struct kComoduleMorphism<G: Grading, F: Field> {
     pub map: GradedLinearMap<G, F, FieldMatrix<F>>, // Question: Shouldn't this be a module morphism?
 }
 
-impl<G: Grading, F: Field>  kComoduleMorphism<G, F> {
+impl<G: Grading, F: Field> kComoduleMorphism<G, F> {
     fn verify_dimensions(&self) -> bool {
         for k in self.domain.space.0.keys() {
             if !self.map.maps.contains_key(k) {
@@ -39,12 +40,12 @@ impl<G: Grading, F: Field>  kComoduleMorphism<G, F> {
             }
         }
 
-        for (g,map) in self.map.maps.iter() {
+        for (g, map) in self.map.maps.iter() {
             let dom_dim = self.domain.space.dimension_in_grade(g);
             let codom_dim = self.codomain.space.dimension_in_grade(g);
-                        
+
             if dom_dim != map.domain || codom_dim != map.codomain {
-                return false
+                return false;
             }
         }
 
@@ -63,17 +64,29 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
 
         let pivots = cokernel_map.pivots();
 
-        let m_lut: HashMap<BasisIndex<G>, Vec<(usize, F)>> = self.codomain.tensor.construct.iter().map(|((f_gr, f_id),_)| {
-            // Transfer a specific codomain grade and id (f_gr, f_id) to a list of elements which it maps to in the cokernel 
-            let v = (0..cokernel_map.maps.get(f_gr).map(|map| {map.codomain}).unwrap_or(0)).filter_map(|q_index| {
-                let val = cokernel_map.maps.get(f_gr).unwrap().data[*f_id][q_index];
-                match val.is_zero() {
-                    true => {None},
-                    false => {Some((q_index, val))},
-                }
-            }).collect();
-            ((*f_gr, *f_id), v)
-        }).collect();
+        let m_lut: HashMap<BasisIndex<G>, Vec<(usize, F)>> = self
+            .codomain
+            .tensor
+            .construct
+            .iter()
+            .map(|((f_gr, f_id), _)| {
+                // Transfer a specific codomain grade and id (f_gr, f_id) to a list of elements which it maps to in the cokernel
+                let v = (0..cokernel_map
+                    .maps
+                    .get(f_gr)
+                    .map(|map| map.codomain)
+                    .unwrap_or(0))
+                    .filter_map(|q_index| {
+                        let val = cokernel_map.maps.get(f_gr).unwrap().data[*f_id][q_index];
+                        match val.is_zero() {
+                            true => None,
+                            false => Some((q_index, val)),
+                        }
+                    })
+                    .collect();
+                ((*f_gr, *f_id), v)
+            })
+            .collect();
 
         let coaction: HashMap<G, FieldMatrix<F>> = coker_space
             .0
@@ -174,14 +187,12 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
 
                 let codomain_len = self.codomain.space.dimension_in_grade(&t_gr);
                 let coalg_len = coalg_space.dimension_in_grade(alg_gr);
-        
+
                 if !alg_to_tens.contains_key(&(*alg_gr, 0)) {
                     let zero_map = FieldMatrix::zero(codomain_len, coalg_len);
                     map_to_cofree.maps.insert(t_gr, zero_map);
                     continue;
                 };
-                
-                
 
                 let mut map = FieldMatrix::zero(codomain_len, coalg_len);
 
@@ -217,7 +228,7 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
             map: growing_map,
         };
         assert!(final_morph.verify_dimensions());
-        final_morph 
+        final_morph
     }
 
     fn zero_morphism(comodule: Arc<kComodule<G, F>>) -> Self {
@@ -241,7 +252,10 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
     }
 
     fn compose(l: Self, r: Self) -> Self {
-        assert!(l.domain == r.codomain, "l-domain and r-codomain should be equal when composing");
+        assert!(
+            l.domain == r.codomain,
+            "l-domain and r-codomain should be equal when composing"
+        );
 
         let codomain = l.codomain;
         let domain = r.domain;
@@ -249,16 +263,42 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
         let map = l.map.compose(r.map);
 
         let final_morph = Self {
-                        domain,
-                        codomain,
-                        map,
-                    };
+            domain,
+            codomain,
+            map,
+        };
         final_morph.verify_dimensions();
         final_morph
     }
 
-    fn get_structure_lines(&self) -> Vec<(BasisIndex<G>, BasisIndex<G>, usize)> {
-        todo!()
+    fn get_structure_lines(&self) -> Vec<(usize, usize, usize, String)> {
+        let mut lines = vec![];
+
+        for (gr, gr_map) in self.map.maps.iter() {
+            for el_id in 0..self.domain.space.dimension_in_grade(gr) {
+                let els = self.domain.space.0.get(gr).unwrap();
+                match els[el_id].primitive {
+                    Some(prim_id) => {
+                        for t_id in 0..gr_map.codomain {
+                            let t_el = &self.codomain.space.0.get(gr).expect("As codomain of the map is non-zero this vector space should contain an element in this grade.")[t_id];
+                            if t_el.generator {
+                                if !gr_map.data[t_id][el_id].is_zero() {
+                                    lines.push((
+                                        els[el_id].generated_index,
+                                        t_el.generated_index,
+                                        gr_map.data[t_id][el_id].as_usize(),
+                                        prim_id.to_string(),
+                                    ));
+                                }
+                            }
+                        }
+                    },
+                    None => {},
+                }
+            }
+        }
+
+        lines
     }
 
     fn get_codomain(&self) -> Arc<kComodule<G, F>> {

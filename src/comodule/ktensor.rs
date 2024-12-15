@@ -18,11 +18,11 @@ pub struct kTensor<G: Grading> {
 
 impl<G: Grading> Tensor<G> for kTensor<G> {
     fn tensor_to_base() {
-        todo!()
+        unimplemented!()
     }
 
     fn base_to_tensor() {
-        todo!()
+        unimplemented!()
     }
 
     fn get_dimension(&self, grading: &G) -> usize {

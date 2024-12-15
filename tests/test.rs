@@ -11,6 +11,7 @@ mod tests {
         linalg::{field::F2, graded::UniGrading},
         resolution::Resolution,
     };
+    use itertools::Itertools;
 
     #[test]
     fn test_a0_resolution() {
@@ -26,6 +27,40 @@ mod tests {
 
         res.resolve_to_s(4, 10);
 
-        dbg!(res.generate_page());
+        let page = res.generate_page();
+
+        let sorted_gens: Vec<(usize, usize, Vec<i32>)> = page
+            .generators
+            .iter()
+            .map(|x| (x.0, x.1, x.2.clone()))
+            .sorted_by_key(|x| x.0 * 1000 + x.2[0] as usize)
+            .collect();
+        assert_eq!(
+            sorted_gens,
+            vec![
+                (0, 0, vec![0]),
+                (1, 0, vec![1]),
+                (2, 0, vec![2]),
+                (3, 0, vec![3]),
+                (4, 0, vec![4]),
+            ]
+        );
+
+
+        let sorted_lines: Vec<((usize, usize), (usize, usize), usize, String)> = page
+            .structure_lines
+            .iter()
+            .map(|x| (x.clone()))
+            .sorted_by_key(|x| x.0.0 * 1000 + x.0.1)
+            .collect();
+        assert_eq!(
+            sorted_lines,
+            vec![
+                ((0, 0), (1,0), 1, "0".to_string()),
+                ((1, 0), (2,0), 1, "0".to_string()),
+                ((2, 0), (3,0), 1, "0".to_string()),
+                ((3, 0), (4,0), 1, "0".to_string()),
+            ]
+        );
     }
 }

@@ -8,7 +8,11 @@ mod tests {
             kcomodule::{kComodule, A0_coalgebra},
             kmorphism::kComoduleMorphism,
         },
-        linalg::{field::{Field, F2}, graded::{GradedLinearMap, GradedVectorSpace}, matrix::{FieldMatrix, Matrix}},
+        linalg::{
+            field::{Field, F2},
+            graded::{GradedLinearMap, GradedVectorSpace},
+            matrix::{FieldMatrix, Matrix},
+        },
     };
 
     #[test]
@@ -34,12 +38,13 @@ mod tests {
     #[test]
     fn test_cokernel() {
         let coalgebra = Arc::new(A0_coalgebra());
-        
+
         let domain = Arc::new(kComodule::fp_comodule(coalgebra.clone()));
 
         let codomain = Arc::new(kComodule::cofree_comodule(coalgebra, 0, 0, 5));
 
-        let mut map: GradedLinearMap<i32, F2, FieldMatrix<F2>> = GradedLinearMap::zero(&domain.space, &codomain.space);
+        let mut map: GradedLinearMap<i32, F2, FieldMatrix<F2>> =
+            GradedLinearMap::zero(&domain.space, &codomain.space);
         map.maps.get_mut(&0).unwrap().data[0][0] = F2::one();
 
         let morphism = kComoduleMorphism {
@@ -52,12 +57,35 @@ mod tests {
 
         // Assertions
         assert_eq!(cokernel_morphism.domain, morphism.codomain);
+
+        let expected_map: GradedLinearMap<i32, F2, FieldMatrix<F2>> =
+            GradedLinearMap::from(HashMap::from([
+                (0, FieldMatrix::zero(1, 0)),
+                (1, FieldMatrix::identity(1)),
+            ]));
+        assert_eq!(cokernel_morphism.map, expected_map);
+    }
+
+
+    #[test]
+    fn test_structure_lines() {
+        let coalgebra = Arc::new(A0_coalgebra());
+
+        let domain = Arc::new(kComodule::cofree_comodule(coalgebra.clone(), 0, 0, 5));
+
+        let codomain = Arc::new(kComodule::cofree_comodule(coalgebra, 0, 1, 5));
+
+        let mut map: GradedLinearMap<i32, F2, FieldMatrix<F2>> =
+            GradedLinearMap::zero(&domain.space, &codomain.space);
+        map.maps.get_mut(&1).unwrap().data[0][0] = F2::one();
+
+        let morphism = kComoduleMorphism {
+            domain: domain.clone(),
+            codomain: codomain.clone(),
+            map,
+        };
         
-        let expected_map: GradedLinearMap<i32, F2, FieldMatrix<F2>> = GradedLinearMap::from(HashMap::from([
-            (0, FieldMatrix::zero(1, 0)),
-            (1, FieldMatrix::identity(1))
-        ]));
-        assert_eq!(cokernel_morphism.map, expected_map); 
+        assert_eq!(morphism.get_structure_lines(), [(0,0,1,"0".to_string())]);
     }
 
     #[test]
