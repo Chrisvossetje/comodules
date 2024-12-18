@@ -1,4 +1,6 @@
-use crate::linalg::field::{Field, Fp};
+use std::vec;
+
+use crate::linalg::field::Field;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct FieldMatrix<F: Field> {
@@ -8,6 +10,8 @@ pub struct FieldMatrix<F: Field> {
 }
 
 pub trait Matrix<F: Field>: Clone {
+    type Vector;
+
     fn zero(domain: usize, codomain: usize) -> Self;
     fn identity(d: usize) -> Self;
 
@@ -15,7 +19,7 @@ pub trait Matrix<F: Field>: Clone {
     fn set(&mut self, x: usize, y: usize, f: F);
 
     // domain l == codomain r, l \circ r
-    fn compose(&self, rhs: &mut Self) -> Self;
+    fn compose(&self, rhs: &Self) -> Self;
 
     fn transpose(&self) -> Self;
 
@@ -30,7 +34,7 @@ pub trait Matrix<F: Field>: Clone {
     fn block_sum(&mut self, other: &mut Self);
 
     // Returns the change of basis matrix for the domain!
-    fn rref(&mut self) -> Self;
+    fn rref(&mut self);
 
     fn kernel(&self) -> Self;
     fn cokernel(&self) -> Self {
@@ -55,8 +59,8 @@ impl<F: Field> FieldMatrix<F> {
 
         let pivs = self.pivots();
 
-        for (i, j) in pivs {
-            pivots[i] = Some(j);
+        for (col, row) in pivs {
+            pivots[col] = Some(row);
         }
 
         // Identify free variables (non-pivot columns)
@@ -105,11 +109,20 @@ impl<F: Field> FieldMatrix<F> {
 }
 
 impl<F: Field> Matrix<F> for FieldMatrix<F> {
+    type Vector = Vec<F>;
+
     // TODO: This will probably need more tests !
     fn kernel(&self) -> Self {
+        if self.domain == 0 {
+            return Self::zero(0, 0);
+        }
+        if self.codomain == 0 {
+            return Self::identity(self.domain);
+        }
         let mut clone = self.clone();
-        let mut changeofbasis = clone.rref();
-        let mut kernel = clone.rref_kernel().compose(&mut changeofbasis);
+        let changeofbasis = clone.rref();
+        let mut kernel = clone.rref_kernel();
+        // let mut transformed_kernel = kernel.compose(&mut changeofbasis);
         kernel.rref();
         kernel
     }
@@ -132,63 +145,9 @@ impl<F: Field> Matrix<F> for FieldMatrix<F> {
         }
     }
 
-    // fn rref(&mut self) {
-    //     let rows = self.codomain;
-    //     let cols = self.domain;
-
-    //     let mut lead = 0; // Index of the leading column
-
-    //     for r in 0..rows {
-    //         if lead >= cols {
-    //             break;
-    //         }
-
-    //         let mut i = r;
-    //         while self.data[i][lead].is_zero() {
-    //             i += 1;
-    //             if i == rows {
-    //                 i = r;
-    //                 lead += 1;
-    //                 if lead == cols {
-    //                     return;
-    //                 }
-    //             }
-    //         }
-
-    //         // Swap rows to move the pivot row to the current row
-    //         self.data.swap(i, r);
-
-    //         // Normalize the pivot row (make the leading coefficient 1)
-    //         let pivot = self.data[r][lead];
-    //         if !pivot.is_zero() {
-    //             let pivot_inv = pivot.inv().expect("Pivot should be invertible");
-    //             for j in 0..cols {
-    //                 self.data[r][j] *= pivot_inv;
-    //             }
-    //         }
-
-    //         // Eliminate all other entries in the leading column
-    //         for i in 0..rows {
-    //             if i != r {
-    //                 let factor = self.data[i][lead];
-    //                 for j in 0..cols {
-    //                     let temp = factor * self.data[r][j];
-    //                     self.data[i][j] -= temp;
-    //                 }
-    //             }
-    //         }
-
-    //         lead += 1;
-    //     }
-    // }
-
-    /// Computes the RREF and also returns the change of basis matrix for the domain
-    fn rref(&mut self) -> Self {
+    fn rref(&mut self) {
         let rows = self.codomain;
         let cols = self.domain;
-
-        // Initialize the change of basis matrix as the identity matrix of size cols x cols
-        let mut change_of_basis = Matrix::identity(cols);
 
         let mut lead = 0; // Index of the leading column
 
@@ -204,16 +163,13 @@ impl<F: Field> Matrix<F> for FieldMatrix<F> {
                     i = r;
                     lead += 1;
                     if lead == cols {
-                        return change_of_basis; // Return the accumulated change of basis matrix
+                        return;
                     }
                 }
             }
 
             // Swap rows to move the pivot row to the current row
-            if i != r {
-                self.data.swap(i, r);
-                change_of_basis.data.swap(i, r); // Apply swap on the change of basis matrix
-            }
+            self.data.swap(i, r);
 
             // Normalize the pivot row (make the leading coefficient 1)
             let pivot = self.data[r][lead];
@@ -221,9 +177,6 @@ impl<F: Field> Matrix<F> for FieldMatrix<F> {
                 let pivot_inv = pivot.inv().expect("Pivot should be invertible");
                 for j in 0..cols {
                     self.data[r][j] *= pivot_inv;
-                }
-                for j in 0..cols {
-                    change_of_basis.data[r][j] *= pivot_inv; // Normalize in the change of basis matrix
                 }
             }
 
@@ -235,31 +188,25 @@ impl<F: Field> Matrix<F> for FieldMatrix<F> {
                         let temp = factor * self.data[r][j];
                         self.data[i][j] -= temp;
                     }
-                    for j in 0..cols {
-                        let temp = factor * change_of_basis.data[r][j];
-                        change_of_basis.data[i][j] -= temp; // Eliminate in the change of basis matrix
-                    }
                 }
             }
 
             lead += 1;
         }
-
-        // Return the change of basis matrix
-        change_of_basis
     }
 
-    // (Row, Column)
+    /// (Column, Row) == (domain, codomain)
     fn pivots(&self) -> Vec<(usize, usize)> {
-        let mut id = 0;
+        let mut col = 0;
         let mut pivots = vec![];
-        for i in 0..self.codomain {
-            if !self.data[id][i].is_zero() {
-                pivots.push((id, i));
-                id += 1;
-            }
-            if id == self.data.len() {
-                break;
+        for row in 0..self.codomain {
+            while col < self.domain {
+                if !self.data[row][col].is_zero() {
+                    pivots.push((col, row));
+                    col += 1;
+                    break;
+                }
+                col += 1;
             }
         }
         pivots
@@ -296,6 +243,13 @@ impl<F: Field> Matrix<F> for FieldMatrix<F> {
     }
 
     fn identity(d: usize) -> Self {
+        if d == 0 {
+            return Self {
+                data: vec![],
+                domain: 0,
+                codomain: 0,
+            };
+        }
         let mut matrix = vec![vec![F::zero(); d]; d];
         for i in 0..d {
             matrix[i][i] = F::one();
@@ -323,7 +277,7 @@ impl<F: Field> Matrix<F> for FieldMatrix<F> {
     }
 
     // domain l == codomain r, l \circ r
-    fn compose(&self, rhs: &mut Self) -> Self {
+    fn compose(&self, rhs: &Self) -> Self {
         assert_eq!(
             self.domain, rhs.codomain,
             "Matrix domain not equal to codomain"
@@ -371,6 +325,8 @@ fn dot_product<F: Field>(l: &Vec<F>, r: &Vec<F>) -> F {
 
 #[test]
 fn test_rref_kernel() {
+    use crate::linalg::field::Fp;
+
     type TestField = Fp<23>;
 
     let matrix = FieldMatrix {

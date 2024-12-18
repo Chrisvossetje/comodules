@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use super::*;
+
     use crate::linalg::field::F2;
     use crate::linalg::graded::{BasisElement, GradedLinearMap, GradedVectorSpace};
     use crate::linalg::matrix::{FieldMatrix, Matrix};

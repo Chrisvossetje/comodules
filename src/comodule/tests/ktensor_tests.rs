@@ -1,4 +1,4 @@
-use crate::linalg::graded::{BasisElement, BasisIndex, GradedVectorSpace, Grading};
+use crate::linalg::graded::{BasisElement, GradedVectorSpace, Grading};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
@@ -8,7 +8,7 @@ impl BasisElement for MockBasisElement {}
 
 #[cfg(test)]
 mod tests {
-    use crate::comodule::{kcomodule::A0_coalgebra, ktensor::kTensor};
+    use crate::comodule::{kcoalgebra::A0_coalgebra, ktensor::kTensor};
 
     use super::*;
 
@@ -98,23 +98,13 @@ mod tests {
         assert_eq!(tensor1.dimensions.get(&0), Some(&2));
         assert_eq!(tensor1.dimensions.get(&1), Some(&4));
         assert_eq!(tensor1.dimensions.get(&2), None);
-        assert!(tensor1.is_correct());
+        tensor1.is_correct();
     }
 
     #[test]
     fn test_correctness_a0() {
         let a0 = A0_coalgebra();
-        assert!(a0.tensor.is_correct());
+        a0.tensor.is_correct();
         assert_eq!(a0.tensor.dimensions[&1], 2);
     }
-
-    // #[test]
-    // fn test_get_dimension() {
-    //     let mut tensor: kTensor<i32> = kTensor::new();
-    //     tensor.dimensions.insert(0, 3);
-    //     tensor.dimensions.insert(1, 5);
-
-    //     assert_eq!(tensor.get_dimension(&0), 3);
-    //     assert_eq!(tensor.get_dimension(&1), 5);
-    // }
 }

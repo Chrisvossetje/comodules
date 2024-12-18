@@ -24,17 +24,19 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
 
     pub fn resolve_to_s(&mut self, s: usize, mut limit: G) {
         let zero_morph = Morph::zero_morphism(self.comodule.clone());
+        let fixed_limit = limit.incr().incr();
 
-        let initial_inject = zero_morph.inject_codomain_to_cofree(limit);
+        let initial_inject = zero_morph.inject_codomain_to_cofree(limit, fixed_limit);
         self.resolution.push(initial_inject);
 
         for _ in 0..s {
             limit = limit.incr();
+            let fixed_limit = limit.incr().incr();
             let last_morph = self.resolution.last().unwrap();
 
             let coker = last_morph.cokernel();
 
-            let inject = coker.inject_codomain_to_cofree(limit);
+            let inject = coker.inject_codomain_to_cofree(limit, fixed_limit);
 
             let combine = Morph::compose(inject, coker);
 
@@ -62,9 +64,10 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
             .enumerate()
             .flat_map(|(s, x)| {
                 let g = x.get_structure_lines();
-                g.into_iter().map(move |(from_gen, to_gen, value, prim_type)| {
-                    ((s - 1, from_gen), (s, to_gen), value, prim_type)
-                })
+                g.into_iter()
+                    .map(move |(from_gen, to_gen, value, prim_type)| {
+                        ((s - 1, from_gen), (s, to_gen), value, prim_type)
+                    })
             })
             .collect();
 

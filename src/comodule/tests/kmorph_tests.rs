@@ -5,7 +5,8 @@ mod tests {
     use crate::{
         comodule::{
             comodule::{Comodule, ComoduleMorphism},
-            kcomodule::{kComodule, A0_coalgebra},
+            kcoalgebra::A0_coalgebra,
+            kcomodule::kComodule,
             kmorphism::kComoduleMorphism,
         },
         linalg::{
@@ -22,7 +23,7 @@ mod tests {
 
         let morphism = kComoduleMorphism::zero_morphism(comodule);
 
-        let cofree_morphism = morphism.inject_codomain_to_cofree(5);
+        let cofree_morphism = morphism.inject_codomain_to_cofree(5, 7);
 
         let comp = kComodule::cofree_comodule(coalgebra, 0, 0, 5);
 
@@ -66,7 +67,6 @@ mod tests {
         assert_eq!(cokernel_morphism.map, expected_map);
     }
 
-
     #[test]
     fn test_structure_lines() {
         let coalgebra = Arc::new(A0_coalgebra());
@@ -84,8 +84,8 @@ mod tests {
             codomain: codomain.clone(),
             map,
         };
-        
-        assert_eq!(morphism.get_structure_lines(), [(0,0,1,"0".to_string())]);
+
+        assert_eq!(morphism.get_structure_lines(), [(0, 0, 1, "0".to_string())]);
     }
 
     #[test]

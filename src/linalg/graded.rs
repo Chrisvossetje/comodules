@@ -4,6 +4,7 @@ use std::{
     hash::Hash,
     marker::PhantomData,
     ops::{Add, AddAssign, Sub, SubAssign},
+    str::FromStr,
 };
 
 use super::{field::Field, matrix::Matrix};
@@ -30,6 +31,8 @@ pub trait Grading:
 
     fn incr(self) -> Self;
     fn zero() -> Self;
+
+    fn parse(parse: &str) -> Result<Self, ()>;
 }
 
 impl Grading for i32 {
@@ -51,6 +54,10 @@ impl Grading for i32 {
 
     fn incr(self) -> Self {
         self + 1
+    }
+
+    fn parse(parse: &str) -> Result<Self, ()> {
+        i32::from_str(parse).map_err(|_| ())
     }
 }
 

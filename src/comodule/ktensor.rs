@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use itertools::Itertools;
+
 use crate::linalg::graded::{BasisElement, BasisIndex, GradedVectorSpace, Grading};
 
 use super::comodule::Tensor;
@@ -45,6 +47,47 @@ impl<G: Grading> kTensor<G> {
         Self::default()
     }
 
+    // pub fn generate<B: BasisElement>(
+    //     left: &GradedVectorSpace<G, B>,
+    //     right: &GradedVectorSpace<G, B>,
+    // ) -> Self {
+    //     let mut construct = HashMap::new();
+    //     let mut deconstruct = HashMap::new();
+    //     let mut dimensions = HashMap::new();
+
+    //     for (r_grade, r_elements) in right.0.iter() {
+    //         for r_id in 0..r_elements.len() {
+    //             let mut construct_map = HashMap::new();
+
+    //             for (l_grade, l_elements) in left.0.iter() {
+    //                 let t_grade = *l_grade + *r_grade;
+
+    //                 if !right.0.contains_key(&t_grade) {
+    //                     continue;
+    //                 }
+
+    //                 for l_id in 0..l_elements.len() {
+    //                     let t_id = dimensions.entry(t_grade).or_insert(0);
+    //                     construct_map.insert((*l_grade, l_id), (t_grade, *t_id as usize));
+
+    //                     deconstruct.insert(
+    //                         (t_grade, *t_id as usize),
+    //                         ((*l_grade, l_id), (*r_grade, r_id)),
+    //                     );
+    //                     *t_id = *t_id + 1;
+    //                 }
+    //             }
+    //             construct.insert((*r_grade, r_id), construct_map);
+    //         }
+    //     }
+
+    //     Self {
+    //         construct,
+    //         deconstruct,
+    //         dimensions,
+    //     }
+    // }
+
     pub fn generate<B: BasisElement>(
         left: &GradedVectorSpace<G, B>,
         right: &GradedVectorSpace<G, B>,
@@ -53,20 +96,19 @@ impl<G: Grading> kTensor<G> {
         let mut deconstruct = HashMap::new();
         let mut dimensions = HashMap::new();
 
-        for (r_grade, r_elements) in right.0.iter() {
-            for r_id in 0..r_elements.len() {
-                let mut construct_map = HashMap::new();
-
-                for (l_grade, l_elements) in left.0.iter() {
+        for (l_grade, l_elements) in left.0.iter() {
+            for l_id in 0..l_elements.len() {            
+                for (r_grade, r_elements) in right.0.iter() {
                     let t_grade = *l_grade + *r_grade;
 
                     if !right.0.contains_key(&t_grade) {
                         continue;
                     }
 
-                    for l_id in 0..l_elements.len() {
+                    for r_id in 0..r_elements.len() {
                         let t_id = dimensions.entry(t_grade).or_insert(0);
-                        construct_map.insert((*l_grade, l_id), (t_grade, *t_id as usize));
+
+                        construct.entry((*r_grade, r_id)).or_insert(HashMap::new()).insert((*l_grade, l_id), (t_grade, *t_id));
 
                         deconstruct.insert(
                             (t_grade, *t_id as usize),
@@ -75,7 +117,6 @@ impl<G: Grading> kTensor<G> {
                         *t_id = *t_id + 1;
                     }
                 }
-                construct.insert((*r_grade, r_id), construct_map);
             }
         }
 
@@ -145,6 +186,10 @@ impl<G: Grading> kTensor<G> {
         }
     }
 
+
+    /// Special care should be taken here, 
+    /// as this tensor object usually relates to certain graded linear maps 
+    /// We should expect that direct summing the underlying vector spaces creates the correct new tensor object
     pub fn direct_sum(&mut self, other: &mut Self, self_space_dimensions: &HashMap<G, usize>) {
         other.construct.iter().for_each(|((m_gr, m_id), maps)| {
             let m_id_new = self_space_dimensions.get(m_gr).unwrap_or(&0) + m_id;
@@ -181,7 +226,7 @@ impl<G: Grading> kTensor<G> {
         });
     }
 
-    pub fn is_correct(&self) -> bool {
+    pub fn is_correct(&self) {
         let decon_wrong =
             self.deconstruct
                 .iter()
@@ -192,7 +237,6 @@ impl<G: Grading> kTensor<G> {
                     },
                     None => true,
                 });
-
         let con_wrong = self.construct.iter().any(|(m_id, map)| {
             map.iter()
                 .any(|(a_id, t_id)| match self.deconstruct.get(t_id) {
@@ -209,6 +253,6 @@ impl<G: Grading> kTensor<G> {
 
         let dim_wrong = dims != self.dimensions;
 
-        !decon_wrong && !con_wrong && !dim_wrong
+        assert!(!decon_wrong && !con_wrong && !dim_wrong);
     }
 }

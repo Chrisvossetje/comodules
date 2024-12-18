@@ -24,6 +24,8 @@ pub trait Field:
     fn one() -> Self;
     fn zero() -> Self;
     fn as_usize(self) -> usize;
+
+    fn parse(input: &str) -> Result<Self, ()>;
 }
 
 impl Field for f64 {
@@ -53,6 +55,10 @@ impl Field for f64 {
 
     fn as_usize(self) -> usize {
         self as usize
+    }
+
+    fn parse(input: &str) -> Result<Self, ()> {
+        input.parse().map_err(|_| ())
     }
 }
 
@@ -170,6 +176,11 @@ impl<const P: u8> Field for Fp<P> {
     fn as_usize(self) -> usize {
         self.0 as usize
     }
+
+    fn parse(input: &str) -> Result<Self, ()> {
+        let chr: i32 = input.parse().map_err(|_| ())?;
+        Ok(Self((chr % (P as i32)) as u8))
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -274,5 +285,10 @@ impl Field for F2 {
 
     fn as_usize(self) -> usize {
         self.0 as usize
+    }
+
+    fn parse(input: &str) -> Result<Self, ()> {
+        let chr: i32 = input.parse().map_err(|_| ())?;
+        Ok(Self((chr & 1) as u8))
     }
 }

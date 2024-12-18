@@ -9,7 +9,6 @@ use crate::{
         graded::{BasisIndex, GradedLinearMap, Grading},
         matrix::{FieldMatrix, Matrix},
     },
-    resolution,
 };
 
 use super::{
@@ -27,29 +26,21 @@ pub struct kComoduleMorphism<G: Grading, F: Field> {
 }
 
 impl<G: Grading, F: Field> kComoduleMorphism<G, F> {
-    fn verify_dimensions(&self) -> bool {
+    fn verify_dimensions(&self) {
         for k in self.domain.space.0.keys() {
-            if !self.map.maps.contains_key(k) {
-                return false;
-            }
+            assert!(self.map.maps.contains_key(k));
         }
 
         for k in self.codomain.space.0.keys() {
-            if !self.map.maps.contains_key(k) {
-                return false;
-            }
+            assert!(self.map.maps.contains_key(k));
         }
 
         for (g, map) in self.map.maps.iter() {
             let dom_dim = self.domain.space.dimension_in_grade(g);
             let codom_dim = self.codomain.space.dimension_in_grade(g);
-
-            if dom_dim != map.domain || codom_dim != map.codomain {
-                return false;
-            }
+            assert_eq!(dom_dim, map.domain);
+            assert_eq!(codom_dim, map.codomain);
         }
-
-        true
     }
 }
 
@@ -61,6 +52,8 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
 
         let coalg = self.codomain.coalgebra.as_ref();
         let tensor = kTensor::generate(&coalg.space, &coker_space);
+
+        tensor.is_correct();
 
         let pivots = cokernel_map.pivots();
 
@@ -77,7 +70,7 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
                     .map(|map| map.codomain)
                     .unwrap_or(0))
                     .filter_map(|q_index| {
-                        let val = cokernel_map.maps.get(f_gr).unwrap().data[*f_id][q_index];
+                        let val = cokernel_map.maps.get(f_gr).unwrap().data[q_index][*f_id];
                         match val.is_zero() {
                             true => None,
                             false => Some((q_index, val)),
@@ -99,8 +92,8 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
                 // THERE SHOULD? BE A FASTER VERSION OF THIS, BUT THIS IS SIMPLER ?
                 // THIS COMMENTS WAS WRITTERN BEFORE M_lUT()
 
-                // (Row, Column)
-                for (coker_id, codom_id) in &pivots[g] {
+                // (domain, codomain)
+                for (codom_id, coker_id) in &pivots[g] {
                     let coact_size = self.codomain.tensor.dimensions[g];
                     for codom_coact_id in 0..coact_size {
                         let coact_val =
@@ -127,23 +120,24 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
             coaction: GradedLinearMap::from(coaction),
             tensor,
         };
+        comodule.verify();
         let coker_morph = Self {
             codomain: Arc::new(comodule),
             domain: self.codomain.clone(),
             map: cokernel_map,
         };
-        assert!(coker_morph.verify_dimensions());
+        coker_morph.verify_dimensions();
         coker_morph
     }
 
-    fn inject_codomain_to_cofree(&self, limit: G) -> Self {
+    fn inject_codomain_to_cofree(&self, limit: G, fixed_limit: G) -> Self {
         let mut growing_map: GradedLinearMap<G, F, FieldMatrix<F>> =
             GradedLinearMap::zero_codomain(&self.codomain.space);
         let mut growing_comodule = kComodule::zero_comodule(self.codomain.coalgebra.clone());
         let mut iteration = 0;
 
-        let grades: Vec<G> = growing_map.maps.iter().map(|(g, _)| *g).sorted().collect();
-        let prev_grade = 0;
+        let grades: Vec<G> = growing_map.maps.iter().map(|(g, _)| *g).sorted().filter(|&g| g <= limit).collect();
+        let mut prev_grade = 0;
 
         loop {
             // Get lowest graded pivot element
@@ -158,6 +152,7 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
 
                 match kernel.first_non_zero_entry() {
                     Some(loc) => {
+                        prev_grade = grade_id;
                         pivot = Some((loc, grade));
                         break;
                     }
@@ -184,6 +179,10 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
             let coalg_space = &self.codomain.coalgebra.space;
             for alg_gr in coalg_space.0.keys() {
                 let t_gr = *alg_gr + pivot_grade;
+
+                if t_gr > fixed_limit {
+                    continue;
+                }
 
                 let codomain_len = self.codomain.space.dimension_in_grade(&t_gr);
                 let coalg_len = coalg_space.dimension_in_grade(alg_gr);
@@ -216,9 +215,13 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
                 self.codomain.coalgebra.clone(),
                 iteration,
                 pivot_grade,
-                limit,
+                fixed_limit,
             );
             growing_comodule.direct_sum(&mut f);
+            growing_comodule.verify();
+
+            growing_comodule.tensor.is_correct();
+
             growing_map.vstack(&mut map_to_cofree);
             iteration += 1;
         }
@@ -227,7 +230,7 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
             codomain: Arc::new(growing_comodule),
             map: growing_map,
         };
-        assert!(final_morph.verify_dimensions());
+        final_morph.verify_dimensions();
         final_morph
     }
 
@@ -292,8 +295,8 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
                                 }
                             }
                         }
-                    },
-                    None => {},
+                    }
+                    None => {}
                 }
             }
         }

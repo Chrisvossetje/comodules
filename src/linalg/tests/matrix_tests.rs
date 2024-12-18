@@ -2,7 +2,7 @@
 mod tests {
     use crate::linalg::{
         field::{Field, Fp, F2},
-        matrix::{self, FieldMatrix, Matrix},
+        matrix::{FieldMatrix, Matrix},
     };
 
     type TestField = Fp<23>;
@@ -159,6 +159,22 @@ mod tests {
     }
 
     #[test]
+    fn test_rref_4() {
+        let mut matrix = FieldMatrix {
+            data: vec![vec![TestField { 0: 1 }], vec![TestField { 0: 0 }]],
+            domain: 1,
+            codomain: 2,
+        };
+        matrix.rref();
+        let expected = FieldMatrix {
+            data: vec![vec![TestField { 0: 1 }], vec![TestField { 0: 0 }]],
+            domain: 1,
+            codomain: 2,
+        };
+        assert_eq!(matrix, expected);
+    }
+
+    #[test]
     fn test_compose() {
         let matrix1 = FieldMatrix {
             data: vec![
@@ -198,7 +214,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pivots() {
+    fn test_pivots_1() {
         let matrix = FieldMatrix {
             data: vec![
                 vec![TestField { 0: 1 }, TestField { 0: 0 }, TestField { 0: 3 }],
@@ -212,7 +228,21 @@ mod tests {
     }
 
     #[test]
-    fn test_vstack() {
+    fn test_pivots_2() {
+        let matrix = FieldMatrix {
+            data: vec![
+                vec![TestField { 0: 0 }, TestField { 0: 1 }, TestField { 0: 0 }],
+                vec![TestField { 0: 0 }, TestField { 0: 0 }, TestField { 0: 1 }],
+            ],
+            domain: 3,
+            codomain: 2,
+        };
+        let pivots = matrix.pivots();
+        assert_eq!(pivots, vec![(1, 0), (2, 1)]);
+    }
+
+    #[test]
+    fn test_vstack_1() {
         let mut matrix1 = FieldMatrix {
             data: vec![vec![TestField { 0: 1 }], vec![TestField { 0: 2 }]],
             domain: 1,
@@ -233,6 +263,31 @@ mod tests {
             ],
             domain: 1,
             codomain: 4,
+        };
+        assert_eq!(matrix1, expected);
+    }
+
+    #[test]
+    fn test_vstack_2() {
+        let mut matrix1 = FieldMatrix {
+            data: vec![vec![F2::one(), F2::one()], vec![F2::zero(), F2::zero()]],
+            domain: 2,
+            codomain: 2,
+        };
+        let mut matrix2 = FieldMatrix {
+            data: vec![vec![F2::zero(), F2::one()]],
+            domain: 2,
+            codomain: 1,
+        };
+        matrix1.vstack(&mut matrix2);
+        let expected = FieldMatrix {
+            data: vec![
+                vec![F2::one(), F2::one()],
+                vec![F2::zero(), F2::zero()],
+                vec![F2::zero(), F2::one()],
+            ],
+            domain: 2,
+            codomain: 3,
         };
         assert_eq!(matrix1, expected);
     }

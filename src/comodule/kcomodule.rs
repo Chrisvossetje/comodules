@@ -1,12 +1,12 @@
 use std::{collections::HashMap, sync::Arc};
 
 use crate::linalg::{
-    field::{Field, F2},
-    graded::{BasisElement, GradedLinearMap, GradedVectorSpace, Grading, UniGrading},
+    field::Field,
+    graded::{BasisElement, GradedLinearMap, GradedVectorSpace, Grading},
     matrix::{FieldMatrix, Matrix},
 };
 
-use super::{comodule::Comodule, ktensor::kTensor};
+use super::{comodule::Comodule, kcoalgebra::kCoalgebra, ktensor::kTensor};
 
 #[derive(Debug, Clone, PartialEq, Default)]
 #[allow(non_camel_case_types)]
@@ -18,14 +18,6 @@ pub struct kBasisElement {
 }
 
 impl BasisElement for kBasisElement {}
-
-#[derive(Debug, Clone, PartialEq)]
-#[allow(non_camel_case_types)]
-pub struct kCoalgebra<G: Grading, F: Field> {
-    pub space: GradedVectorSpace<G, kBasisElement>,
-    pub coaction: GradedLinearMap<G, F, FieldMatrix<F>>,
-    pub tensor: kTensor<G>,
-}
 
 #[derive(Clone, PartialEq)]
 #[allow(non_camel_case_types)]
@@ -39,6 +31,18 @@ pub struct kComodule<G: Grading, F: Field> {
 impl<G: Grading, F: Field> std::fmt::Debug for kComodule<G, F> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.space.0)
+    }
+}
+
+impl<G: Grading, F: Field> kComodule<G, F> {
+    pub fn verify(&self) {
+        for (&(m_gr, m_id), map) in &self.tensor.construct {
+            let &(t_gr, t_id) = map.get(&(G::zero(), 0)).unwrap();
+            assert_eq!(t_gr, m_gr);
+
+            let val = self.coaction.maps.get(&t_gr).unwrap().data[t_id][m_id];
+            assert_eq!(val, F::one());
+        }
     }
 }
 
@@ -186,79 +190,5 @@ impl<G: Grading, F: Field> Comodule<G> for kComodule<G, F> {
             coaction: GradedLinearMap::from(coaction),
             tensor,
         }
-    }
-}
-
-#[allow(non_snake_case)]
-pub fn A0_coalgebra() -> kCoalgebra<UniGrading, F2> {
-    let mut space = GradedVectorSpace::new();
-    space.0.insert(
-        0,
-        vec![kBasisElement {
-            name: "1".to_owned(),
-            generator: true,
-            primitive: None,
-            generated_index: 0,
-        }],
-    );
-
-    space.0.insert(
-        1,
-        vec![kBasisElement {
-            name: "xi1".to_owned(),
-            generator: false,
-            primitive: Some(0),
-            generated_index: 0,
-        }],
-    );
-
-    let mut dimensions = HashMap::new();
-    dimensions.insert(0, 1);
-    dimensions.insert(1, 2);
-
-    let mut construct = HashMap::new();
-    let mut first_entry = HashMap::new();
-    first_entry.insert((0, 0), (0, 0));
-    first_entry.insert((1, 0), (1, 0));
-
-    let mut second_entry = HashMap::new();
-    second_entry.insert((0, 0), (1, 1));
-
-    construct.insert((0, 0), first_entry);
-    construct.insert((1, 0), second_entry);
-
-    let mut deconstruct = HashMap::new();
-    deconstruct.insert((0, 0), ((0, 0), (0, 0)));
-    deconstruct.insert((1, 0), ((1, 0), (0, 0)));
-    deconstruct.insert((1, 1), ((0, 0), (1, 0)));
-
-    let tensor = kTensor {
-        construct,
-        deconstruct,
-        dimensions,
-    };
-
-    let mut coaction = GradedLinearMap::empty();
-    coaction.maps.insert(
-        0,
-        FieldMatrix {
-            data: vec![vec![F2::one()]],
-            domain: 1,
-            codomain: 1,
-        },
-    );
-    coaction.maps.insert(
-        1,
-        FieldMatrix {
-            data: vec![vec![F2::one()], vec![F2::one()]],
-            domain: 1,
-            codomain: 2,
-        },
-    );
-
-    kCoalgebra {
-        space,
-        coaction,
-        tensor,
     }
 }

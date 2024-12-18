@@ -5,7 +5,8 @@ mod tests {
     use crate::{
         comodule::{
             comodule::{Comodule, ComoduleMorphism},
-            kcomodule::{kBasisElement, kCoalgebra, kComodule, A0_coalgebra},
+            kcoalgebra::A0_coalgebra,
+            kcomodule::{kBasisElement, kComodule},
             kmorphism::kComoduleMorphism,
             ktensor::kTensor,
         },
@@ -75,7 +76,7 @@ mod tests {
         let dims = &comodule1.tensor.dimensions;
         assert_eq!(dims.get(&0), Some(&2));
         assert_eq!(dims.get(&1), Some(&2));
-        assert!(comodule1.tensor.is_correct());
+        comodule1.tensor.is_correct();
     }
 
     // Test for kComodule::get_generators
