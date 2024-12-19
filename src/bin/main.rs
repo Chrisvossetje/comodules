@@ -6,7 +6,7 @@ use comodules::{
         kmorphism::kComoduleMorphism,
     },
     linalg::{
-        field::{Field, F2},
+        field::F2,
         graded::UniGrading,
     },
     resolution::Resolution,

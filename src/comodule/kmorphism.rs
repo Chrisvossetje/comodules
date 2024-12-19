@@ -28,11 +28,11 @@ pub struct kComoduleMorphism<G: Grading, F: Field> {
 impl<G: Grading, F: Field> kComoduleMorphism<G, F> {
     fn verify_dimensions(&self) {
         for k in self.domain.space.0.keys() {
-            assert!(self.map.maps.contains_key(k));
+            debug_assert!(self.map.maps.contains_key(k));
         }
 
         for k in self.codomain.space.0.keys() {
-            assert!(self.map.maps.contains_key(k));
+            debug_assert!(self.map.maps.contains_key(k));
         }
 
         for (g, map) in self.map.maps.iter() {
@@ -177,6 +177,7 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
                 .expect("The tensor should exist on the codomain in this grade");
 
             let coalg_space = &self.codomain.coalgebra.space;
+            // CHECK
             for alg_gr in coalg_space.0.keys() {
                 let t_gr = *alg_gr + pivot_grade;
 
@@ -255,7 +256,7 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
     }
 
     fn compose(l: Self, r: Self) -> Self {
-        assert!(
+        debug_assert!(
             l.domain == r.codomain,
             "l-domain and r-codomain should be equal when composing"
         );

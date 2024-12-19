@@ -100,6 +100,9 @@ impl<F: Field> FieldMatrix<F> {
             kernel.push(kernel_vector);
         }
         let codomain = kernel.len();
+
+        debug_assert_eq!(codomain, free_vars.len());
+        
         Self {
             data: kernel,
             domain: self.domain,
@@ -113,6 +116,7 @@ impl<F: Field> Matrix<F> for FieldMatrix<F> {
 
     // TODO: This will probably need more tests !
     fn kernel(&self) -> Self {
+        // TODO: i dont need the following two ifs ?
         if self.domain == 0 {
             return Self::zero(0, 0);
         }
@@ -120,7 +124,7 @@ impl<F: Field> Matrix<F> for FieldMatrix<F> {
             return Self::identity(self.domain);
         }
         let mut clone = self.clone();
-        let changeofbasis = clone.rref();
+        clone.rref();
         let mut kernel = clone.rref_kernel();
         // let mut transformed_kernel = kernel.compose(&mut changeofbasis);
         kernel.rref();

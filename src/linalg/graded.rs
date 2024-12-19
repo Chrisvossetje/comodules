@@ -70,6 +70,7 @@ pub trait BasisElement: 'static + Debug + Clone {}
 
 pub type BasisIndex<G> = (G, usize);
 
+
 // A VectorSpace should be naive / simple, just a list of basis elements!
 // Specific modules can implement their own "basis" type which encodes the information they need
 pub type VectorSpace<B> = Vec<B>;

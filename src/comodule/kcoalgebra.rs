@@ -1,5 +1,7 @@
 use std::{collections::HashMap, fmt::Error};
 
+use itertools::Itertools;
+
 use crate::linalg::{
     field::{Field, F2},
     graded::{BasisIndex, GradedLinearMap, GradedVectorSpace, Grading, UniGrading},
@@ -20,7 +22,7 @@ impl<G: Grading, F: Field> kCoalgebra<G, F> {
     pub fn set_primitives(&mut self) {
         let mut primitive_index = 0;
 
-        for (grade, basis_elements) in self.space.0.iter_mut() {
+        for (grade, basis_elements) in self.space.0.iter_mut().sorted_by_key(|(g,_)| {*g}) {
             let coact_map = &self.coaction.maps[grade];
             for (index, el) in basis_elements.iter_mut().enumerate() {
                 let mut non_zero_count = 0;
@@ -143,7 +145,8 @@ impl<G: Grading, F: Field> kCoalgebra<G, F> {
 
         // Create basis dictionary
         let mut basis_dict = HashMap::new();
-        for (name, grade) in &basis {
+        // Sorted not necessary here ?
+        for (name, grade) in basis.iter() {
             if basis_dict.contains_key(name) {
                 panic!("Name in basis appears twice");
             }
@@ -164,7 +167,7 @@ impl<G: Grading, F: Field> kCoalgebra<G, F> {
         // Transform basis
         let mut transformed = HashMap::new();
         let mut basis_translate = HashMap::new();
-        for (name, (el, gr)) in &basis_dict {
+        for (name, (el, gr)) in basis_dict.iter().sorted_by_key(|(name, _)| {*name}) {
             transformed.entry(*gr).or_insert(vec![]).push(el.clone());
             basis_translate.insert(name.clone(), (*gr, transformed[&gr].len() - 1));
         }

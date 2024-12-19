@@ -47,47 +47,6 @@ impl<G: Grading> kTensor<G> {
         Self::default()
     }
 
-    // pub fn generate<B: BasisElement>(
-    //     left: &GradedVectorSpace<G, B>,
-    //     right: &GradedVectorSpace<G, B>,
-    // ) -> Self {
-    //     let mut construct = HashMap::new();
-    //     let mut deconstruct = HashMap::new();
-    //     let mut dimensions = HashMap::new();
-
-    //     for (r_grade, r_elements) in right.0.iter() {
-    //         for r_id in 0..r_elements.len() {
-    //             let mut construct_map = HashMap::new();
-
-    //             for (l_grade, l_elements) in left.0.iter() {
-    //                 let t_grade = *l_grade + *r_grade;
-
-    //                 if !right.0.contains_key(&t_grade) {
-    //                     continue;
-    //                 }
-
-    //                 for l_id in 0..l_elements.len() {
-    //                     let t_id = dimensions.entry(t_grade).or_insert(0);
-    //                     construct_map.insert((*l_grade, l_id), (t_grade, *t_id as usize));
-
-    //                     deconstruct.insert(
-    //                         (t_grade, *t_id as usize),
-    //                         ((*l_grade, l_id), (*r_grade, r_id)),
-    //                     );
-    //                     *t_id = *t_id + 1;
-    //                 }
-    //             }
-    //             construct.insert((*r_grade, r_id), construct_map);
-    //         }
-    //     }
-
-    //     Self {
-    //         construct,
-    //         deconstruct,
-    //         dimensions,
-    //     }
-    // }
-
     pub fn generate<B: BasisElement>(
         left: &GradedVectorSpace<G, B>,
         right: &GradedVectorSpace<G, B>,
@@ -96,9 +55,9 @@ impl<G: Grading> kTensor<G> {
         let mut deconstruct = HashMap::new();
         let mut dimensions = HashMap::new();
 
-        for (l_grade, l_elements) in left.0.iter() {
+        for (l_grade, l_elements) in left.0.iter().sorted_by_key(|(&lg,_)| {lg}) {
             for l_id in 0..l_elements.len() {            
-                for (r_grade, r_elements) in right.0.iter() {
+                for (r_grade, r_elements) in right.0.iter().sorted_by_key(|(&rg,_)| {rg}) {
                     let t_grade = *l_grade + *r_grade;
 
                     if !right.0.contains_key(&t_grade) {
@@ -111,7 +70,7 @@ impl<G: Grading> kTensor<G> {
                         construct.entry((*r_grade, r_id)).or_insert(HashMap::new()).insert((*l_grade, l_id), (t_grade, *t_id));
 
                         deconstruct.insert(
-                            (t_grade, *t_id as usize),
+                            (t_grade, *t_id),
                             ((*l_grade, l_id), (*r_grade, r_id)),
                         );
                         *t_id = *t_id + 1;
@@ -131,6 +90,7 @@ impl<G: Grading> kTensor<G> {
         let cons = self
             .construct
             .iter()
+            .sorted_by_key(|(x,_)| *x)
             .filter_map(|((m_gr, m_id), map)| {
                 let m_sum = *m_gr + add;
                 if m_sum > limit {
@@ -139,6 +99,7 @@ impl<G: Grading> kTensor<G> {
 
                 let alg_map = map
                     .iter()
+                    .sorted_by_key(|(x,_)| *x)
                     .filter_map(|((a_gr, a_id), (t_gr, t_id))| {
                         let t_sum = *t_gr + add;
                         if t_sum <= limit {
@@ -156,6 +117,7 @@ impl<G: Grading> kTensor<G> {
         let decon = self
             .deconstruct
             .iter()
+            .sorted_by_key(|(x,_)| *x)
             .filter_map(|((t_gr, t_id), ((a_gr, a_id), (m_gr, m_id)))| {
                 let t_sum = *t_gr + add;
                 let m_sum = *m_gr + add;
@@ -170,6 +132,7 @@ impl<G: Grading> kTensor<G> {
         let dims = self
             .dimensions
             .iter()
+            .sorted_by_key(|(x,_)| *x)
             .filter_map(|(t_gr, size)| {
                 let t_sum = *t_gr + add;
                 if t_sum <= limit {
@@ -190,12 +153,15 @@ impl<G: Grading> kTensor<G> {
     /// Special care should be taken here, 
     /// as this tensor object usually relates to certain graded linear maps 
     /// We should expect that direct summing the underlying vector spaces creates the correct new tensor object
+    /// 
+    /// After careful thinking, this direct sum is not dependent on the non-determinism of the hashmap
     pub fn direct_sum(&mut self, other: &mut Self, self_space_dimensions: &HashMap<G, usize>) {
-        other.construct.iter().for_each(|((m_gr, m_id), maps)| {
+        other.construct.iter().sorted_by_key(|(x,_)| *x).for_each(|((m_gr, m_id), maps)| {
             let m_id_new = self_space_dimensions.get(m_gr).unwrap_or(&0) + m_id;
 
             let new_map = maps
                 .iter()
+                .sorted_by_key(|(x,_)| *x)
                 .map(|((a_gr, a_id), (t_gr, t_id))| {
                     let t_id_new = self.dimensions.get(t_gr).unwrap_or(&0) + t_id;
                     ((*a_gr, *a_id), (*t_gr, t_id_new))
@@ -208,6 +174,7 @@ impl<G: Grading> kTensor<G> {
         other
             .deconstruct
             .iter()
+            .sorted_by_key(|(x,_)| *x)
             .for_each(|((t_gr, t_id), ((a_gr, a_id), (m_gr, m_id)))| {
                 let m_id_new = self_space_dimensions.get(m_gr).unwrap_or(&0) + m_id;
                 let t_id_new = self.dimensions.get(t_gr).unwrap_or(&0) + t_id;
@@ -216,7 +183,8 @@ impl<G: Grading> kTensor<G> {
                     .insert((*t_gr, t_id_new), ((*a_gr, *a_id), (*m_gr, m_id_new)));
             });
 
-        other.dimensions.iter().for_each(|(gr, other_size)| {
+        other.dimensions.iter().sorted_by_key(|(x,_)| *x)
+        .for_each(|(gr, other_size)| {
             self.dimensions
                 .entry(*gr)
                 .and_modify(|size| {
@@ -247,12 +215,20 @@ impl<G: Grading> kTensor<G> {
 
         let mut dims = HashMap::new();
 
-        for ((t_gr, _), _) in self.deconstruct.iter() {
+        let mut found: HashMap<G, Vec<bool>> = self.dimensions.iter().map(|(&gr, &size)| {
+            (gr, (0..size).map(|_| false).collect())
+        }).collect();
+        for ((t_gr, t_id), _) in self.deconstruct.iter() {
+            found.get_mut(t_gr).unwrap()[*t_id] = true;
             dims.entry(*t_gr).and_modify(|x| *x += 1).or_insert(1);
+        }
+
+        for v in found {
+            debug_assert!(v.1.iter().all(|x| *x));
         }
 
         let dim_wrong = dims != self.dimensions;
 
-        assert!(!decon_wrong && !con_wrong && !dim_wrong);
+        debug_assert!(!decon_wrong && !con_wrong && !dim_wrong);
     }
 }

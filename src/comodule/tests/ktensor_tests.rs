@@ -8,6 +8,8 @@ impl BasisElement for MockBasisElement {}
 
 #[cfg(test)]
 mod tests {
+    use itertools::Itertools;
+
     use crate::comodule::{kcoalgebra::A0_coalgebra, ktensor::kTensor};
 
     use super::*;
@@ -38,6 +40,12 @@ mod tests {
 
         assert_eq!(tensor.dimensions.get(&0), Some(&1));
         assert_eq!(tensor.dimensions.get(&1), Some(&2));
+
+        assert_eq!(tensor.deconstruct, HashMap::from([
+            ((0,0), ((0,0),(0,0))),
+            ((1,0), ((0,0),(1,0))),
+            ((1,1), ((1,0),(0,0))),
+        ]) );
     }
 
     #[test]
