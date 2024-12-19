@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::Arc};
 use crate::linalg::{
     field::Field,
     graded::{BasisElement, GradedLinearMap, GradedVectorSpace, Grading},
-    matrix::{FieldMatrix, Matrix},
+    matrix::Matrix,
 };
 
 use super::{comodule::Comodule, kcoalgebra::kCoalgebra, ktensor::kTensor};
@@ -21,34 +21,34 @@ impl BasisElement for kBasisElement {}
 
 #[derive(Clone, PartialEq)]
 #[allow(non_camel_case_types)]
-pub struct kComodule<G: Grading, F: Field> {
-    pub coalgebra: Arc<kCoalgebra<G, F>>,
+pub struct kComodule<G: Grading, F: Field, M: Matrix<F>> {
+    pub coalgebra: Arc<kCoalgebra<G, F, M>>,
     pub space: GradedVectorSpace<G, kBasisElement>,
-    pub coaction: GradedLinearMap<G, F, FieldMatrix<F>>,
+    pub coaction: GradedLinearMap<G, F, M>,
     pub tensor: kTensor<G>,
 }
 
-impl<G: Grading, F: Field> std::fmt::Debug for kComodule<G, F> {
+impl<G: Grading, F: Field, M: Matrix<F>> std::fmt::Debug for kComodule<G, F, M> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.space.0)
     }
 }
 
-impl<G: Grading, F: Field> kComodule<G, F> {
+impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
     pub fn verify(&self) {
         for (&(m_gr, m_id), map) in &self.tensor.construct {
             let &(t_gr, t_id) = map.get(&(G::zero(), 0)).unwrap();
             assert_eq!(t_gr, m_gr);
 
-            let val = self.coaction.maps.get(&t_gr).unwrap().data[t_id][m_id];
+            let val = self.coaction.maps.get(&t_gr).unwrap().get(m_id, t_id);
             assert_eq!(val, F::one());
         }
     }
 }
 
-impl<G: Grading, F: Field> Comodule<G> for kComodule<G, F> {
+impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
     type Element = kBasisElement;
-    type Coalgebra = kCoalgebra<G, F>;
+    type Coalgebra = kCoalgebra<G, F, M>;
 
     fn get_generators(&self) -> Vec<(usize, G, Option<String>)> {
         self.space
@@ -89,8 +89,7 @@ impl<G: Grading, F: Field> Comodule<G> for kComodule<G, F> {
         let space_map: HashMap<G, Vec<kBasisElement>> = [(zero, vec![el])].into_iter().collect();
         let space = GradedVectorSpace::from(space_map);
 
-        let coact_map: HashMap<G, FieldMatrix<F>> =
-            [(zero, FieldMatrix::identity(1))].into_iter().collect();
+        let coact_map: HashMap<G, M> = [(zero, M::identity(1))].into_iter().collect();
         let coaction = GradedLinearMap::from(coact_map);
 
         assert_eq!(
@@ -148,7 +147,7 @@ impl<G: Grading, F: Field> Comodule<G> for kComodule<G, F> {
     }
 
     fn cofree_comodule(coalgebra: Arc<Self::Coalgebra>, index: usize, grade: G, limit: G) -> Self {
-        let coaction: HashMap<G, FieldMatrix<F>> = coalgebra
+        let coaction: HashMap<G, M> = coalgebra
             .coaction
             .maps
             .iter()

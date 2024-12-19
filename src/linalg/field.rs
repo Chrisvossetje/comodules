@@ -17,6 +17,8 @@ pub trait Field:
     + SubAssign
     + MulAssign
     + std::iter::Sum
+    + Sync
+    + Send
 {
     fn inv(self) -> Option<Self>;
     fn get_characteristic(&self) -> usize;
@@ -26,6 +28,10 @@ pub trait Field:
     fn as_usize(self) -> usize;
 
     fn parse(input: &str) -> Result<Self, ()>;
+
+    fn dot_product(l: &Vec<Self>, r: &Vec<Self>) -> Self {
+        l.iter().zip(r.iter()).map(|(x, y)| *x * *y).sum()
+    }
 }
 
 impl Field for f64 {

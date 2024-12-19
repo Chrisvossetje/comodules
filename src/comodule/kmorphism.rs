@@ -1,13 +1,14 @@
 use std::{collections::HashMap, sync::Arc};
 
 use itertools::Itertools;
+use rayon::prelude::*;
 
 use crate::{
     comodule::{comodule::Tensor, kcomodule::kBasisElement, ktensor::kTensor},
     linalg::{
         field::Field,
         graded::{BasisIndex, GradedLinearMap, Grading},
-        matrix::{FieldMatrix, Matrix},
+        matrix::Matrix,
     },
 };
 
@@ -18,14 +19,14 @@ use super::{
 
 #[derive(Debug, Clone)]
 #[allow(non_camel_case_types)]
-pub struct kComoduleMorphism<G: Grading, F: Field> {
-    pub domain: Arc<kComodule<G, F>>,
-    pub codomain: Arc<kComodule<G, F>>,
+pub struct kComoduleMorphism<G: Grading, F: Field, M: Matrix<F>> {
+    pub domain: Arc<kComodule<G, F, M>>,
+    pub codomain: Arc<kComodule<G, F, M>>,
 
-    pub map: GradedLinearMap<G, F, FieldMatrix<F>>, // Question: Shouldn't this be a module morphism?
+    pub map: GradedLinearMap<G, F, M>, // Question: Shouldn't this be a module morphism?
 }
 
-impl<G: Grading, F: Field> kComoduleMorphism<G, F> {
+impl<G: Grading, F: Field, M: Matrix<F>> kComoduleMorphism<G, F, M> {
     fn verify_dimensions(&self) {
         for k in self.domain.space.0.keys() {
             debug_assert!(self.map.maps.contains_key(k));
@@ -38,13 +39,15 @@ impl<G: Grading, F: Field> kComoduleMorphism<G, F> {
         for (g, map) in self.map.maps.iter() {
             let dom_dim = self.domain.space.dimension_in_grade(g);
             let codom_dim = self.codomain.space.dimension_in_grade(g);
-            assert_eq!(dom_dim, map.domain);
-            assert_eq!(codom_dim, map.codomain);
+            assert_eq!(dom_dim, map.domain());
+            assert_eq!(codom_dim, map.codomain());
         }
     }
 }
 
-impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMorphism<G, F> {
+impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
+    for kComoduleMorphism<G, F, M>
+{
     fn cokernel(&self) -> Self {
         let cokernel_map = self.map.get_cokernel();
 
@@ -57,20 +60,22 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
 
         let pivots = cokernel_map.pivots();
 
+        // The upcoming should be a "solve commutative square thingy ?"
+
         let m_lut: HashMap<BasisIndex<G>, Vec<(usize, F)>> = self
             .codomain
             .tensor
             .construct
-            .iter()
+            .par_iter()
             .map(|((f_gr, f_id), _)| {
                 // Transfer a specific codomain grade and id (f_gr, f_id) to a list of elements which it maps to in the cokernel
                 let v = (0..cokernel_map
                     .maps
                     .get(f_gr)
-                    .map(|map| map.codomain)
+                    .map(|map| map.codomain())
                     .unwrap_or(0))
                     .filter_map(|q_index| {
-                        let val = cokernel_map.maps.get(f_gr).unwrap().data[q_index][*f_id];
+                        let val = cokernel_map.maps.get(f_gr).unwrap().get(*f_id, q_index);
                         match val.is_zero() {
                             true => None,
                             false => Some((q_index, val)),
@@ -81,12 +86,12 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
             })
             .collect();
 
-        let coaction: HashMap<G, FieldMatrix<F>> = coker_space
+        let coaction: HashMap<G, M> = coker_space
             .0
-            .iter()
+            .par_iter()
             .map(|(g, v)| {
                 let g_tensor_dimen = tensor.get_dimension(g);
-                let mut g_coaction = FieldMatrix::<F>::zero(v.len(), g_tensor_dimen);
+                let mut g_coaction = M::zero(v.len(), g_tensor_dimen);
 
                 // TODO:
                 // THERE SHOULD? BE A FASTER VERSION OF THIS, BUT THIS IS SIMPLER ?
@@ -97,7 +102,7 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
                     let coact_size = self.codomain.tensor.dimensions[g];
                     for codom_coact_id in 0..coact_size {
                         let coact_val =
-                            self.codomain.coaction.maps[g].data[codom_coact_id][*codom_id];
+                            self.codomain.coaction.maps[g].get(*codom_id, codom_coact_id);
                         if !coact_val.is_zero() {
                             let ((alg_gr, alg_id), (mod_gr, mod_id)) =
                                 self.codomain.tensor.deconstruct[&(*g, codom_coact_id)];
@@ -105,7 +110,7 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
                             for (target_id, val) in m_lut.get(&(mod_gr, mod_id)).unwrap() {
                                 let (_, final_id) =
                                     tensor.construct[&(mod_gr, *target_id)][&(alg_gr, alg_id)];
-                                g_coaction.data[final_id][*coker_id] += coact_val * *val;
+                                g_coaction.add_at(*coker_id, final_id, coact_val * *val);
                             }
                         }
                     }
@@ -131,12 +136,18 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
     }
 
     fn inject_codomain_to_cofree(&self, limit: G, fixed_limit: G) -> Self {
-        let mut growing_map: GradedLinearMap<G, F, FieldMatrix<F>> =
+        let mut growing_map: GradedLinearMap<G, F, M> =
             GradedLinearMap::zero_codomain(&self.codomain.space);
         let mut growing_comodule = kComodule::zero_comodule(self.codomain.coalgebra.clone());
         let mut iteration = 0;
 
-        let grades: Vec<G> = growing_map.maps.iter().map(|(g, _)| *g).sorted().filter(|&g| g <= limit).collect();
+        let grades: Vec<G> = growing_map
+            .maps
+            .iter()
+            .map(|(g, _)| *g)
+            .sorted()
+            .filter(|&g| g <= limit)
+            .collect();
         let mut prev_grade = 0;
 
         loop {
@@ -177,24 +188,23 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
                 .expect("The tensor should exist on the codomain in this grade");
 
             let coalg_space = &self.codomain.coalgebra.space;
-            // CHECK
-            for alg_gr in coalg_space.0.keys() {
+            coalg_space.0.iter().for_each(|(alg_gr, alg_gr_space)| {
                 let t_gr = *alg_gr + pivot_grade;
 
                 if t_gr > fixed_limit {
-                    continue;
+                    return;
                 }
 
                 let codomain_len = self.codomain.space.dimension_in_grade(&t_gr);
-                let coalg_len = coalg_space.dimension_in_grade(alg_gr);
+                let coalg_len = alg_gr_space.len();
 
                 if !alg_to_tens.contains_key(&(*alg_gr, 0)) {
-                    let zero_map = FieldMatrix::zero(codomain_len, coalg_len);
+                    let zero_map = M::zero(codomain_len, coalg_len);
                     map_to_cofree.maps.insert(t_gr, zero_map);
-                    continue;
+                    return;
                 };
 
-                let mut map = FieldMatrix::zero(codomain_len, coalg_len);
+                let mut map = M::zero(codomain_len, coalg_len);
 
                 for a_id in 0..coalg_len {
                     let (t_gr, t_id) = alg_to_tens.get(&(*alg_gr,a_id)).expect("This BasisIndex should exist on the tensor object in the to inject comodule");
@@ -204,13 +214,12 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
                         .maps
                         .get(t_gr)
                         .expect("This grade should exist on the coaction of the injecting comodule")
-                        .data[*t_id]
-                        .as_slice();
-                    map.data[a_id].clone_from_slice(slice);
+                        .get_row(*t_id);
+                    map.set_row(a_id, slice);
                 }
 
                 map_to_cofree.maps.insert(t_gr, map);
-            }
+            });
 
             let mut f = kComodule::cofree_comodule(
                 self.codomain.coalgebra.clone(),
@@ -235,7 +244,7 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
         final_morph
     }
 
-    fn zero_morphism(comodule: Arc<kComodule<G, F>>) -> Self {
+    fn zero_morphism(comodule: Arc<kComodule<G, F, M>>) -> Self {
         let codomain = comodule.clone();
         let zero = Arc::new(kComodule::zero_comodule(comodule.coalgebra.clone()));
 
@@ -243,9 +252,7 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
         let mut zero_map = GradedLinearMap::empty();
 
         for (gr, elements) in codomain.space.0.iter() {
-            zero_map
-                .maps
-                .insert(*gr, FieldMatrix::zero(0, elements.len()));
+            zero_map.maps.insert(*gr, M::zero(0, elements.len()));
         }
 
         Self {
@@ -283,14 +290,14 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
                 let els = self.domain.space.0.get(gr).unwrap();
                 match els[el_id].primitive {
                     Some(prim_id) => {
-                        for t_id in 0..gr_map.codomain {
+                        for t_id in 0..gr_map.codomain() {
                             let t_el = &self.codomain.space.0.get(gr).expect("As codomain of the map is non-zero this vector space should contain an element in this grade.")[t_id];
                             if t_el.generator {
-                                if !gr_map.data[t_id][el_id].is_zero() {
+                                if !gr_map.get(el_id, t_id).is_zero() {
                                     lines.push((
                                         els[el_id].generated_index,
                                         t_el.generated_index,
-                                        gr_map.data[t_id][el_id].as_usize(),
+                                        gr_map.get(el_id, t_id).as_usize(),
                                         prim_id.to_string(),
                                     ));
                                 }
@@ -305,7 +312,7 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, kComodule<G, F>> for kComoduleMor
         lines
     }
 
-    fn get_codomain(&self) -> Arc<kComodule<G, F>> {
+    fn get_codomain(&self) -> Arc<kComodule<G, F, M>> {
         self.codomain.clone()
     }
 }

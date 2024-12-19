@@ -1,22 +1,17 @@
-use std::vec;
-
 use crate::linalg::field::Field;
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct FieldMatrix<F: Field> {
-    pub data: Vec<Vec<F>>,
-    pub domain: usize,
-    pub codomain: usize,
-}
-
-pub trait Matrix<F: Field>: Clone {
+pub trait Matrix<F: Field>: Clone + Send + Sync + PartialEq {
     type Vector;
 
     fn zero(domain: usize, codomain: usize) -> Self;
     fn identity(d: usize) -> Self;
 
-    fn get(&self, x: usize, y: usize) -> F;
-    fn set(&mut self, x: usize, y: usize, f: F);
+    fn get(&self, domain: usize, codomain: usize) -> F;
+    fn set(&mut self, domain: usize, codomain: usize, f: F);
+    fn add_at(&mut self, domain: usize, codomain: usize, f: F);
+
+    fn get_row(&self, codomain: usize) -> &[F];
+    fn set_row(&mut self, codomain: usize, row: &[F]);
 
     // domain l == codomain r, l \circ r
     fn compose(&self, rhs: &Self) -> Self;
@@ -44,13 +39,22 @@ pub trait Matrix<F: Field>: Clone {
     fn first_non_zero_entry(&self) -> Option<(usize, usize)>;
 }
 
+use std::vec;
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct FieldMatrix<F: Field> {
+    pub data: Vec<Vec<F>>,
+    pub domain: usize,
+    pub codomain: usize,
+}
+
 impl<F: Field> FieldMatrix<F> {
     fn rref_kernel(&self) -> Self {
         // Store pivot columns
         let mut free_vars = Vec::new();
 
         let pivot_cols: Vec<usize> = self.pivots().iter().map(|x| x.0).collect();
-        
+
         for j in 0..self.domain {
             if !pivot_cols.contains(&j) {
                 free_vars.push(j);
@@ -59,11 +63,11 @@ impl<F: Field> FieldMatrix<F> {
 
         // Initialize kernel matrix (one column per free variable)
         let mut kernel = vec![vec![F::zero(); self.domain]; free_vars.len()];
-        
+
         for (i, &free_var) in free_vars.iter().enumerate() {
             // Set the free variable coefficient to 1
             kernel[i][free_var] = F::one();
-            
+
             // Back-substitute to find the pivot column contributions
             for (row, &pivot_col) in pivot_cols.iter().enumerate() {
                 kernel[i][pivot_col] = -self.data[row][free_var];
@@ -72,7 +76,7 @@ impl<F: Field> FieldMatrix<F> {
         Self {
             data: kernel,
             domain: self.domain,
-            codomain: free_vars.len()
+            codomain: free_vars.len(),
         }
     }
 }
@@ -231,12 +235,24 @@ impl<F: Field> Matrix<F> for FieldMatrix<F> {
         }
     }
 
-    fn get(&self, x: usize, y: usize) -> F {
-        self.data[y][x]
+    fn get(&self, domain: usize, codomain: usize) -> F {
+        self.data[codomain][domain]
     }
 
-    fn set(&mut self, x: usize, y: usize, f: F) {
-        self.data[y][x] = f;
+    fn set(&mut self, domain: usize, codomain: usize, f: F) {
+        self.data[codomain][domain] = f;
+    }
+
+    fn add_at(&mut self, domain: usize, codomain: usize, f: F) {
+        self.data[codomain][domain] = f;
+    }
+
+    fn get_row(&self, codomain: usize) -> &[F] {
+        self.data[codomain].as_slice()
+    }
+
+    fn set_row(&mut self, codomain: usize, row: &[F]) {
+        self.data[codomain].clone_from_slice(row);
     }
 
     fn domain(&self) -> usize {
@@ -258,7 +274,7 @@ impl<F: Field> Matrix<F> for FieldMatrix<F> {
 
         for x in 0..self.codomain {
             for y in 0..trans.codomain {
-                compose[x][y] = dot_product(&self.data[x], &trans.data[y])
+                compose[x][y] = F::dot_product(&self.data[x], &trans.data[y])
             }
         }
         Self {
@@ -287,10 +303,6 @@ impl<F: Field> Matrix<F> for FieldMatrix<F> {
         }
         None
     }
-}
-
-fn dot_product<F: Field>(l: &Vec<F>, r: &Vec<F>) -> F {
-    l.iter().zip(r.iter()).map(|(x, y)| *x * *y).sum()
 }
 
 #[test]

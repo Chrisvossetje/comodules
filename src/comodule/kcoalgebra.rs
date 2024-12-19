@@ -12,24 +12,24 @@ use super::{kcomodule::kBasisElement, ktensor::kTensor};
 
 #[derive(Debug, Clone, PartialEq)]
 #[allow(non_camel_case_types)]
-pub struct kCoalgebra<G: Grading, F: Field> {
+pub struct kCoalgebra<G: Grading, F: Field, M: Matrix<F>> {
     pub space: GradedVectorSpace<G, kBasisElement>,
-    pub coaction: GradedLinearMap<G, F, FieldMatrix<F>>,
+    pub coaction: GradedLinearMap<G, F, M>,
     pub tensor: kTensor<G>,
 }
 
-impl<G: Grading, F: Field> kCoalgebra<G, F> {
+impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
     pub fn set_primitives(&mut self) {
         let mut primitive_index = 0;
 
-        for (grade, basis_elements) in self.space.0.iter_mut().sorted_by_key(|(g,_)| {*g}) {
+        for (grade, basis_elements) in self.space.0.iter_mut().sorted_by_key(|(g, _)| *g) {
             let coact_map = &self.coaction.maps[grade];
             for (index, el) in basis_elements.iter_mut().enumerate() {
                 let mut non_zero_count = 0;
 
                 // Count non-zero entries
-                for t_id in 0..coact_map.codomain {
-                    if !coact_map.data[t_id][index].is_zero() {
+                for t_id in 0..coact_map.codomain() {
+                    if !coact_map.get(index, t_id).is_zero() {
                         non_zero_count += 1;
                     }
                 }
@@ -43,7 +43,9 @@ impl<G: Grading, F: Field> kCoalgebra<G, F> {
         }
     }
 
-    pub fn parse(input: &str) -> Result<(kCoalgebra<G, F>, HashMap<String, BasisIndex<G>>), Error> {
+    pub fn parse(
+        input: &str,
+    ) -> Result<(kCoalgebra<G, F, M>, HashMap<String, BasisIndex<G>>), Error> {
         #[derive(Debug, Clone, PartialEq)]
         enum State {
             None,
@@ -167,7 +169,7 @@ impl<G: Grading, F: Field> kCoalgebra<G, F> {
         // Transform basis
         let mut transformed = HashMap::new();
         let mut basis_translate = HashMap::new();
-        for (name, (el, gr)) in basis_dict.iter().sorted_by_key(|(name, _)| {*name}) {
+        for (name, (el, gr)) in basis_dict.iter().sorted_by_key(|(name, _)| *name) {
             transformed.entry(*gr).or_insert(vec![]).push(el.clone());
             basis_translate.insert(name.clone(), (*gr, transformed[&gr].len() - 1));
         }
@@ -175,11 +177,11 @@ impl<G: Grading, F: Field> kCoalgebra<G, F> {
         let graded_space = GradedVectorSpace(transformed);
         let tensor = kTensor::generate(&graded_space, &graded_space);
 
-        let mut coaction: HashMap<G, FieldMatrix<F>> = HashMap::new();
+        let mut coaction: HashMap<G, M> = HashMap::new();
         for (gr, elements) in &graded_space.0 {
             let domain = elements.len();
             let codomain = *tensor.dimensions.get(gr).unwrap_or(&0);
-            coaction.insert(*gr, FieldMatrix::zero(domain, codomain));
+            coaction.insert(*gr, M::zero(domain, codomain));
         }
 
         for (b, ls) in coaction_lut {
@@ -190,7 +192,10 @@ impl<G: Grading, F: Field> kCoalgebra<G, F> {
                 assert_eq!((l_id.0 + r_id.0), gr, "Grades are not homogenous");
                 let t_id = tensor.construct[&r_id][&l_id];
                 assert_eq!(t_id.0, gr, "Grades are not homogenous");
-                coaction.get_mut(&gr).unwrap().data[t_id.1][id] = F::parse(&scalar).unwrap();
+                coaction
+                    .get_mut(&gr)
+                    .unwrap()
+                    .set(id, t_id.1, F::parse(&scalar).unwrap());
             }
         }
 
@@ -207,7 +212,7 @@ impl<G: Grading, F: Field> kCoalgebra<G, F> {
 }
 
 #[allow(non_snake_case)]
-pub fn A0_coalgebra() -> kCoalgebra<UniGrading, F2> {
+pub fn A0_coalgebra() -> kCoalgebra<UniGrading, F2, FieldMatrix<F2>> {
     let mut space = GradedVectorSpace::new();
     space.0.insert(
         0,

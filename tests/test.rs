@@ -9,7 +9,7 @@ mod tests {
             kcomodule::kComodule,
             kmorphism::kComoduleMorphism,
         },
-        linalg::{field::F2, graded::UniGrading},
+        linalg::{field::F2, graded::UniGrading, matrix::FieldMatrix},
         resolution::Resolution,
     };
     use itertools::Itertools;
@@ -22,8 +22,8 @@ mod tests {
 
         let mut res: Resolution<
             UniGrading,
-            kComodule<UniGrading, F2>,
-            kComoduleMorphism<UniGrading, F2>,
+            kComodule<UniGrading, F2, FieldMatrix<F2>>,
+            kComoduleMorphism<UniGrading, F2, FieldMatrix<F2>>,
         > = Resolution::new(fp);
 
         res.resolve_to_s(4, 10);
@@ -73,12 +73,12 @@ mod tests {
 
         let mut res: Resolution<
             UniGrading,
-            kComodule<UniGrading, F2>,
-            kComoduleMorphism<UniGrading, F2>,
+            kComodule<UniGrading, F2, FieldMatrix<F2>>,
+            kComoduleMorphism<UniGrading, F2, FieldMatrix<F2>>,
         > = Resolution::new(fp);
 
         res.resolve_to_s(10, 10);
 
-        let page = res.generate_page();
+        let _ = res.generate_page();
     }
 }

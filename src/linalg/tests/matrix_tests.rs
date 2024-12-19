@@ -29,7 +29,6 @@ mod tests {
         assert_eq!(kern, compare);
     }
 
-
     #[test]
     pub fn kernel_simple_2() {
         let matrix = FieldMatrix {
@@ -98,7 +97,6 @@ mod tests {
                 }
             }
         }
-        let a = TestField { 0: 2 };
     }
 
     #[test]
@@ -303,8 +301,6 @@ mod tests {
         let pivots = matrix.pivots();
         assert_eq!(pivots, vec![(0, 0), (1, 1)]);
     }
-
-    
 
     #[test]
     fn test_vstack_1() {

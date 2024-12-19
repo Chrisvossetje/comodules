@@ -23,13 +23,15 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
     }
 
     pub fn resolve_to_s(&mut self, s: usize, mut limit: G) {
-        let zero_morph = Morph::zero_morphism(self.comodule.clone());
-        let fixed_limit = limit.incr().incr();
+        if self.resolution.len() == 0 {
+            let zero_morph = Morph::zero_morphism(self.comodule.clone());
+            let fixed_limit = limit.incr().incr();
 
-        let initial_inject = zero_morph.inject_codomain_to_cofree(limit, fixed_limit);
-        self.resolution.push(initial_inject);
+            let initial_inject = zero_morph.inject_codomain_to_cofree(limit, fixed_limit);
+            self.resolution.push(initial_inject);
+        }
 
-        for _ in 0..s {
+        for _ in self.resolution.len()..=s {
             limit = limit.incr();
             let fixed_limit = limit.incr().incr();
             let last_morph = self.resolution.last().unwrap();

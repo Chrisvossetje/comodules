@@ -4,10 +4,9 @@ mod tests {
 
     use crate::{
         comodule::{
-            comodule::{Comodule, ComoduleMorphism},
+            comodule::Comodule,
             kcoalgebra::A0_coalgebra,
             kcomodule::{kBasisElement, kComodule},
-            kmorphism::kComoduleMorphism,
             ktensor::kTensor,
         },
         linalg::{
@@ -115,14 +114,5 @@ mod tests {
         assert_eq!(generators.len(), 1);
         assert_eq!(generators[0].1, 0);
         assert_eq!(generators[0].2, Some("gen1".to_string()));
-    }
-
-    #[test]
-    fn test_kcomod_cokernel() {
-        let coalgebra = Arc::new(A0_coalgebra());
-
-        let fp = Arc::new(kComodule::fp_comodule(coalgebra));
-
-        let initial = kComoduleMorphism::zero_morphism(fp);
     }
 }
