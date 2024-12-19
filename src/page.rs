@@ -18,9 +18,13 @@ pub struct Page {
 }
 
 impl Page {
+    pub fn to_string(&self) -> String {
+        serde_json::to_string(self).unwrap()
+    }
+    
     pub fn save_to_json(&self, file_path: String) -> io::Result<()> {
         let content = serde_json::to_string(self)?;
-
+        
         // Create or open the file at the specified path
         let mut file = File::create(file_path)?;
 

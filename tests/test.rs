@@ -65,6 +65,24 @@ mod tests {
     }
 
     #[test]
+    fn test_a0_consistent_page() {
+        let coalgebra = Arc::new(A0_coalgebra());
+
+        let fp = kComodule::fp_comodule(coalgebra);
+
+        let mut res: Resolution<
+            UniGrading,
+            kComodule<UniGrading, F2, FieldMatrix<F2>>,
+            kComoduleMorphism<UniGrading, F2, FieldMatrix<F2>>,
+        > = Resolution::new(fp);
+
+        res.resolve_to_s(20, 20);
+
+        let p = res.generate_page();
+        assert_eq!(p.to_string(), include_str!("./A(0)page.json"));
+    }
+
+    #[test]
     fn test_a1_resolution() {
         let input = include_str!("../examples/kcoalgebras/A(1).txt");
         let coalgebra = Arc::new(kCoalgebra::parse(input).unwrap().0);
@@ -77,8 +95,10 @@ mod tests {
             kComoduleMorphism<UniGrading, F2, FieldMatrix<F2>>,
         > = Resolution::new(fp);
 
-        res.resolve_to_s(10, 10);
+        res.resolve_to_s(20, 20);
 
-        let _ = res.generate_page();
+        let p = res.generate_page();
+        assert_eq!(p.to_string(), include_str!("./A(1)page.json"));
+        
     }
 }
