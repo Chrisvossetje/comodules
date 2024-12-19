@@ -29,6 +29,32 @@ mod tests {
         assert_eq!(kern, compare);
     }
 
+
+    #[test]
+    pub fn kernel_simple_2() {
+        let matrix = FieldMatrix {
+            data: vec![
+                vec![F2::zero(), F2::zero(), F2::zero(), F2::zero()],
+                vec![F2::zero(), F2::one(), F2::zero(), F2::one()],
+                vec![F2::one(), F2::zero(), F2::one(), F2::one()],
+            ],
+            domain: 4,
+            codomain: 3,
+        };
+
+        let kern = matrix.kernel();
+
+        let compare = FieldMatrix {
+            data: vec![
+                vec![F2::one(), F2::zero(), F2::one(), F2::zero()],
+                vec![F2::zero(), F2::one(), F2::one(), F2::one()],
+            ],
+            domain: 4,
+            codomain: 2,
+        };
+        assert_eq!(kern, compare);
+    }
+
     #[test]
     fn kernel_identity() {
         let matrix = FieldMatrix::<Fp<23>>::identity(1);
