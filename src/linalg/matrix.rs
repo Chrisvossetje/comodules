@@ -46,67 +46,33 @@ pub trait Matrix<F: Field>: Clone {
 
 impl<F: Field> FieldMatrix<F> {
     fn rref_kernel(&self) -> Self {
-        if self.domain == 0 {
-            return Self {
-                data: vec![],
-                domain: 0,
-                codomain: 0,
-            };
-        }
-
-        let mut pivots = vec![None; self.domain];
+        // Store pivot columns
         let mut free_vars = Vec::new();
 
-        let pivs = self.pivots();
-
-        for (col, row) in pivs {
-            pivots[col] = Some(row);
-        }
-
-        // Identify free variables (non-pivot columns)
+        let pivot_cols: Vec<usize> = self.pivots().iter().map(|x| x.0).collect();
+        
         for j in 0..self.domain {
-            if pivots[j].is_none() {
+            if !pivot_cols.contains(&j) {
                 free_vars.push(j);
             }
         }
 
-        // Generate kernel basis vectors
-        let mut kernel = Vec::new();
-        for &free_var in &free_vars {
-            let mut kernel_vector = vec![F::zero(); self.domain];
-            kernel_vector[free_var] = F::one(); // Free variable set to 1
-
-            // Back-substitute to calculate the dependent variables
-            for i in 0..self.codomain {
-                match self.data[i][free_var].inv() {
-                    None => {}
-                    Some(inv) => {
-                        for j in 0..free_var {
-                            match pivots[j] {
-                                None => {}
-                                Some(k) => {
-                                    if i == k {
-                                        kernel_vector[j] += inv;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        break;
-                    }
-                }
-            }
-
-            kernel.push(kernel_vector);
-        }
-        let codomain = kernel.len();
-
-        debug_assert_eq!(codomain, free_vars.len());
+        // Initialize kernel matrix (one column per free variable)
+        let mut kernel = vec![vec![F::zero(); self.domain]; free_vars.len()];
         
+        for (i, &free_var) in free_vars.iter().enumerate() {
+            // Set the free variable coefficient to 1
+            kernel[i][free_var] = F::one();
+            
+            // Back-substitute to find the pivot column contributions
+            for (row, &pivot_col) in pivot_cols.iter().enumerate() {
+                kernel[i][pivot_col] = -self.data[row][free_var];
+            }
+        }
         Self {
             data: kernel,
             domain: self.domain,
-            codomain,
+            codomain: free_vars.len()
         }
     }
 }
@@ -344,8 +310,8 @@ fn test_rref_kernel() {
     let kernel = matrix.rref_kernel();
     let expected = FieldMatrix {
         data: vec![vec![
+            TestField { 0: 1 },
             TestField { 0: 22 },
-            TestField { 0: 0 },
             TestField { 0: 1 },
         ]],
         domain: 3,

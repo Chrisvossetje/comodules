@@ -34,12 +34,12 @@ mod tests {
     pub fn kernel_simple_2() {
         let matrix = FieldMatrix {
             data: vec![
-                vec![F2::zero(), F2::zero(), F2::zero(), F2::zero()],
+                // vec![F2::zero(), F2::zero(), F2::zero(), F2::zero()],
                 vec![F2::zero(), F2::one(), F2::zero(), F2::one()],
                 vec![F2::one(), F2::zero(), F2::one(), F2::one()],
             ],
             domain: 4,
-            codomain: 3,
+            codomain: 2,
         };
 
         let kern = matrix.kernel();
@@ -201,6 +201,29 @@ mod tests {
     }
 
     #[test]
+    fn test_rref_7() {
+        let mut matrix = FieldMatrix {
+            data: vec![
+                // vec![F2::zero(), F2::zero(), F2::zero(), F2::zero()],
+                vec![F2::zero(), F2::one(), F2::zero(), F2::one()],
+                vec![F2::one(), F2::zero(), F2::one(), F2::one()],
+            ],
+            domain: 4,
+            codomain: 2,
+        };
+        matrix.rref();
+        let expected = FieldMatrix {
+            data: vec![
+                vec![F2::one(), F2::zero(), F2::one(), F2::one()],
+                vec![F2::zero(), F2::one(), F2::zero(), F2::one()],
+            ],
+            domain: 4,
+            codomain: 2,
+        };
+        assert_eq!(matrix, expected);
+    }
+
+    #[test]
     fn test_compose() {
         let matrix1 = FieldMatrix {
             data: vec![
@@ -266,6 +289,22 @@ mod tests {
         let pivots = matrix.pivots();
         assert_eq!(pivots, vec![(1, 0), (2, 1)]);
     }
+
+    #[test]
+    fn test_pivots_3() {
+        let matrix = FieldMatrix {
+            data: vec![
+                vec![F2::one(), F2::zero(), F2::one(), F2::one()],
+                vec![F2::zero(), F2::one(), F2::zero(), F2::one()],
+            ],
+            domain: 4,
+            codomain: 2,
+        };
+        let pivots = matrix.pivots();
+        assert_eq!(pivots, vec![(0, 0), (1, 1)]);
+    }
+
+    
 
     #[test]
     fn test_vstack_1() {

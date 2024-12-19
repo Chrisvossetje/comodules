@@ -24,7 +24,7 @@ fn main() {
         kComoduleMorphism<UniGrading, F2>,
     > = Resolution::new(fp);
 
-    res.resolve_to_s(10, 9);
+    res.resolve_to_s(8, 60);
 
     let page = res.generate_page();
 
