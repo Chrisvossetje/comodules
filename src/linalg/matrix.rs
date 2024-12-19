@@ -244,7 +244,7 @@ impl<F: Field> Matrix<F> for FieldMatrix<F> {
     }
 
     fn add_at(&mut self, domain: usize, codomain: usize, f: F) {
-        self.data[codomain][domain] = f;
+        self.data[codomain][domain] += f;
     }
 
     fn get_row(&self, codomain: usize) -> &[F] {
