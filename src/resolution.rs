@@ -23,12 +23,19 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
     }
 
     pub fn resolve_to_s(&mut self, s: usize, mut limit: G) {
-        println!("Resolving to filtration index: {}", s);
+        println!("Resolving to filtration index: {} \n", s);
         
         if self.resolution.len() == 0 {
-            println!("Injecting to M_{}", s);
+            println!("Resolving for 0",);
+            print!("Injecting to 0              ",);
+            io::stdout().flush().unwrap();
+            let inject_time = std::time::Instant::now();
+
             let zero_morph = Morph::zero_morphism(self.comodule.clone());
             let fixed_limit = limit.incr().incr();
+            
+            
+            println!("took: {:.2?}\n", inject_time.elapsed());
 
             let initial_inject = zero_morph.inject_codomain_to_cofree(limit, fixed_limit);
             self.resolution.push(initial_inject);
@@ -36,7 +43,7 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
 
         for i in self.resolution.len()..=s {
             limit = limit.incr();
-            let fixed_limit = limit.incr();
+            let fixed_limit = limit.incr().incr();
             let last_morph = self.resolution.last().unwrap();
 
             println!("Resolving for {}", i);
