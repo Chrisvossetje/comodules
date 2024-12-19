@@ -4,10 +4,10 @@ mod tests {
 
     use crate::{
         comodule::{
-            traits::Comodule,
             kcoalgebra::A0_coalgebra,
             kcomodule::{kBasisElement, kComodule},
             ktensor::kTensor,
+            traits::Comodule,
         },
         linalg::{
             field::F2,

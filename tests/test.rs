@@ -4,10 +4,10 @@ mod tests {
 
     use comodules::{
         comodule::{
-            traits::Comodule,
             kcoalgebra::{kCoalgebra, A0_coalgebra},
             kcomodule::kComodule,
             kmorphism::kComoduleMorphism,
+            traits::Comodule,
         },
         linalg::{field::F2, graded::UniGrading, matrix::FieldMatrix},
         resolution::Resolution,

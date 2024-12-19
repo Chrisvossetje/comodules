@@ -410,7 +410,11 @@ mod tests {
             vec![TestField { 0: 1 }, TestField { 0: 2 }],
             vec![TestField { 0: 3 }, TestField { 0: 4 }],
         ];
-        let matrix = FieldMatrix { data, domain: 2, codomain: 2 };
+        let matrix = FieldMatrix {
+            data,
+            domain: 2,
+            codomain: 2,
+        };
 
         assert_eq!(matrix.get(0, 0), TestField { 0: 1 });
         assert_eq!(matrix.get(1, 0), TestField { 0: 2 });
@@ -420,11 +424,15 @@ mod tests {
 
     #[test]
     fn test_set() {
-        let mut data = vec![
+        let data = vec![
             vec![TestField { 0: 1 }, TestField { 0: 2 }],
             vec![TestField { 0: 3 }, TestField { 0: 4 }],
         ];
-        let mut matrix = FieldMatrix { data, domain: 2, codomain: 2 };
+        let mut matrix = FieldMatrix {
+            data,
+            domain: 2,
+            codomain: 2,
+        };
 
         matrix.set(0, 0, TestField { 0: 10 });
         matrix.set(1, 1, TestField { 0: 20 });
@@ -435,11 +443,15 @@ mod tests {
 
     #[test]
     fn test_add_at() {
-        let mut data = vec![
+        let data = vec![
             vec![TestField { 0: 1 }, TestField { 0: 2 }],
             vec![TestField { 0: 3 }, TestField { 0: 4 }],
         ];
-        let mut matrix = FieldMatrix { data, domain: 2, codomain: 2 };
+        let mut matrix = FieldMatrix {
+            data,
+            domain: 2,
+            codomain: 2,
+        };
 
         matrix.add_at(0, 0, TestField { 0: 5 });
         matrix.add_at(1, 1, TestField { 0: 3 });
@@ -454,7 +466,11 @@ mod tests {
             vec![TestField { 0: 1 }, TestField { 0: 2 }],
             vec![TestField { 0: 3 }, TestField { 0: 4 }],
         ];
-        let matrix = FieldMatrix { data, domain: 2, codomain: 2 };
+        let matrix = FieldMatrix {
+            data,
+            domain: 2,
+            codomain: 2,
+        };
 
         assert_eq!(matrix.get_row(0), &[TestField { 0: 1 }, TestField { 0: 2 }]);
         assert_eq!(matrix.get_row(1), &[TestField { 0: 3 }, TestField { 0: 4 }]);
@@ -462,16 +478,23 @@ mod tests {
 
     #[test]
     fn test_set_row() {
-        let mut data = vec![
+        let data = vec![
             vec![TestField { 0: 1 }, TestField { 0: 2 }],
             vec![TestField { 0: 3 }, TestField { 0: 4 }],
         ];
-        let mut matrix = FieldMatrix { data, domain: 2, codomain: 2 };
+        let mut matrix = FieldMatrix {
+            data,
+            domain: 2,
+            codomain: 2,
+        };
 
         let new_row = vec![TestField { 0: 10 }, TestField { 0: 20 }];
         matrix.set_row(0, &new_row);
 
-        assert_eq!(matrix.get_row(0), &[TestField { 0: 10 }, TestField { 0: 20 }]);
+        assert_eq!(
+            matrix.get_row(0),
+            &[TestField { 0: 10 }, TestField { 0: 20 }]
+        );
     }
 
     #[test]
@@ -480,7 +503,11 @@ mod tests {
             vec![TestField { 0: 1 }, TestField { 0: 2 }],
             vec![TestField { 0: 3 }, TestField { 0: 4 }],
         ];
-        let matrix = FieldMatrix { data, domain: 2, codomain: 2 };
+        let matrix = FieldMatrix {
+            data,
+            domain: 2,
+            codomain: 2,
+        };
 
         assert_eq!(matrix.domain(), 2);
         assert_eq!(matrix.codomain(), 2);
@@ -492,7 +519,11 @@ mod tests {
             vec![TestField { 0: 0 }, TestField { 0: 0 }],
             vec![TestField { 0: 0 }, TestField { 0: 4 }],
         ];
-        let matrix = FieldMatrix { data, domain: 2, codomain: 2 };
+        let matrix = FieldMatrix {
+            data,
+            domain: 2,
+            codomain: 2,
+        };
 
         assert_eq!(matrix.first_non_zero_entry(), Some((1, 1)));
 
@@ -500,7 +531,11 @@ mod tests {
             vec![TestField { 0: 0 }, TestField { 0: 0 }],
             vec![TestField { 0: 0 }, TestField { 0: 0 }],
         ];
-        let matrix = FieldMatrix { data, domain: 2, codomain: 2 };
+        let matrix = FieldMatrix {
+            data,
+            domain: 2,
+            codomain: 2,
+        };
 
         assert_eq!(matrix.first_non_zero_entry(), None);
     }
@@ -511,10 +546,12 @@ mod tests {
             vec![TestField { 0: 5 }, TestField { 0: 0 }],
             vec![TestField { 0: 0 }, TestField { 0: 4 }],
         ];
-        let matrix = FieldMatrix { data, domain: 2, codomain: 2 };
+        let matrix = FieldMatrix {
+            data,
+            domain: 2,
+            codomain: 2,
+        };
 
         assert_eq!(matrix.first_non_zero_entry(), Some((0, 0)));
     }
-
-
 }

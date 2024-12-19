@@ -4,14 +4,10 @@ use std::time::Instant;
 
 use comodules::{
     comodule::{
-        traits::Comodule, kcoalgebra::kCoalgebra, kcomodule::kComodule,
-        kmorphism::kComoduleMorphism,
+        kcoalgebra::kCoalgebra, kcomodule::kComodule, kmorphism::kComoduleMorphism,
+        traits::Comodule,
     },
-    linalg::{
-        field::F2,
-        graded::UniGrading,
-        matrix::FieldMatrix,
-    },
+    linalg::{field::F2, graded::UniGrading, matrix::FieldMatrix},
     resolution::Resolution,
 };
 

@@ -117,7 +117,11 @@ impl<G: Grading, F: Field, M: Matrix<F>> From<HashMap<G, M>> for GradedLinearMap
 
 impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
     pub fn get_cokernel(&self) -> Self {
-        let cokernel: HashMap<G, M> = self.maps.par_iter().map(|(k, v)| (*k, v.cokernel())).collect();
+        let cokernel: HashMap<G, M> = self
+            .maps
+            .par_iter()
+            .map(|(k, v)| (*k, v.cokernel()))
+            .collect();
         GradedLinearMap {
             maps: cokernel,
             __: PhantomData,
@@ -125,7 +129,11 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
     }
 
     pub fn get_kernel(&self) -> Self {
-        let kernel: HashMap<G, M> = self.maps.par_iter().map(|(k, v)| (*k, v.kernel())).collect();
+        let kernel: HashMap<G, M> = self
+            .maps
+            .par_iter()
+            .map(|(k, v)| (*k, v.kernel()))
+            .collect();
         GradedLinearMap {
             maps: kernel,
             __: PhantomData,
@@ -183,7 +191,10 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
     }
 
     pub fn pivots(&self) -> HashMap<G, Vec<(usize, usize)>> {
-        self.maps.par_iter().map(|(k, v)| (*k, v.pivots())).collect()
+        self.maps
+            .par_iter()
+            .map(|(k, v)| (*k, v.pivots()))
+            .collect()
     }
 
     pub fn empty() -> Self {
