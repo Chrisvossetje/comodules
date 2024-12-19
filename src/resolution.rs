@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, sync::Arc};
+use std::{io::{self, Write}, marker::PhantomData, sync::Arc};
 
 use crate::{
     comodule::comodule::{Comodule, ComoduleMorphism},
@@ -23,7 +23,10 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
     }
 
     pub fn resolve_to_s(&mut self, s: usize, mut limit: G) {
+        println!("Resolving to filtration index: {}", s);
+        
         if self.resolution.len() == 0 {
+            println!("Injecting to M_{}", s);
             let zero_morph = Morph::zero_morphism(self.comodule.clone());
             let fixed_limit = limit.incr().incr();
 
@@ -31,17 +34,31 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
             self.resolution.push(initial_inject);
         }
 
-        for _ in self.resolution.len()..=s {
+        for i in self.resolution.len()..=s {
             limit = limit.incr();
-            let fixed_limit = limit.incr().incr();
+            let fixed_limit = limit.incr();
             let last_morph = self.resolution.last().unwrap();
 
+            println!("Resolving for {}", i);
+            let coker_time = std::time::Instant::now();
+            print!("Finding cokernel            ");
+            io::stdout().flush().unwrap();
             let coker = last_morph.cokernel();
-
+            println!("took: {:.2?}", coker_time.elapsed());
+            
+            let inject_time = std::time::Instant::now();
+            print!("Injecting cokernel          ");
+            io::stdout().flush().unwrap();
             let inject = coker.inject_codomain_to_cofree(limit, fixed_limit);
-
+            println!("took: {:.2?}", inject_time.elapsed());
+            
+            let compose_time = std::time::Instant::now();
+            print!("Composing both morphisms    ");
+            io::stdout().flush().unwrap();
             let combine = Morph::compose(inject, coker);
+            println!("took: {:.2?}", compose_time.elapsed());
 
+            println!("Total time:                 took: {:.2?}\n", coker_time.elapsed());
             self.resolution.push(combine);
         }
     }

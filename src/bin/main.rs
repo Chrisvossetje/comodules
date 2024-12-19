@@ -35,5 +35,5 @@ fn main() {
 
     let _ = page.save_to_json("page.json".to_owned());
 
-    println!("\nProgram took: {:?}", start.elapsed());
+    println!("\nProgram took: {:.2?}", start.elapsed());
 }
