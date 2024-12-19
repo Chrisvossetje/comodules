@@ -1,4 +1,4 @@
-pub mod comodule;
+pub mod traits;
 pub mod kcoalgebra;
 pub mod kcomodule;
 pub mod kmorphism;

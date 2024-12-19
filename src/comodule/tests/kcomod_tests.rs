@@ -4,7 +4,7 @@ mod tests {
 
     use crate::{
         comodule::{
-            comodule::Comodule,
+            traits::Comodule,
             kcoalgebra::A0_coalgebra,
             kcomodule::{kBasisElement, kComodule},
             ktensor::kTensor,

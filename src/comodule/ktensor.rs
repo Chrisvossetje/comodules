@@ -4,7 +4,7 @@ use itertools::Itertools;
 
 use crate::linalg::graded::{BasisElement, BasisIndex, GradedVectorSpace, Grading};
 
-use super::comodule::Tensor;
+use super::traits::Tensor;
 
 #[derive(Debug, Clone, PartialEq)]
 #[allow(non_camel_case_types)]

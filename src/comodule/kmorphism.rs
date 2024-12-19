@@ -4,7 +4,7 @@ use itertools::Itertools;
 use rayon::prelude::*;
 
 use crate::{
-    comodule::{comodule::Tensor, kcomodule::kBasisElement, ktensor::kTensor},
+    comodule::{traits::Tensor, kcomodule::kBasisElement, ktensor::kTensor},
     linalg::{
         field::Field,
         graded::{BasisIndex, GradedLinearMap, Grading},
@@ -13,7 +13,7 @@ use crate::{
 };
 
 use super::{
-    comodule::{Comodule, ComoduleMorphism},
+    traits::{Comodule, ComoduleMorphism},
     kcomodule::kComodule,
 };
 

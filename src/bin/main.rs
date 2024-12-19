@@ -4,7 +4,7 @@ use std::time::Instant;
 
 use comodules::{
     comodule::{
-        comodule::Comodule, kcoalgebra::kCoalgebra, kcomodule::kComodule,
+        traits::Comodule, kcoalgebra::kCoalgebra, kcomodule::kComodule,
         kmorphism::kComoduleMorphism,
     },
     linalg::{

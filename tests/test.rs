@@ -4,7 +4,7 @@ mod tests {
 
     use comodules::{
         comodule::{
-            comodule::Comodule,
+            traits::Comodule,
             kcoalgebra::{kCoalgebra, A0_coalgebra},
             kcomodule::kComodule,
             kmorphism::kComoduleMorphism,

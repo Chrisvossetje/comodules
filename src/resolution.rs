@@ -1,7 +1,7 @@
 use std::{io::{self, Write}, marker::PhantomData, sync::Arc};
 
 use crate::{
-    comodule::comodule::{Comodule, ComoduleMorphism},
+    comodule::traits::{Comodule, ComoduleMorphism},
     linalg::graded::Grading,
     page::Page,
 };

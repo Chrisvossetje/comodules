@@ -6,7 +6,7 @@ use crate::linalg::{
     matrix::Matrix,
 };
 
-use super::{comodule::Comodule, kcoalgebra::kCoalgebra, ktensor::kTensor};
+use super::{traits::Comodule, kcoalgebra::kCoalgebra, ktensor::kTensor};
 
 #[derive(Debug, Clone, PartialEq, Default)]
 #[allow(non_camel_case_types)]
