@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 
 use crate::linalg::graded::{BasisElement, BasisIndex, GradedVectorSpace, Grading};
 
 use super::traits::Tensor;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[allow(non_camel_case_types)]
 pub struct kTensor<G: Grading> {
     // # Module Grade + Index -> Algebra Grading + index -> Tensor Grading + index
@@ -55,9 +56,10 @@ impl<G: Grading> kTensor<G> {
         let mut deconstruct = HashMap::new();
         let mut dimensions = HashMap::new();
 
+        // This sorted is important for consistency !
         for (l_grade, l_elements) in left.0.iter().sorted_by_key(|(&lg, _)| lg) {
             for l_id in 0..l_elements.len() {
-                for (r_grade, r_elements) in right.0.iter().sorted_by_key(|(&rg, _)| rg) {
+                for (r_grade, r_elements) in right.0.iter() {
                     let t_grade = *l_grade + *r_grade;
 
                     if !right.0.contains_key(&t_grade) {
@@ -79,18 +81,19 @@ impl<G: Grading> kTensor<G> {
             }
         }
 
-        Self {
+        let tensor = Self {
             construct,
             deconstruct,
             dimensions,
-        }
+        };
+        debug_assert!(tensor.is_correct());
+        tensor
     }
 
     pub fn add_and_restrict(&self, add: G, limit: G) -> kTensor<G> {
         let cons = self
             .construct
             .iter()
-            .sorted_by_key(|(x, _)| *x)
             .filter_map(|((m_gr, m_id), map)| {
                 let m_sum = *m_gr + add;
                 if m_sum > limit {
@@ -99,7 +102,6 @@ impl<G: Grading> kTensor<G> {
 
                 let alg_map = map
                     .iter()
-                    .sorted_by_key(|(x, _)| *x)
                     .filter_map(|((a_gr, a_id), (t_gr, t_id))| {
                         let t_sum = *t_gr + add;
                         if t_sum <= limit {
@@ -117,7 +119,6 @@ impl<G: Grading> kTensor<G> {
         let decon = self
             .deconstruct
             .iter()
-            .sorted_by_key(|(x, _)| *x)
             .filter_map(|((t_gr, t_id), ((a_gr, a_id), (m_gr, m_id)))| {
                 let t_sum = *t_gr + add;
                 let m_sum = *m_gr + add;
@@ -132,7 +133,6 @@ impl<G: Grading> kTensor<G> {
         let dims = self
             .dimensions
             .iter()
-            .sorted_by_key(|(x, _)| *x)
             .filter_map(|(t_gr, size)| {
                 let t_sum = *t_gr + add;
                 if t_sum <= limit {
@@ -142,11 +142,13 @@ impl<G: Grading> kTensor<G> {
                 }
             })
             .collect();
-        kTensor {
+        let tens = kTensor {
             construct: cons,
             deconstruct: decon,
             dimensions: dims,
-        }
+        };
+        debug_assert!(tens.is_correct());
+        tens
     }
 
     /// Special care should be taken here,
@@ -158,13 +160,11 @@ impl<G: Grading> kTensor<G> {
         other
             .construct
             .iter()
-            .sorted_by_key(|(x, _)| *x)
             .for_each(|((m_gr, m_id), maps)| {
                 let m_id_new = self_space_dimensions.get(m_gr).unwrap_or(&0) + m_id;
 
                 let new_map = maps
                     .iter()
-                    .sorted_by_key(|(x, _)| *x)
                     .map(|((a_gr, a_id), (t_gr, t_id))| {
                         let t_id_new = self.dimensions.get(t_gr).unwrap_or(&0) + t_id;
                         ((*a_gr, *a_id), (*t_gr, t_id_new))
@@ -177,7 +177,6 @@ impl<G: Grading> kTensor<G> {
         other
             .deconstruct
             .iter()
-            .sorted_by_key(|(x, _)| *x)
             .for_each(|((t_gr, t_id), ((a_gr, a_id), (m_gr, m_id)))| {
                 let m_id_new = self_space_dimensions.get(m_gr).unwrap_or(&0) + m_id;
                 let t_id_new = self.dimensions.get(t_gr).unwrap_or(&0) + t_id;
@@ -189,7 +188,6 @@ impl<G: Grading> kTensor<G> {
         other
             .dimensions
             .iter()
-            .sorted_by_key(|(x, _)| *x)
             .for_each(|(gr, other_size)| {
                 self.dimensions
                     .entry(*gr)
@@ -198,9 +196,11 @@ impl<G: Grading> kTensor<G> {
                     })
                     .or_insert(*other_size);
             });
+
+        debug_assert!(self.is_correct());
     }
 
-    pub fn is_correct(&self) {
+    pub fn is_correct(&self) -> bool {
         let decon_wrong =
             self.deconstruct
                 .iter()
@@ -237,6 +237,6 @@ impl<G: Grading> kTensor<G> {
 
         let dim_wrong = dims != self.dimensions;
 
-        debug_assert!(!decon_wrong && !con_wrong && !dim_wrong);
+        !decon_wrong && !con_wrong && !dim_wrong
     }
 }

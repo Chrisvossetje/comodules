@@ -22,26 +22,49 @@ use super::{
 pub struct kComoduleMorphism<G: Grading, F: Field, M: Matrix<F>> {
     pub domain: Arc<kComodule<G, F, M>>,
     pub codomain: Arc<kComodule<G, F, M>>,
-
     pub map: GradedLinearMap<G, F, M>, // Question: Shouldn't this be a module morphism?
 }
 
 impl<G: Grading, F: Field, M: Matrix<F>> kComoduleMorphism<G, F, M> {
-    fn verify_dimensions(&self) {
+    fn verify_dimensions(&self) -> bool {
         for k in self.domain.space.0.keys() {
-            debug_assert!(self.map.maps.contains_key(k));
+            if !self.map.maps.contains_key(k) {
+                return false;
+            };
         }
 
         for k in self.codomain.space.0.keys() {
-            debug_assert!(self.map.maps.contains_key(k));
+            if !self.map.maps.contains_key(k) {
+                return false;
+            };
         }
 
         for (g, map) in self.map.maps.iter() {
             let dom_dim = self.domain.space.dimension_in_grade(g);
             let codom_dim = self.codomain.space.dimension_in_grade(g);
-            assert_eq!(dom_dim, map.domain());
-            assert_eq!(codom_dim, map.codomain());
+            if dom_dim != map.domain() {
+                return false;
+            };
+            if codom_dim != map.codomain() {
+                return false;
+            };
         }
+
+        true
+    }
+
+    pub fn new(
+        domain: Arc<kComodule<G, F, M>>,
+        codomain: Arc<kComodule<G, F, M>>,
+        map: GradedLinearMap<G, F, M>,
+    ) -> Self {
+        let new = Self {
+            domain,
+            codomain,
+            map,
+        };
+        debug_assert!(new.verify_dimensions());
+        new
     }
 }
 
@@ -55,8 +78,6 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
 
         let coalg = self.codomain.coalgebra.as_ref();
         let tensor = kTensor::generate(&coalg.space, &coker_space);
-
-        tensor.is_correct();
 
         let pivots = cokernel_map.pivots();
 
@@ -119,20 +140,14 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
             })
             .collect();
 
-        let comodule = kComodule {
-            coalgebra: self.codomain.coalgebra.clone(),
-            space: coker_space,
-            coaction: GradedLinearMap::from(coaction),
+        let comodule = kComodule::new(
+            self.codomain.coalgebra.clone(),
+            coker_space,
+            GradedLinearMap::from(coaction),
             tensor,
-        };
-        comodule.verify();
-        let coker_morph = Self {
-            codomain: Arc::new(comodule),
-            domain: self.codomain.clone(),
-            map: cokernel_map,
-        };
-        coker_morph.verify_dimensions();
-        coker_morph
+        );
+
+        Self::new(self.codomain.clone(), Arc::new(comodule), cokernel_map)
     }
 
     fn inject_codomain_to_cofree(&self, limit: G, fixed_limit: G) -> Self {
@@ -228,20 +243,16 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                 fixed_limit,
             );
             growing_comodule.direct_sum(&mut f);
-            growing_comodule.verify();
-
-            growing_comodule.tensor.is_correct();
 
             growing_map.vstack(&mut map_to_cofree);
             iteration += 1;
         }
-        let final_morph = Self {
-            domain: self.codomain.clone(),
-            codomain: Arc::new(growing_comodule),
-            map: growing_map,
-        };
-        final_morph.verify_dimensions();
-        final_morph
+
+        Self::new(
+            self.codomain.clone(),
+            Arc::new(growing_comodule),
+            growing_map,
+        )
     }
 
     fn zero_morphism(comodule: Arc<kComodule<G, F, M>>) -> Self {
@@ -273,13 +284,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
 
         let map = l.map.compose(r.map);
 
-        let final_morph = Self {
-            domain,
-            codomain,
-            map,
-        };
-        final_morph.verify_dimensions();
-        final_morph
+        Self::new(domain, codomain, map)
     }
 
     fn get_structure_lines(&self) -> Vec<(usize, usize, usize, String)> {

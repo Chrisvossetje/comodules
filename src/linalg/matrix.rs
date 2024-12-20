@@ -39,9 +39,10 @@ pub trait Matrix<F: Field>: Clone + Send + Sync + PartialEq {
     fn first_non_zero_entry(&self) -> Option<(usize, usize)>;
 }
 
+use serde::{Deserialize, Serialize};
 use std::vec;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct FieldMatrix<F: Field> {
     pub data: Vec<Vec<F>>,
     pub domain: usize,

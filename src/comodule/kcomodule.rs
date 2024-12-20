@@ -1,5 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 
+use serde::{Deserialize, Serialize};
+
 use crate::linalg::{
     field::Field,
     graded::{BasisElement, GradedLinearMap, GradedVectorSpace, Grading},
@@ -8,7 +10,7 @@ use crate::linalg::{
 
 use super::{kcoalgebra::kCoalgebra, ktensor::kTensor, traits::Comodule};
 
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default, Deserialize, Serialize)]
 #[allow(non_camel_case_types)]
 pub struct kBasisElement {
     pub name: String,
@@ -35,14 +37,35 @@ impl<G: Grading, F: Field, M: Matrix<F>> std::fmt::Debug for kComodule<G, F, M> 
 }
 
 impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
-    pub fn verify(&self) {
+    pub fn verify(&self) -> bool {
         for (&(m_gr, m_id), map) in &self.tensor.construct {
             let &(t_gr, t_id) = map.get(&(G::zero(), 0)).unwrap();
-            assert_eq!(t_gr, m_gr);
+            if t_gr != m_gr {
+                return false;
+            };
 
             let val = self.coaction.maps.get(&t_gr).unwrap().get(m_id, t_id);
-            assert_eq!(val, F::one());
+            if val != F::one() {
+                return false;
+            };
         }
+        true
+    }
+
+    pub fn new(
+        coalgebra: Arc<kCoalgebra<G, F, M>>,
+        space: GradedVectorSpace<G, kBasisElement>,
+        coaction: GradedLinearMap<G, F, M>,
+        tensor: kTensor<G>,
+    ) -> Self {
+        let com = Self {
+            coalgebra,
+            space,
+            coaction,
+            tensor,
+        };
+        debug_assert!(com.verify());
+        com
     }
 }
 
@@ -144,6 +167,8 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
         });
 
         self.tensor.direct_sum(&mut other.tensor, &self_dimensions);
+
+        debug_assert!(self.verify());
     }
 
     fn cofree_comodule(coalgebra: Arc<Self::Coalgebra>, index: usize, grade: G, limit: G) -> Self {
@@ -183,11 +208,11 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
             .collect();
         let tensor = coalgebra.tensor.add_and_restrict(grade, limit);
 
-        kComodule {
+        kComodule::new(
             coalgebra,
-            space: GradedVectorSpace(space),
-            coaction: GradedLinearMap::from(coaction),
+            GradedVectorSpace(space),
+            GradedLinearMap::from(coaction),
             tensor,
-        }
+        )
     }
 }

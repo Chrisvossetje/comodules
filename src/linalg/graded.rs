@@ -10,6 +10,7 @@ use std::{
 use rayon::prelude::*;
 
 use super::{field::Field, matrix::Matrix};
+use serde::{Deserialize, Serialize};
 
 pub trait Grading:
     'static
@@ -82,10 +83,10 @@ pub type VectorSpace<B> = Vec<B>;
 // This is probably fine, as modules will always direct use this type
 // pub type GradedVectorSpace<G: Grading, B: BasisElement> = HashMap<G, VectorSpace<B>>;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct GradedVectorSpace<G: Grading, B: BasisElement>(pub HashMap<G, VectorSpace<B>>);
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct GradedLinearMap<G: Grading, F: Field, M: Matrix<F>> {
     pub maps: HashMap<G, M>,
     __: PhantomData<F>,

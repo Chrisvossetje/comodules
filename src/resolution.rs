@@ -4,6 +4,8 @@ use std::{
     sync::Arc,
 };
 
+use itertools::Itertools;
+
 use crate::{
     comodule::traits::{Comodule, ComoduleMorphism},
     linalg::graded::Grading,
@@ -45,6 +47,7 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
         }
 
         for i in self.resolution.len()..=s {
+            // Increment limit and get last morphism
             limit = limit.incr();
             let fixed_limit = limit.incr().incr();
             let last_morph = self.resolution.last().unwrap();
@@ -52,6 +55,7 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
             println!("Resolving for {}", i);
             let coker_time = std::time::Instant::now();
             print!("Finding cokernel            ");
+            // Cokernel
             io::stdout().flush().unwrap();
             let coker = last_morph.cokernel();
             println!("took: {:.2?}", coker_time.elapsed());
@@ -59,11 +63,13 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
             let inject_time = std::time::Instant::now();
             print!("Injecting cokernel          ");
             io::stdout().flush().unwrap();
+            // Inject to cofree
             let inject = coker.inject_codomain_to_cofree(limit, fixed_limit);
             println!("took: {:.2?}", inject_time.elapsed());
 
             let compose_time = std::time::Instant::now();
             print!("Composing both morphisms    ");
+            // Compose
             io::stdout().flush().unwrap();
             let combine = Morph::compose(inject, coker);
             println!("took: {:.2?}", compose_time.elapsed());
@@ -88,6 +94,7 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
                 g.into_iter()
                     .map(move |(id, g, name)| (s, id, g.export_grade(), name))
             })
+            .sorted_by_key(|f| (f.0, f.1))
             .collect();
 
         let lines = self
@@ -101,9 +108,9 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
                         ((s - 1, from_gen), (s, to_gen), value, prim_type)
                     })
             })
+            .sorted_by_key(|f| (f.0, f.1))
             .collect();
 
-        // TODO: Structure Lines
         Page {
             name: " ?? ".to_string(),
             id: 2,

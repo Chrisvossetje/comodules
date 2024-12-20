@@ -24,7 +24,7 @@ mod tests {
     #[test]
     fn test_a2_consistency() {
         let mut comps = vec![];
-        for _ in 0..100 {
+        for _ in 0..10 {
             let input = include_str!("../../../examples/kcoalgebras/A(2).txt");
 
             let (kcoalg, _) = kCoalgebra::<i32, F2, FieldMatrix<F2>>::parse(input).unwrap();

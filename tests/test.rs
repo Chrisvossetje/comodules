@@ -10,6 +10,7 @@ mod tests {
             traits::Comodule,
         },
         linalg::{field::F2, graded::UniGrading, matrix::FieldMatrix},
+        page::Page,
         resolution::Resolution,
     };
     use itertools::Itertools;
@@ -79,7 +80,8 @@ mod tests {
         res.resolve_to_s(20, 20);
 
         let p = res.generate_page();
-        assert_eq!(p.to_string(), include_str!("./A(0)page.json"));
+        let comp_p: Page = serde_json::from_str(include_str!("./A(0)page.json")).unwrap();
+        assert_eq!(p, comp_p);
     }
 
     #[test]
@@ -98,7 +100,27 @@ mod tests {
         res.resolve_to_s(20, 20);
 
         let p = res.generate_page();
-        assert_eq!(p.to_string(), include_str!("./A(1)page.json"));
-        
+        let comp_p: Page = serde_json::from_str(include_str!("./A(1)page.json")).unwrap();
+        assert_eq!(p, comp_p);
+    }
+
+    #[test]
+    fn test_a2_resolution() {
+        let input = include_str!("../examples/kcoalgebras/A(2).txt");
+        let coalgebra = Arc::new(kCoalgebra::parse(input).unwrap().0);
+
+        let fp = kComodule::fp_comodule(coalgebra);
+
+        let mut res: Resolution<
+            UniGrading,
+            kComodule<UniGrading, F2, FieldMatrix<F2>>,
+            kComoduleMorphism<UniGrading, F2, FieldMatrix<F2>>,
+        > = Resolution::new(fp);
+
+        res.resolve_to_s(8, 12);
+
+        let p = res.generate_page();
+        let comp_p: Page = serde_json::from_str(include_str!("./A(2)page.json")).unwrap();
+        assert_eq!(p, comp_p);
     }
 }

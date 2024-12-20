@@ -9,8 +9,9 @@ use crate::linalg::{
 };
 
 use super::{kcomodule::kBasisElement, ktensor::kTensor};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[allow(non_camel_case_types)]
 pub struct kCoalgebra<G: Grading, F: Field, M: Matrix<F>> {
     pub space: GradedVectorSpace<G, kBasisElement>,
@@ -147,7 +148,6 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
 
         // Create basis dictionary
         let mut basis_dict = HashMap::new();
-        // Sorted not necessary here ?
         for (name, grade) in basis.iter() {
             if basis_dict.contains_key(name) {
                 panic!("Name in basis appears twice");
@@ -169,6 +169,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         // Transform basis
         let mut transformed = HashMap::new();
         let mut basis_translate = HashMap::new();
+        
         for (name, (el, gr)) in basis_dict.iter().sorted_by_key(|(name, _)| *name) {
             transformed.entry(*gr).or_insert(vec![]).push(el.clone());
             basis_translate.insert(name.clone(), (*gr, transformed[&gr].len() - 1));
