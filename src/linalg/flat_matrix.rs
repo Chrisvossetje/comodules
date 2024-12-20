@@ -147,27 +147,21 @@ impl<F: Field> Matrix<F> for FlatMatrix<F> {
     }
 
     fn block_sum(&mut self, other: &mut Self) {
-        let self_domain = self.domain;
-        let other_domain = other.domain;
-        let mut new_data =
-            vec![F::zero(); (self.codomain + other.codomain) * (self_domain + other_domain)];
+        let new_domain = self.domain + other.domain;
+        let new_codomain = self.codomain + other.codomain;
+        let mut new = Self::zero(new_domain, new_codomain);
 
         for i in 0..self.codomain {
-            for j in 0..self_domain {
-                new_data[i * (self_domain + other_domain) + j] = self.get_element(i, j);
-            }
+            let start = i * new_domain;
+            new.data[start..(start+self.domain)].copy_from_slice(self.get_row(i));
         }
-
+        
         for i in 0..other.codomain {
-            for j in 0..other_domain {
-                new_data[(self.codomain + i) * (self_domain + other_domain) + (self_domain + j)] =
-                    other.get_element(i, j);
-            }
+            let start = (self.codomain + i) * new_domain + self.domain;
+            new.data[start..(start+other.domain)].copy_from_slice(other.get_row(i));
         }
 
-        self.data = new_data;
-        self.domain += other.domain;
-        self.codomain += other.codomain;
+        *self = new
     }
 
     fn identity(d: usize) -> Self {
