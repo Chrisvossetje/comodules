@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, sync::{Arc, Mutex}};
 
 use itertools::Itertools;
 use rayon::prelude::*;
@@ -193,7 +193,9 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
             };
 
             // Create a map to a cofree comodule
-            let mut map_to_cofree = GradedLinearMap::empty();
+            let mut map_to_cofree = Mutex::new(GradedLinearMap::empty());
+
+
 
             let alg_to_tens = self
                 .codomain
@@ -203,7 +205,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                 .expect("The tensor should exist on the codomain in this grade");
 
             let coalg_space = &self.codomain.coalgebra.space;
-            coalg_space.0.iter().for_each(|(alg_gr, alg_gr_space)| {
+            coalg_space.0.par_iter().for_each(|(alg_gr, alg_gr_space)| {
                 let t_gr = *alg_gr + pivot_grade;
 
                 if t_gr > fixed_limit {
@@ -215,7 +217,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
 
                 if !alg_to_tens.contains_key(&(*alg_gr, 0)) {
                     let zero_map = M::zero(codomain_len, coalg_len);
-                    map_to_cofree.maps.insert(t_gr, zero_map);
+                    map_to_cofree.lock().unwrap().maps.insert(t_gr, zero_map);
                     return;
                 };
 
@@ -233,7 +235,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                     map.set_row(a_id, slice);
                 }
 
-                map_to_cofree.maps.insert(t_gr, map);
+                map_to_cofree.lock().unwrap().maps.insert(t_gr, map);
             });
 
             let mut f = kComodule::cofree_comodule(
@@ -244,7 +246,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
             );
             growing_comodule.direct_sum(&mut f);
 
-            growing_map.vstack(&mut map_to_cofree);
+            growing_map.vstack(map_to_cofree.get_mut().unwrap());
             iteration += 1;
         }
 
