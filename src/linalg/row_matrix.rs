@@ -204,7 +204,7 @@ impl<F: Field> Matrix<F> for RowMatrix<F> {
     }
 
     fn set_row(&mut self, codomain: usize, row: &[F]) {
-        self.data[codomain].clone_from_slice(row);
+        self.data[codomain].copy_from_slice(row);
     }
 
     fn domain(&self) -> usize {

@@ -198,7 +198,7 @@ impl<F: Field> Matrix<F> for FlatMatrix<F> {
     fn set_row(&mut self, codomain: usize, row: &[F]) {
         let start = codomain * self.domain;
         let end = start + self.domain;
-        self.data[start..end].clone_from_slice(row);
+        self.data[start..end].copy_from_slice(row);
     }
 
     fn domain(&self) -> usize {

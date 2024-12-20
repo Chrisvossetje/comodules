@@ -197,9 +197,6 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                 }
             };
 
-            // Create a map to a cofree comodule
-            let mut map_to_cofree = Mutex::new(GradedLinearMap::empty());
-
             let alg_to_tens = self
                 .codomain
                 .tensor
@@ -208,12 +205,13 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                 .expect("The tensor should exist on the codomain in this grade");
 
             let coalg_space = &self.codomain.coalgebra.space;
+
             // TODO: Verify is this parallel iterator is faster or not for big(ger) coalgebras
-            coalg_space.0.par_iter().for_each(|(alg_gr, alg_gr_space)| {
+            let cofree_map: HashMap<G,M, RandomState> = coalg_space.0.iter().filter_map(|(alg_gr, alg_gr_space)| {
                 let t_gr = *alg_gr + pivot_grade;
 
                 if t_gr > fixed_limit {
-                    return;
+                    return None;
                 }
 
                 let codomain_len = self.codomain.space.dimension_in_grade(&t_gr);
@@ -221,8 +219,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
 
                 if !alg_to_tens.contains_key(&(*alg_gr, 0)) {
                     let zero_map = M::zero(codomain_len, coalg_len);
-                    map_to_cofree.lock().unwrap().maps.insert(t_gr, zero_map);
-                    return;
+                    return Some((t_gr, zero_map));
                 };
 
                 let mut map = M::zero(codomain_len, coalg_len);
@@ -239,8 +236,8 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                     map.set_row(a_id, slice);
                 }
 
-                map_to_cofree.lock().unwrap().maps.insert(t_gr, map);
-            });
+                Some((t_gr, map))
+            }).collect();
 
             let mut f = kComodule::cofree_comodule(
                 self.codomain.coalgebra.clone(),
@@ -248,9 +245,11 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                 pivot_grade,
                 fixed_limit,
             );
-            growing_comodule.direct_sum(&mut f);
 
-            growing_map.vstack(map_to_cofree.get_mut().unwrap());
+
+            growing_comodule.direct_sum(&mut f);
+            growing_map.vstack(&mut GradedLinearMap::from(cofree_map));
+
             iteration += 1;
         }
 
