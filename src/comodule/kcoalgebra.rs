@@ -169,7 +169,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         // Transform basis
         let mut transformed = HashMap::new();
         let mut basis_translate = HashMap::new();
-        
+
         for (name, (el, gr)) in basis_dict.iter().sorted_by_key(|(name, _)| *name) {
             transformed.entry(*gr).or_insert(vec![]).push(el.clone());
             basis_translate.insert(name.clone(), (*gr, transformed[&gr].len() - 1));

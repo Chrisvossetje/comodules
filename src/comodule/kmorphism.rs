@@ -1,4 +1,7 @@
-use std::{collections::HashMap, sync::{Arc, Mutex}};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 use itertools::Itertools;
 use rayon::prelude::*;
@@ -194,8 +197,6 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
 
             // Create a map to a cofree comodule
             let mut map_to_cofree = Mutex::new(GradedLinearMap::empty());
-
-
 
             let alg_to_tens = self
                 .codomain

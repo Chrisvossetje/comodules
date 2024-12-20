@@ -7,6 +7,11 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/chrisvossetje/comodules" 
 
+[profile.profile]
+inherits = "release" # Inherit settings from the release profile
+debug = true         # Enable debug symbols
+strip = "none"
+
 [lib]
 name = "comodules"
 
