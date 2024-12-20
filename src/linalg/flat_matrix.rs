@@ -154,16 +154,13 @@ impl<F: Field> Matrix<F> for FlatMatrix<F> {
         let mut new = Self::zero(new_domain, new_codomain);
 
         for i in 0..self.codomain {
-            for j in 0..self.domain {
-                new.data[i * (new_domain) + j] = self.get_element(i, j);
-            }
+            let start = i * new_domain;
+            new.data[start..(start+self.domain)].copy_from_slice(self.get_row(i));
         }
-
+        
         for i in 0..other.codomain {
-            for j in 0..other.domain {
-                new.data[(self.codomain + i) * (new_domain) + (self.domain + j)] =
-                    other.get_element(i, j);
-            }
+            let start = (self.codomain + i) * new_domain + self.domain;
+            new.data[start..(start+other.domain)].copy_from_slice(other.get_row(i));
         }
 
         new
