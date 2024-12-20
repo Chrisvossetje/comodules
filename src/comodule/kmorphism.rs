@@ -288,7 +288,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
         let codomain = l.codomain;
         let domain = r.domain;
 
-        let map = l.map.compose(r.map);
+        let map = l.map.compose(&r.map);
 
         Self::new(domain, codomain, map)
     }

@@ -130,7 +130,7 @@ mod tests {
         let linear_map1: GradedLinearMap<G, F, M> = GradedLinearMap::from(map1);
         let linear_map2: GradedLinearMap<G, F, M> = GradedLinearMap::from(map2);
 
-        let composed = linear_map2.compose(linear_map1);
+        let composed = linear_map2.compose(&linear_map1);
 
         assert!(composed.maps.get(&0).is_some());
         assert!(composed.maps.get(&1).is_some());

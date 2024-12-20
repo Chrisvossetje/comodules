@@ -83,7 +83,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
         });
     }
 
-    pub fn block_sum(&mut self, other: &mut Self) {
+    pub fn block_sum(&mut self, other: &mut Self) { 
         other.maps.iter_mut().for_each(|(grade, other_mat)| {
             self.maps
                 .entry(*grade)
@@ -94,11 +94,11 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
         });
     }
 
-    pub fn compose(self, mut rhs: Self) -> Self {
+    pub fn compose(&self, rhs: &Self) -> Self {
         let mut compose: HashMap<G, M, RandomState> = self
             .maps
-            .iter()
-            .filter_map(|(k, v)| match rhs.maps.get_mut(&k) {
+            .par_iter()
+            .filter_map(|(k, v)| match rhs.maps.get(&k) {
                 None => None,
                 Some(t) => Some((*k, v.compose(t))),
             })
