@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use ahash::RandomState;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -10,16 +11,21 @@ use crate::linalg::{
 
 use super::traits::Tensor;
 
+pub type TensorConstruct<G> =
+    HashMap<BasisIndex<G>, HashMap<BasisIndex<G>, BasisIndex<G>, RandomState>, RandomState>;
+pub type TensorDeconstruct<G> = HashMap<BasisIndex<G>, (BasisIndex<G>, BasisIndex<G>), RandomState>;
+pub type TensorDimension<G> = HashMap<G, usize, RandomState>;
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[allow(non_camel_case_types)]
 pub struct kTensor<G: Grading> {
     // # Module Grade + Index -> Algebra Grading + index -> Tensor Grading + index
-    pub construct: HashMap<BasisIndex<G>, HashMap<BasisIndex<G>, BasisIndex<G>>>,
+    pub construct: TensorConstruct<G>,
 
     // # Module Grade + Index -> Algebra Grading + index -> Tensor Grading + index
-    pub deconstruct: HashMap<BasisIndex<G>, (BasisIndex<G>, BasisIndex<G>)>,
+    pub deconstruct: TensorDeconstruct<G>,
 
-    pub dimensions: HashMap<G, usize>,
+    pub dimensions: TensorDimension<G>,
 }
 
 impl<G: Grading> Tensor<G> for kTensor<G> {
@@ -55,9 +61,9 @@ impl<G: Grading> kTensor<G> {
         left: &GradedVectorSpace<G, B>,
         right: &GradedVectorSpace<G, B>,
     ) -> Self {
-        let mut construct = HashMap::new();
-        let mut deconstruct = HashMap::new();
-        let mut dimensions = HashMap::new();
+        let mut construct = HashMap::default();
+        let mut deconstruct = HashMap::default();
+        let mut dimensions = HashMap::default();
 
         // This sorted is important for consistency !
         for (l_grade, l_elements) in left.0.iter().sorted_by_key(|(&lg, _)| lg) {
@@ -74,7 +80,7 @@ impl<G: Grading> kTensor<G> {
 
                         construct
                             .entry((*r_grade, r_id))
-                            .or_insert(HashMap::new())
+                            .or_insert(HashMap::default())
                             .insert((*l_grade, l_id), (t_grade, *t_id));
 
                         deconstruct.insert((t_grade, *t_id), ((*l_grade, l_id), (*r_grade, r_id)));
@@ -216,9 +222,9 @@ impl<G: Grading> kTensor<G> {
                 })
         });
 
-        let mut dims = HashMap::new();
+        let mut dims = HashMap::default();
 
-        let mut found: HashMap<G, Vec<bool>> = self
+        let mut found: HashMap<G, Vec<bool>, RandomState> = self
             .dimensions
             .iter()
             .map(|(&gr, &size)| (gr, (0..size).map(|_| false).collect()))

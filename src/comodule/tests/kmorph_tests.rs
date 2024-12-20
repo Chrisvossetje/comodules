@@ -60,11 +60,10 @@ mod tests {
         // Assertions
         assert_eq!(cokernel_morphism.domain, morphism.codomain);
 
-        let expected_map: GradedLinearMap<i32, F2, RowMatrix<F2>> =
-            GradedLinearMap::from(HashMap::from([
-                (0, RowMatrix::zero(1, 0)),
-                (1, RowMatrix::identity(1)),
-            ]));
+        let mut map = HashMap::default();
+        map.insert(0, RowMatrix::zero(1, 0));
+        map.insert(1, RowMatrix::identity(1));
+        let expected_map: GradedLinearMap<i32, F2, RowMatrix<F2>> = GradedLinearMap::from(map);
         assert_eq!(cokernel_morphism.map, expected_map);
     }
 

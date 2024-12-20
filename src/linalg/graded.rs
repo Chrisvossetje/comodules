@@ -1,5 +1,6 @@
 use std::{collections::HashMap, fmt::Debug, marker::PhantomData};
 
+use ahash::RandomState;
 use rayon::prelude::*;
 
 use super::{field::Field, grading::Grading, matrix::Matrix};
@@ -9,40 +10,36 @@ pub trait BasisElement: 'static + Debug + Clone {}
 
 pub type BasisIndex<G> = (G, usize);
 
-// A VectorSpace should be naive / simple, just a list of basis elements!
-// Specific modules can implement their own "basis" type which encodes the information they need
-pub type VectorSpace<B> = Vec<B>;
-
-// Maybe make this its own type ???
-// This is probably fine, as modules will always direct use this type
-// pub type GradedVectorSpace<G: Grading, B: BasisElement> = HashMap<G, VectorSpace<B>>;
-
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-pub struct GradedVectorSpace<G: Grading, B: BasisElement>(pub HashMap<G, VectorSpace<B>>);
+pub struct GradedVectorSpace<G: Grading, B: BasisElement>(pub HashMap<G, Vec<B>, RandomState>);
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct GradedLinearMap<G: Grading, F: Field, M: Matrix<F>> {
-    pub maps: HashMap<G, M>,
+    pub maps: HashMap<G, M, RandomState>,
     __: PhantomData<F>,
 }
 
 impl<G: Grading, B: BasisElement> GradedVectorSpace<G, B> {
     pub fn new() -> Self {
-        Self(HashMap::new())
+        Self(HashMap::default())
     }
     pub fn dimension_in_grade(&self, grade: &G) -> usize {
         self.0.get(grade).map(|x| x.len()).unwrap_or(0)
     }
 }
 
-impl<G: Grading, B: BasisElement> From<HashMap<G, Vec<B>>> for GradedVectorSpace<G, B> {
-    fn from(value: HashMap<G, Vec<B>>) -> Self {
+impl<G: Grading, B: BasisElement> From<HashMap<G, Vec<B>, RandomState>>
+    for GradedVectorSpace<G, B>
+{
+    fn from(value: HashMap<G, Vec<B>, RandomState>) -> Self {
         Self(value)
     }
 }
 
-impl<G: Grading, F: Field, M: Matrix<F>> From<HashMap<G, M>> for GradedLinearMap<G, F, M> {
-    fn from(value: HashMap<G, M>) -> Self {
+impl<G: Grading, F: Field, M: Matrix<F>> From<HashMap<G, M, RandomState>>
+    for GradedLinearMap<G, F, M>
+{
+    fn from(value: HashMap<G, M, RandomState>) -> Self {
         Self {
             maps: value,
             __: PhantomData,
@@ -52,7 +49,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> From<HashMap<G, M>> for GradedLinearMap
 
 impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
     pub fn get_cokernel(&self) -> Self {
-        let cokernel: HashMap<G, M> = self
+        let cokernel = self
             .maps
             .par_iter()
             .map(|(k, v)| (*k, v.cokernel()))
@@ -64,7 +61,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
     }
 
     pub fn get_kernel(&self) -> Self {
-        let kernel: HashMap<G, M> = self
+        let kernel = self
             .maps
             .par_iter()
             .map(|(k, v)| (*k, v.kernel()))
@@ -98,7 +95,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
     }
 
     pub fn compose(self, mut rhs: Self) -> Self {
-        let mut compose: HashMap<G, M> = self
+        let mut compose: HashMap<G, M, RandomState> = self
             .maps
             .iter()
             .filter_map(|(k, v)| match rhs.maps.get_mut(&k) {
@@ -134,7 +131,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
 
     pub fn empty() -> Self {
         GradedLinearMap {
-            maps: HashMap::new(),
+            maps: HashMap::default(),
             __: PhantomData,
         }
     }
@@ -143,7 +140,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
         domain: &GradedVectorSpace<G, B>,
         codomain: &GradedVectorSpace<G, B>,
     ) -> Self {
-        let mut maps: HashMap<G, M> = domain
+        let mut maps: HashMap<G, M, RandomState> = domain
             .0
             .iter()
             .map(|(g, els)| {
@@ -175,7 +172,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
     }
 
     pub fn codomain_space<B: BasisElement>(&self, b: B) -> GradedVectorSpace<G, B> {
-        let space: HashMap<G, Vec<B>> = self
+        let space = self
             .maps
             .iter()
             .filter_map(|(g, m)| match m.codomain() {

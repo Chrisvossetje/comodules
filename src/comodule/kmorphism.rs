@@ -3,6 +3,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use ahash::RandomState;
 use itertools::Itertools;
 use rayon::prelude::*;
 
@@ -111,7 +112,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
             })
             .collect();
 
-        let coaction: HashMap<G, M> = coker_space
+        let coaction: HashMap<G, M, RandomState> = coker_space
             .0
             .par_iter()
             .map(|(g, v)| {

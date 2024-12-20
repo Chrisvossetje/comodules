@@ -1,5 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
 
+use ahash::RandomState;
 use serde::{Deserialize, Serialize};
 
 use crate::linalg::{
@@ -110,10 +111,11 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
             generated_index: 0,
         };
 
-        let space_map: HashMap<G, Vec<kBasisElement>> = [(zero, vec![el])].into_iter().collect();
+        let space_map: HashMap<G, Vec<kBasisElement>, RandomState> =
+            [(zero, vec![el])].into_iter().collect();
         let space = GradedVectorSpace::from(space_map);
 
-        let coact_map: HashMap<G, M> = [(zero, M::identity(1))].into_iter().collect();
+        let coact_map: HashMap<G, M, RandomState> = [(zero, M::identity(1))].into_iter().collect();
         let coaction = GradedLinearMap::from(coact_map);
 
         assert_eq!(
@@ -127,15 +129,15 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
             "Coalgebra is not a connected coalgebra"
         );
 
-        let mut dimensions = HashMap::new();
+        let mut dimensions = HashMap::default();
         dimensions.insert(zero, 1);
 
-        let mut construct = HashMap::new();
-        let mut first_entry = HashMap::new();
+        let mut construct = HashMap::default();
+        let mut first_entry = HashMap::default();
         first_entry.insert((zero, 0), (zero, 0));
         construct.insert((zero, 0), first_entry);
 
-        let mut deconstruct = HashMap::new();
+        let mut deconstruct = HashMap::default();
         deconstruct.insert((zero, 0), ((zero, 0), (zero, 0)));
 
         let tensor = kTensor {
@@ -173,7 +175,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
     }
 
     fn cofree_comodule(coalgebra: Arc<Self::Coalgebra>, index: usize, grade: G, limit: G) -> Self {
-        let coaction: HashMap<G, M> = coalgebra
+        let coaction: HashMap<G, M, RandomState> = coalgebra
             .coaction
             .maps
             .iter()
@@ -186,7 +188,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
                 }
             })
             .collect();
-        let space: HashMap<G, Vec<kBasisElement>> = coalgebra
+        let space = coalgebra
             .space
             .0
             .iter()
