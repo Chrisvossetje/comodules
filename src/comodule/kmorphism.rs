@@ -208,6 +208,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                 .expect("The tensor should exist on the codomain in this grade");
 
             let coalg_space = &self.codomain.coalgebra.space;
+            // TODO: Verify is this parallel iterator is faster or not for big(ger) coalgebras
             coalg_space.0.par_iter().for_each(|(alg_gr, alg_gr_space)| {
                 let t_gr = *alg_gr + pivot_grade;
 
