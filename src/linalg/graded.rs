@@ -6,7 +6,7 @@ use rayon::prelude::*;
 use super::{field::Field, grading::Grading, matrix::Matrix};
 use serde::{Deserialize, Serialize};
 
-pub trait BasisElement: 'static + Debug + Clone {}
+pub trait BasisElement: 'static + Debug + Clone + Send + Sync {}
 
 pub type BasisIndex<G> = (G, usize);
 
@@ -72,33 +72,51 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
         }
     }
 
-    pub fn vstack(&mut self, other: &mut Self) {
-        other.maps.iter_mut().for_each(|(grade, other_mat)| {
-            self.maps
-                .entry(*grade)
-                .and_modify(|self_mat| {
-                    self_mat.vstack(other_mat);
-                })
-                .or_insert(other_mat.clone());
-        });
+    pub fn vstack(&self, other: &Self) -> Self {
+        let mut maps: HashMap<G, M, RandomState> = other.maps.par_iter().map(|(grade, other_mat)| {
+            match self.maps.get(&grade) {
+                Some(self_mat) => {(*grade, self_mat.vstack(other_mat))},
+                None => {(*grade, other_mat.clone())},
+            }
+        }).collect();
+        
+        for gr in self.maps.keys() {
+            if !maps.contains_key(gr) {
+                maps.insert(*gr, self.maps.get(gr).unwrap().clone());
+            }
+        }
+
+        Self {
+            maps,
+            __: PhantomData
+        }
     }
 
-    pub fn block_sum(&mut self, other: &mut Self) {
-        other.maps.iter_mut().for_each(|(grade, other_mat)| {
-            self.maps
-                .entry(*grade)
-                .and_modify(|self_mat| {
-                    self_mat.block_sum(other_mat);
-                })
-                .or_insert(other_mat.clone());
-        });
+    pub fn block_sum(&self, other: &Self) -> Self {
+        let mut maps: HashMap<G, M, RandomState> = other.maps.par_iter().map(|(grade, other_mat)| {
+            match self.maps.get(&grade) {
+                Some(self_mat) => {(*grade, self_mat.block_sum(other_mat))},
+                None => {(*grade, other_mat.clone())},
+            }
+        }).collect();
+        
+        for gr in self.maps.keys() {
+            if !maps.contains_key(gr) {
+                maps.insert(*gr, self.maps.get(gr).unwrap().clone());
+            }
+        }
+
+        Self {
+            maps,
+            __: PhantomData
+        }
     }
 
-    pub fn compose(self, mut rhs: Self) -> Self {
+    pub fn compose(&self, rhs: &Self) -> Self {
         let mut compose: HashMap<G, M, RandomState> = self
             .maps
-            .iter()
-            .filter_map(|(k, v)| match rhs.maps.get_mut(&k) {
+            .par_iter()
+            .filter_map(|(k, v)| match rhs.maps.get(&k) {
                 None => None,
                 Some(t) => Some((*k, v.compose(t))),
             })
@@ -142,7 +160,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
     ) -> Self {
         let mut maps: HashMap<G, M, RandomState> = domain
             .0
-            .iter()
+            .par_iter()
             .map(|(g, els)| {
                 let codom_len = codomain.dimension_in_grade(g);
                 (*g, Matrix::zero(els.len(), codom_len))
@@ -162,7 +180,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
     pub fn zero_codomain<B: BasisElement>(codomain: &GradedVectorSpace<G, B>) -> Self {
         let maps = codomain
             .0
-            .iter()
+            .par_iter()
             .map(|(g, els)| (*g, Matrix::zero(els.len(), 0)))
             .collect();
         Self {
@@ -174,7 +192,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
     pub fn codomain_space<B: BasisElement>(&self, b: B) -> GradedVectorSpace<G, B> {
         let space = self
             .maps
-            .iter()
+            .par_iter()
             .filter_map(|(g, m)| match m.codomain() {
                 0 => None,
                 s => Some((*g, vec![b.clone(); s])),

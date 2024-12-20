@@ -315,7 +315,7 @@ mod tests {
             domain: 1,
             codomain: 2,
         };
-        matrix1.vstack(&mut matrix2);
+        let stack = matrix1.vstack(&mut matrix2);
         let expected = RowMatrix {
             data: vec![
                 vec![TestField { 0: 1 }],
@@ -326,7 +326,7 @@ mod tests {
             domain: 1,
             codomain: 4,
         };
-        assert_eq!(matrix1, expected);
+        assert_eq!(stack, expected);
     }
 
     #[test]
@@ -341,7 +341,7 @@ mod tests {
             domain: 2,
             codomain: 1,
         };
-        matrix1.vstack(&mut matrix2);
+        let stack = matrix1.vstack(&mut matrix2);
         let expected = RowMatrix {
             data: vec![
                 vec![F2::one(), F2::one()],
@@ -351,7 +351,7 @@ mod tests {
             domain: 2,
             codomain: 3,
         };
-        assert_eq!(matrix1, expected);
+        assert_eq!(stack, expected);
     }
 
     #[test]
@@ -366,7 +366,7 @@ mod tests {
             domain: 1,
             codomain: 2,
         };
-        matrix1.block_sum(&mut matrix2);
+        let block = matrix1.block_sum(&mut matrix2);
         let expected = RowMatrix {
             data: vec![
                 vec![TestField { 0: 1 }, TestField { 0: 0 }],
@@ -377,7 +377,7 @@ mod tests {
             domain: 2,
             codomain: 4,
         };
-        assert_eq!(matrix1, expected);
+        assert_eq!(block, expected);
     }
 
     #[test]
@@ -392,7 +392,7 @@ mod tests {
             domain: 1,
             codomain: 2,
         };
-        matrix1.block_sum(&mut matrix2);
+        let block = matrix1.block_sum(&mut matrix2);
         let expected = RowMatrix {
             data: vec![
                 vec![TestField { 0: 1 }, TestField { 0: 2 }, TestField { 0: 0 }],
@@ -402,7 +402,7 @@ mod tests {
             domain: 3,
             codomain: 3,
         };
-        assert_eq!(matrix1, expected);
+        assert_eq!(block, expected);
     }
 
     #[test]

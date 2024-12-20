@@ -249,8 +249,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                 fixed_limit,
             );
             growing_comodule.direct_sum(&mut f);
-
-            growing_map.vstack(map_to_cofree.get_mut().unwrap());
+            growing_map = growing_map.vstack(map_to_cofree.get_mut().unwrap()); 
             iteration += 1;
         }
 
@@ -279,16 +278,16 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
         }
     }
 
-    fn compose(l: Self, r: Self) -> Self {
+    fn compose(l: &Self, r: &Self) -> Self {
         debug_assert!(
             l.domain == r.codomain,
             "l-domain and r-codomain should be equal when composing"
         );
 
-        let codomain = l.codomain;
-        let domain = r.domain;
+        let codomain = l.codomain.clone();
+        let domain = r.domain.clone();
 
-        let map = l.map.compose(r.map);
+        let map = l.map.compose(&r.map);
 
         Self::new(domain, codomain, map)
     }

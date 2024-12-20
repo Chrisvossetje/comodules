@@ -23,8 +23,8 @@ pub trait Matrix<F: Field>: Clone + Send + Sync + PartialEq {
     // nah, both
     fn pivots(&self) -> Vec<(usize, usize)>;
 
-    fn vstack(&mut self, other: &mut Self);
-    fn block_sum(&mut self, other: &mut Self);
+    fn vstack(&self, other: &Self) -> Self;
+    fn block_sum(&self, other: &Self) -> Self;
 
     // Returns the change of basis matrix for the domain!
     fn rref(&mut self);

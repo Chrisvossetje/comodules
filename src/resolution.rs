@@ -71,7 +71,7 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
             print!("Composing both morphisms    ");
             // Compose
             io::stdout().flush().unwrap();
-            let combine = Morph::compose(inject, coker);
+            let combine = Morph::compose(&inject, &coker);
             println!("took: {:.2?}", compose_time.elapsed());
 
             println!(

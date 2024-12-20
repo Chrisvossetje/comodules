@@ -86,12 +86,12 @@ mod tests {
         let mut linear_map1: GradedLinearMap<G, F, M> = GradedLinearMap::from(map1);
         let mut linear_map2: GradedLinearMap<G, F, M> = GradedLinearMap::from(map2);
 
-        linear_map1.vstack(&mut linear_map2);
+        let stack = linear_map1.vstack(&mut linear_map2);
 
-        assert_eq!(linear_map1.maps[&0].domain, 2); // 2 + 3 rows
-        assert_eq!(linear_map1.maps[&1].domain, 2); // 2 + 3 rows
-        assert_eq!(linear_map1.maps[&0].codomain, 9); // 2 + 3 rows
-        assert_eq!(linear_map1.maps[&1].codomain, 6); // 1 + 2 rows
+        assert_eq!(stack.maps[&0].domain, 2); // 2 + 3 rows
+        assert_eq!(stack.maps[&1].domain, 2); // 2 + 3 rows
+        assert_eq!(stack.maps[&0].codomain, 9); // 2 + 3 rows
+        assert_eq!(stack.maps[&1].codomain, 6); // 1 + 2 rows
     }
 
     #[test]
@@ -108,12 +108,12 @@ mod tests {
         let mut linear_map1: GradedLinearMap<G, F, M> = GradedLinearMap::from(map1);
         let mut linear_map2: GradedLinearMap<G, F, M> = GradedLinearMap::from(map2);
 
-        linear_map1.block_sum(&mut linear_map2);
+        let block = linear_map1.block_sum(&mut linear_map2);
 
-        assert_eq!(linear_map1.maps[&0].domain, 4);
-        assert_eq!(linear_map1.maps[&0].codomain, 7);
-        assert_eq!(linear_map1.maps[&1].domain, 2);
-        assert_eq!(linear_map1.maps[&1].codomain, 5);
+        assert_eq!(block.maps[&0].domain, 4);
+        assert_eq!(block.maps[&0].codomain, 7);
+        assert_eq!(block.maps[&1].domain, 2);
+        assert_eq!(block.maps[&1].codomain, 5);
     }
 
     #[test]
@@ -130,7 +130,7 @@ mod tests {
         let linear_map1: GradedLinearMap<G, F, M> = GradedLinearMap::from(map1);
         let linear_map2: GradedLinearMap<G, F, M> = GradedLinearMap::from(map2);
 
-        let composed = linear_map2.compose(linear_map1);
+        let composed = linear_map2.compose(&linear_map1);
 
         assert!(composed.maps.get(&0).is_some());
         assert!(composed.maps.get(&1).is_some());

@@ -138,34 +138,33 @@ impl<F: Field> Matrix<F> for RowMatrix<F> {
         pivots
     }
 
-    fn vstack(&mut self, other: &mut Self) {
+    fn vstack(&self, other: &Self) -> Self {
         assert_eq!(
             self.domain(),
             other.domain(),
             "Domains of the two matrices do not have the same dimension"
         );
+        let mut new = self.clone();
 
-        self.data.append(&mut other.data);
-        self.codomain += other.codomain;
+        new.data.append(&mut other.data.clone());
+        new.codomain += other.codomain;
+        new
     }
 
-    fn block_sum(&mut self, other: &mut Self) {
-        let self_domain = self.domain;
-        let other_domain = other.domain;
-        for el in self.data.iter_mut() {
-            let mut zeros = vec![F::zero(); other_domain];
-            el.append(&mut zeros);
+    fn block_sum(&self, other: &Self) -> Self {
+        let new_domain = self.domain + other.domain;
+        let new_codomain = self.codomain + other.codomain;
+        let mut new = Self::zero(new_domain, new_codomain);
+        
+        for i_self in 0..self.codomain {
+            new.data[i_self][0..self.domain].copy_from_slice(self.data[i_self].as_slice());
+        }
+        
+        for i_other in 0..other.codomain {
+            new.data[i_other+self.codomain][self.domain..new_domain].copy_from_slice(other.data[i_other].as_slice());
         }
 
-        for oth in other.data.iter_mut() {
-            let mut zeros = vec![F::zero(); self_domain];
-            zeros.append(oth);
-
-            self.data.push(zeros);
-        }
-
-        self.domain += other_domain;
-        self.codomain += other.codomain;
+        new
     }
 
     fn identity(d: usize) -> Self {
@@ -204,7 +203,7 @@ impl<F: Field> Matrix<F> for RowMatrix<F> {
     }
 
     fn set_row(&mut self, codomain: usize, row: &[F]) {
-        self.data[codomain].clone_from_slice(row);
+        self.data[codomain].copy_from_slice(row);
     }
 
     fn domain(&self) -> usize {

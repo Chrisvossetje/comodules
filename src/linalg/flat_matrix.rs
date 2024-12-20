@@ -135,39 +135,38 @@ impl<F: Field> Matrix<F> for FlatMatrix<F> {
         pivots
     }
 
-    fn vstack(&mut self, other: &mut Self) {
+    fn vstack(&self, other: &Self) -> Self {
         assert_eq!(
             self.domain(),
             other.domain(),
             "Domains of the two matrices do not have the same dimension"
         );
+        let mut new = self.clone();
 
-        self.data.extend_from_slice(&other.data);
-        self.codomain += other.codomain;
+        new.data.extend_from_slice(&other.data);
+        new.codomain += other.codomain;
+        new
     }
 
-    fn block_sum(&mut self, other: &mut Self) {
-        let self_domain = self.domain;
-        let other_domain = other.domain;
-        let mut new_data =
-            vec![F::zero(); (self.codomain + other.codomain) * (self_domain + other_domain)];
+    fn block_sum(&self, other: &Self) -> Self {
+        let new_domain = self.domain + other.domain;
+        let new_codomain = self.codomain + other.codomain;
+        let mut new = Self::zero(new_domain, new_codomain);
 
         for i in 0..self.codomain {
-            for j in 0..self_domain {
-                new_data[i * (self_domain + other_domain) + j] = self.get_element(i, j);
+            for j in 0..self.domain {
+                new.data[i * (new_domain) + j] = self.get_element(i, j);
             }
         }
 
         for i in 0..other.codomain {
-            for j in 0..other_domain {
-                new_data[(self.codomain + i) * (self_domain + other_domain) + (self_domain + j)] =
+            for j in 0..other.domain {
+                new.data[(self.codomain + i) * (new_domain) + (self.domain + j)] =
                     other.get_element(i, j);
             }
         }
 
-        self.data = new_data;
-        self.domain += other.domain;
-        self.codomain += other.codomain;
+        new
     }
 
     fn identity(d: usize) -> Self {
@@ -204,7 +203,7 @@ impl<F: Field> Matrix<F> for FlatMatrix<F> {
     fn set_row(&mut self, codomain: usize, row: &[F]) {
         let start = codomain * self.domain;
         let end = start + self.domain;
-        self.data[start..end].clone_from_slice(row);
+        self.data[start..end].copy_from_slice(row);
     }
 
     fn domain(&self) -> usize {
@@ -259,6 +258,9 @@ impl<F: Field> Matrix<F> for FlatMatrix<F> {
         None
     }
 }
+
+
+
 
 #[test]
 fn test_rref_kernel() {

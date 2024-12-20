@@ -155,7 +155,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
     }
 
     fn direct_sum(&mut self, other: &mut Self) {
-        self.coaction.block_sum(&mut other.coaction);
+        self.coaction = self.coaction.block_sum(&mut other.coaction);
 
         let self_dimensions = self.space.0.iter().map(|(g, v)| (*g, v.len())).collect();
 
