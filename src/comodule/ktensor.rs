@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::linalg::graded::{BasisElement, BasisIndex, GradedVectorSpace, Grading};
+use crate::linalg::{
+    graded::{BasisElement, BasisIndex, GradedVectorSpace},
+    grading::Grading,
+};
 
 use super::traits::Tensor;
 
@@ -157,22 +160,19 @@ impl<G: Grading> kTensor<G> {
     ///
     /// After careful thinking, this direct sum is not dependent on the non-determinism of the hashmap
     pub fn direct_sum(&mut self, other: &mut Self, self_space_dimensions: &HashMap<G, usize>) {
-        other
-            .construct
-            .iter()
-            .for_each(|((m_gr, m_id), maps)| {
-                let m_id_new = self_space_dimensions.get(m_gr).unwrap_or(&0) + m_id;
+        other.construct.iter().for_each(|((m_gr, m_id), maps)| {
+            let m_id_new = self_space_dimensions.get(m_gr).unwrap_or(&0) + m_id;
 
-                let new_map = maps
-                    .iter()
-                    .map(|((a_gr, a_id), (t_gr, t_id))| {
-                        let t_id_new = self.dimensions.get(t_gr).unwrap_or(&0) + t_id;
-                        ((*a_gr, *a_id), (*t_gr, t_id_new))
-                    })
-                    .collect();
+            let new_map = maps
+                .iter()
+                .map(|((a_gr, a_id), (t_gr, t_id))| {
+                    let t_id_new = self.dimensions.get(t_gr).unwrap_or(&0) + t_id;
+                    ((*a_gr, *a_id), (*t_gr, t_id_new))
+                })
+                .collect();
 
-                self.construct.insert((*m_gr, m_id_new), new_map);
-            });
+            self.construct.insert((*m_gr, m_id_new), new_map);
+        });
 
         other
             .deconstruct
@@ -185,17 +185,14 @@ impl<G: Grading> kTensor<G> {
                     .insert((*t_gr, t_id_new), ((*a_gr, *a_id), (*m_gr, m_id_new)));
             });
 
-        other
-            .dimensions
-            .iter()
-            .for_each(|(gr, other_size)| {
-                self.dimensions
-                    .entry(*gr)
-                    .and_modify(|size| {
-                        *size += *other_size;
-                    })
-                    .or_insert(*other_size);
-            });
+        other.dimensions.iter().for_each(|(gr, other_size)| {
+            self.dimensions
+                .entry(*gr)
+                .and_modify(|size| {
+                    *size += *other_size;
+                })
+                .or_insert(*other_size);
+        });
 
         debug_assert!(self.is_correct());
     }

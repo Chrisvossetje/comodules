@@ -7,7 +7,7 @@ use comodules::{
         kcoalgebra::kCoalgebra, kcomodule::kComodule, kmorphism::kComoduleMorphism,
         traits::Comodule,
     },
-    linalg::{field::F2, graded::UniGrading, matrix::FieldMatrix},
+    linalg::{field::F2, grading::UniGrading, row_matrix::RowMatrix},
     resolution::Resolution,
 };
 
@@ -21,8 +21,8 @@ fn main() {
 
     let mut res: Resolution<
         UniGrading,
-        kComodule<UniGrading, F2, FieldMatrix<F2>>,
-        kComoduleMorphism<UniGrading, F2, FieldMatrix<F2>>,
+        kComodule<UniGrading, F2, RowMatrix<F2>>,
+        kComoduleMorphism<UniGrading, F2, RowMatrix<F2>>,
     > = Resolution::new(fp);
 
     res.resolve_to_s(40, 100);

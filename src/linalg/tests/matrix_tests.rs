@@ -2,14 +2,15 @@
 mod tests {
     use crate::linalg::{
         field::{Field, Fp, F2},
-        matrix::{FieldMatrix, Matrix},
+        matrix::Matrix,
+        row_matrix::RowMatrix,
     };
 
     type TestField = Fp<23>;
 
     #[test]
     pub fn kernel_simple() {
-        let matrix = FieldMatrix {
+        let matrix = RowMatrix {
             data: vec![
                 vec![F2::one(), F2::zero(), F2::one(), F2::one()],
                 vec![F2::zero(), F2::one(), F2::zero(), F2::zero()],
@@ -21,7 +22,7 @@ mod tests {
 
         let kern = matrix.kernel();
 
-        let compare = FieldMatrix {
+        let compare = RowMatrix {
             data: vec![vec![F2::zero(), F2::zero(), F2::one(), F2::one()]],
             domain: 4,
             codomain: 1,
@@ -31,7 +32,7 @@ mod tests {
 
     #[test]
     pub fn kernel_simple_2() {
-        let matrix = FieldMatrix {
+        let matrix = RowMatrix {
             data: vec![
                 // vec![F2::zero(), F2::zero(), F2::zero(), F2::zero()],
                 vec![F2::zero(), F2::one(), F2::zero(), F2::one()],
@@ -43,7 +44,7 @@ mod tests {
 
         let kern = matrix.kernel();
 
-        let compare = FieldMatrix {
+        let compare = RowMatrix {
             data: vec![
                 vec![F2::one(), F2::zero(), F2::one(), F2::zero()],
                 vec![F2::zero(), F2::one(), F2::one(), F2::one()],
@@ -56,25 +57,25 @@ mod tests {
 
     #[test]
     fn kernel_identity() {
-        let matrix = FieldMatrix::<Fp<23>>::identity(1);
+        let matrix = RowMatrix::<Fp<23>>::identity(1);
         let kernel = matrix.kernel();
 
-        let comp = FieldMatrix::zero(1, 0);
+        let comp = RowMatrix::zero(1, 0);
         assert_eq!(kernel, comp)
     }
 
     #[test]
     fn cokernel_identity() {
-        let matrix = FieldMatrix::<Fp<23>>::identity(3);
+        let matrix = RowMatrix::<Fp<23>>::identity(3);
         let kernel = matrix.cokernel();
 
-        let comp = FieldMatrix::zero(3, 0);
+        let comp = RowMatrix::zero(3, 0);
         assert_eq!(kernel, comp)
     }
 
     #[test]
     fn test_new() {
-        let matrix: FieldMatrix<TestField> = FieldMatrix::zero(3, 3);
+        let matrix: RowMatrix<TestField> = RowMatrix::zero(3, 3);
         assert_eq!(matrix.data.len(), 3);
         assert_eq!(matrix.data[0].len(), 3);
         assert_eq!(matrix.domain, 3);
@@ -87,7 +88,7 @@ mod tests {
 
     #[test]
     fn test_identity() {
-        let identity = FieldMatrix::<TestField>::identity(3);
+        let identity = RowMatrix::<TestField>::identity(3);
         for i in 0..3 {
             for j in 0..3 {
                 if i == j {
@@ -101,14 +102,14 @@ mod tests {
 
     #[test]
     fn test_set_and_get() {
-        let mut matrix = FieldMatrix::zero(3, 3);
+        let mut matrix = RowMatrix::zero(3, 3);
         matrix.set(1, 2, TestField { 0: 3 });
         assert_eq!(matrix.get(1, 2), TestField { 0: 3 });
     }
 
     #[test]
     fn test_transpose() {
-        let mut matrix = FieldMatrix::zero(2, 3);
+        let mut matrix = RowMatrix::zero(2, 3);
         matrix.set(0, 1, TestField { 0: 2 });
         matrix.set(1, 0, TestField { 0: 5 });
         let transpose = matrix.transpose();
@@ -118,7 +119,7 @@ mod tests {
 
     #[test]
     fn test_rref_1() {
-        let mut matrix = FieldMatrix {
+        let mut matrix = RowMatrix {
             data: vec![
                 vec![TestField { 0: 2 }, TestField { 0: 4 }, TestField { 0: 8 }],
                 vec![TestField { 0: 1 }, TestField { 0: 2 }, TestField { 0: 4 }],
@@ -127,7 +128,7 @@ mod tests {
             codomain: 2,
         };
         matrix.rref();
-        let expected = FieldMatrix {
+        let expected = RowMatrix {
             data: vec![
                 vec![TestField { 0: 1 }, TestField { 0: 2 }, TestField { 0: 4 }],
                 vec![TestField { 0: 0 }, TestField { 0: 0 }, TestField { 0: 0 }],
@@ -140,7 +141,7 @@ mod tests {
 
     #[test]
     fn test_rref_2() {
-        let mut matrix = FieldMatrix {
+        let mut matrix = RowMatrix {
             data: vec![
                 vec![TestField { 0: 0 }, TestField { 0: 0 }, TestField { 0: 8 }],
                 vec![TestField { 0: 0 }, TestField { 0: 2 }, TestField { 0: 4 }],
@@ -149,7 +150,7 @@ mod tests {
             codomain: 2,
         };
         matrix.rref();
-        let expected = FieldMatrix {
+        let expected = RowMatrix {
             data: vec![
                 vec![TestField { 0: 0 }, TestField { 0: 1 }, TestField { 0: 0 }],
                 vec![TestField { 0: 0 }, TestField { 0: 0 }, TestField { 0: 1 }],
@@ -162,7 +163,7 @@ mod tests {
 
     #[test]
     fn test_rref_3() {
-        let mut matrix = FieldMatrix {
+        let mut matrix = RowMatrix {
             data: vec![
                 vec![TestField { 0: 1 }, TestField { 0: 1 }, TestField { 0: 0 }],
                 vec![TestField { 0: 0 }, TestField { 0: 1 }, TestField { 0: 1 }],
@@ -171,7 +172,7 @@ mod tests {
             codomain: 2,
         };
         matrix.rref();
-        let expected = FieldMatrix {
+        let expected = RowMatrix {
             data: vec![
                 vec![TestField { 0: 1 }, TestField { 0: 0 }, TestField { 0: 22 }],
                 vec![TestField { 0: 0 }, TestField { 0: 1 }, TestField { 0: 1 }],
@@ -184,13 +185,13 @@ mod tests {
 
     #[test]
     fn test_rref_4() {
-        let mut matrix = FieldMatrix {
+        let mut matrix = RowMatrix {
             data: vec![vec![TestField { 0: 1 }], vec![TestField { 0: 0 }]],
             domain: 1,
             codomain: 2,
         };
         matrix.rref();
-        let expected = FieldMatrix {
+        let expected = RowMatrix {
             data: vec![vec![TestField { 0: 1 }], vec![TestField { 0: 0 }]],
             domain: 1,
             codomain: 2,
@@ -200,7 +201,7 @@ mod tests {
 
     #[test]
     fn test_rref_7() {
-        let mut matrix = FieldMatrix {
+        let mut matrix = RowMatrix {
             data: vec![
                 // vec![F2::zero(), F2::zero(), F2::zero(), F2::zero()],
                 vec![F2::zero(), F2::one(), F2::zero(), F2::one()],
@@ -210,7 +211,7 @@ mod tests {
             codomain: 2,
         };
         matrix.rref();
-        let expected = FieldMatrix {
+        let expected = RowMatrix {
             data: vec![
                 vec![F2::one(), F2::zero(), F2::one(), F2::one()],
                 vec![F2::zero(), F2::one(), F2::zero(), F2::one()],
@@ -223,7 +224,7 @@ mod tests {
 
     #[test]
     fn test_compose() {
-        let matrix1 = FieldMatrix {
+        let matrix1 = RowMatrix {
             data: vec![
                 vec![TestField { 0: 1 }, TestField { 0: 2 }],
                 vec![TestField { 0: 3 }, TestField { 0: 4 }],
@@ -231,7 +232,7 @@ mod tests {
             domain: 2,
             codomain: 2,
         };
-        let mut matrix2 = FieldMatrix {
+        let mut matrix2 = RowMatrix {
             data: vec![
                 vec![TestField { 0: 2 }, TestField { 0: 0 }],
                 vec![TestField { 0: 1 }, TestField { 0: 3 }],
@@ -240,7 +241,7 @@ mod tests {
             codomain: 2,
         };
         let result = matrix1.compose(&mut matrix2);
-        let expected = FieldMatrix {
+        let expected = RowMatrix {
             data: vec![
                 vec![TestField { 0: 4 }, TestField { 0: 6 }],
                 vec![TestField { 0: 10 }, TestField { 0: 12 }],
@@ -253,8 +254,8 @@ mod tests {
 
     #[test]
     fn test_compose_2() {
-        let mut matrix1: FieldMatrix<F2> = FieldMatrix::zero(4, 3);
-        let matrix2 = FieldMatrix::zero(3, 5);
+        let mut matrix1: RowMatrix<F2> = RowMatrix::zero(4, 3);
+        let matrix2 = RowMatrix::zero(3, 5);
         let result = matrix2.compose(&mut matrix1);
         assert_eq!(result.codomain, 5);
         assert_eq!(result.domain, 4);
@@ -262,7 +263,7 @@ mod tests {
 
     #[test]
     fn test_pivots_1() {
-        let matrix = FieldMatrix {
+        let matrix = RowMatrix {
             data: vec![
                 vec![TestField { 0: 1 }, TestField { 0: 0 }, TestField { 0: 3 }],
                 vec![TestField { 0: 0 }, TestField { 0: 1 }, TestField { 0: 4 }],
@@ -276,7 +277,7 @@ mod tests {
 
     #[test]
     fn test_pivots_2() {
-        let matrix = FieldMatrix {
+        let matrix = RowMatrix {
             data: vec![
                 vec![TestField { 0: 0 }, TestField { 0: 1 }, TestField { 0: 0 }],
                 vec![TestField { 0: 0 }, TestField { 0: 0 }, TestField { 0: 1 }],
@@ -290,7 +291,7 @@ mod tests {
 
     #[test]
     fn test_pivots_3() {
-        let matrix = FieldMatrix {
+        let matrix = RowMatrix {
             data: vec![
                 vec![F2::one(), F2::zero(), F2::one(), F2::one()],
                 vec![F2::zero(), F2::one(), F2::zero(), F2::one()],
@@ -304,18 +305,18 @@ mod tests {
 
     #[test]
     fn test_vstack_1() {
-        let mut matrix1 = FieldMatrix {
+        let mut matrix1 = RowMatrix {
             data: vec![vec![TestField { 0: 1 }], vec![TestField { 0: 2 }]],
             domain: 1,
             codomain: 2,
         };
-        let mut matrix2 = FieldMatrix {
+        let mut matrix2 = RowMatrix {
             data: vec![vec![TestField { 0: 3 }], vec![TestField { 0: 4 }]],
             domain: 1,
             codomain: 2,
         };
         matrix1.vstack(&mut matrix2);
-        let expected = FieldMatrix {
+        let expected = RowMatrix {
             data: vec![
                 vec![TestField { 0: 1 }],
                 vec![TestField { 0: 2 }],
@@ -330,18 +331,18 @@ mod tests {
 
     #[test]
     fn test_vstack_2() {
-        let mut matrix1 = FieldMatrix {
+        let mut matrix1 = RowMatrix {
             data: vec![vec![F2::one(), F2::one()], vec![F2::zero(), F2::zero()]],
             domain: 2,
             codomain: 2,
         };
-        let mut matrix2 = FieldMatrix {
+        let mut matrix2 = RowMatrix {
             data: vec![vec![F2::zero(), F2::one()]],
             domain: 2,
             codomain: 1,
         };
         matrix1.vstack(&mut matrix2);
-        let expected = FieldMatrix {
+        let expected = RowMatrix {
             data: vec![
                 vec![F2::one(), F2::one()],
                 vec![F2::zero(), F2::zero()],
@@ -355,18 +356,18 @@ mod tests {
 
     #[test]
     fn test_block_sum_1() {
-        let mut matrix1 = FieldMatrix {
+        let mut matrix1 = RowMatrix {
             data: vec![vec![TestField { 0: 1 }], vec![TestField { 0: 2 }]],
             domain: 1,
             codomain: 2,
         };
-        let mut matrix2 = FieldMatrix {
+        let mut matrix2 = RowMatrix {
             data: vec![vec![TestField { 0: 3 }], vec![TestField { 0: 4 }]],
             domain: 1,
             codomain: 2,
         };
         matrix1.block_sum(&mut matrix2);
-        let expected = FieldMatrix {
+        let expected = RowMatrix {
             data: vec![
                 vec![TestField { 0: 1 }, TestField { 0: 0 }],
                 vec![TestField { 0: 2 }, TestField { 0: 0 }],
@@ -381,18 +382,18 @@ mod tests {
 
     #[test]
     fn test_block_sum_2() {
-        let mut matrix1 = FieldMatrix {
+        let mut matrix1 = RowMatrix {
             data: vec![vec![TestField { 0: 1 }, TestField { 0: 2 }]],
             domain: 2,
             codomain: 1,
         };
-        let mut matrix2 = FieldMatrix {
+        let mut matrix2 = RowMatrix {
             data: vec![vec![TestField { 0: 3 }], vec![TestField { 0: 4 }]],
             domain: 1,
             codomain: 2,
         };
         matrix1.block_sum(&mut matrix2);
-        let expected = FieldMatrix {
+        let expected = RowMatrix {
             data: vec![
                 vec![TestField { 0: 1 }, TestField { 0: 2 }, TestField { 0: 0 }],
                 vec![TestField { 0: 0 }, TestField { 0: 0 }, TestField { 0: 3 }],
@@ -410,7 +411,7 @@ mod tests {
             vec![TestField { 0: 1 }, TestField { 0: 2 }],
             vec![TestField { 0: 3 }, TestField { 0: 4 }],
         ];
-        let matrix = FieldMatrix {
+        let matrix = RowMatrix {
             data,
             domain: 2,
             codomain: 2,
@@ -428,7 +429,7 @@ mod tests {
             vec![TestField { 0: 1 }, TestField { 0: 2 }],
             vec![TestField { 0: 3 }, TestField { 0: 4 }],
         ];
-        let mut matrix = FieldMatrix {
+        let mut matrix = RowMatrix {
             data,
             domain: 2,
             codomain: 2,
@@ -447,7 +448,7 @@ mod tests {
             vec![TestField { 0: 1 }, TestField { 0: 2 }],
             vec![TestField { 0: 3 }, TestField { 0: 4 }],
         ];
-        let mut matrix = FieldMatrix {
+        let mut matrix = RowMatrix {
             data,
             domain: 2,
             codomain: 2,
@@ -466,7 +467,7 @@ mod tests {
             vec![TestField { 0: 1 }, TestField { 0: 2 }],
             vec![TestField { 0: 3 }, TestField { 0: 4 }],
         ];
-        let matrix = FieldMatrix {
+        let matrix = RowMatrix {
             data,
             domain: 2,
             codomain: 2,
@@ -482,7 +483,7 @@ mod tests {
             vec![TestField { 0: 1 }, TestField { 0: 2 }],
             vec![TestField { 0: 3 }, TestField { 0: 4 }],
         ];
-        let mut matrix = FieldMatrix {
+        let mut matrix = RowMatrix {
             data,
             domain: 2,
             codomain: 2,
@@ -503,7 +504,7 @@ mod tests {
             vec![TestField { 0: 1 }, TestField { 0: 2 }],
             vec![TestField { 0: 3 }, TestField { 0: 4 }],
         ];
-        let matrix = FieldMatrix {
+        let matrix = RowMatrix {
             data,
             domain: 2,
             codomain: 2,
@@ -519,7 +520,7 @@ mod tests {
             vec![TestField { 0: 0 }, TestField { 0: 0 }],
             vec![TestField { 0: 0 }, TestField { 0: 4 }],
         ];
-        let matrix = FieldMatrix {
+        let matrix = RowMatrix {
             data,
             domain: 2,
             codomain: 2,
@@ -531,7 +532,7 @@ mod tests {
             vec![TestField { 0: 0 }, TestField { 0: 0 }],
             vec![TestField { 0: 0 }, TestField { 0: 0 }],
         ];
-        let matrix = FieldMatrix {
+        let matrix = RowMatrix {
             data,
             domain: 2,
             codomain: 2,
@@ -546,7 +547,7 @@ mod tests {
             vec![TestField { 0: 5 }, TestField { 0: 0 }],
             vec![TestField { 0: 0 }, TestField { 0: 4 }],
         ];
-        let matrix = FieldMatrix {
+        let matrix = RowMatrix {
             data,
             domain: 2,
             codomain: 2,

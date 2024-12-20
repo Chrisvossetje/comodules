@@ -8,7 +8,7 @@ use itertools::Itertools;
 
 use crate::{
     comodule::traits::{Comodule, ComoduleMorphism},
-    linalg::graded::Grading,
+    linalg::grading::Grading,
     page::Page,
 };
 

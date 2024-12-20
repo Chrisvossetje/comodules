@@ -10,7 +10,8 @@ use crate::{
     comodule::{kcomodule::kBasisElement, ktensor::kTensor, traits::Tensor},
     linalg::{
         field::Field,
-        graded::{BasisIndex, GradedLinearMap, Grading},
+        graded::{BasisIndex, GradedLinearMap},
+        grading::Grading,
         matrix::Matrix,
     },
 };

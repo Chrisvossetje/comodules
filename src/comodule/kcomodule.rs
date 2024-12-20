@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::linalg::{
     field::Field,
-    graded::{BasisElement, GradedLinearMap, GradedVectorSpace, Grading},
+    graded::{BasisElement, GradedLinearMap, GradedVectorSpace},
+    grading::Grading,
     matrix::Matrix,
 };
 

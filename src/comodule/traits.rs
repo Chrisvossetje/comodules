@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::linalg::graded::{BasisElement, Grading};
+use crate::linalg::{graded::BasisElement, grading::Grading};
 
 pub trait Comodule<G: Grading> {
     type Element: BasisElement;

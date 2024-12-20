@@ -9,7 +9,7 @@ mod tests {
             kmorphism::kComoduleMorphism,
             traits::Comodule,
         },
-        linalg::{field::F2, graded::UniGrading, matrix::FieldMatrix},
+        linalg::{field::F2, grading::UniGrading, row_matrix::RowMatrix},
         page::Page,
         resolution::Resolution,
     };
@@ -23,8 +23,8 @@ mod tests {
 
         let mut res: Resolution<
             UniGrading,
-            kComodule<UniGrading, F2, FieldMatrix<F2>>,
-            kComoduleMorphism<UniGrading, F2, FieldMatrix<F2>>,
+            kComodule<UniGrading, F2, RowMatrix<F2>>,
+            kComoduleMorphism<UniGrading, F2, RowMatrix<F2>>,
         > = Resolution::new(fp);
 
         res.resolve_to_s(4, 10);
@@ -73,8 +73,8 @@ mod tests {
 
         let mut res: Resolution<
             UniGrading,
-            kComodule<UniGrading, F2, FieldMatrix<F2>>,
-            kComoduleMorphism<UniGrading, F2, FieldMatrix<F2>>,
+            kComodule<UniGrading, F2, RowMatrix<F2>>,
+            kComoduleMorphism<UniGrading, F2, RowMatrix<F2>>,
         > = Resolution::new(fp);
 
         res.resolve_to_s(20, 20);
@@ -93,8 +93,8 @@ mod tests {
 
         let mut res: Resolution<
             UniGrading,
-            kComodule<UniGrading, F2, FieldMatrix<F2>>,
-            kComoduleMorphism<UniGrading, F2, FieldMatrix<F2>>,
+            kComodule<UniGrading, F2, RowMatrix<F2>>,
+            kComoduleMorphism<UniGrading, F2, RowMatrix<F2>>,
         > = Resolution::new(fp);
 
         res.resolve_to_s(20, 20);
@@ -113,8 +113,8 @@ mod tests {
 
         let mut res: Resolution<
             UniGrading,
-            kComodule<UniGrading, F2, FieldMatrix<F2>>,
-            kComoduleMorphism<UniGrading, F2, FieldMatrix<F2>>,
+            kComodule<UniGrading, F2, RowMatrix<F2>>,
+            kComoduleMorphism<UniGrading, F2, RowMatrix<F2>>,
         > = Resolution::new(fp);
 
         res.resolve_to_s(8, 12);

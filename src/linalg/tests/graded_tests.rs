@@ -3,12 +3,13 @@ mod tests {
 
     use crate::linalg::field::F2;
     use crate::linalg::graded::{BasisElement, GradedLinearMap, GradedVectorSpace};
-    use crate::linalg::matrix::{FieldMatrix, Matrix};
+    use crate::linalg::matrix::Matrix;
+    use crate::linalg::row_matrix::RowMatrix;
     use std::collections::HashMap; // Assuming F2 is implemented as a Field type.
 
     type G = i32; // Grading type
     type F = F2; // Field type
-    type M = FieldMatrix<F>; // Matrix type
+    type M = RowMatrix<F>; // Matrix type
 
     impl BasisElement for usize {}
 
@@ -34,8 +35,8 @@ mod tests {
     fn test_graded_linear_map_from() {
         // Test creating a GradedLinearMap from a HashMap
         let mut map = HashMap::new();
-        map.insert(0, FieldMatrix::zero(2, 2));
-        map.insert(1, FieldMatrix::zero(3, 3));
+        map.insert(0, RowMatrix::zero(2, 2));
+        map.insert(1, RowMatrix::zero(3, 3));
 
         let linear_map: GradedLinearMap<G, F, M> = GradedLinearMap::from(map.clone());
         assert_eq!(linear_map.maps, map);
@@ -45,13 +46,13 @@ mod tests {
     fn test_graded_linear_map_get_cokernel() {
         // Test get_cokernel() produces a correct GradedLinearMap
         let mut map = HashMap::new();
-        map.insert(0, FieldMatrix::zero(2, 3));
-        map.insert(1, FieldMatrix::zero(3, 4));
+        map.insert(0, RowMatrix::zero(2, 3));
+        map.insert(1, RowMatrix::zero(3, 4));
 
         let linear_map: GradedLinearMap<G, F, M> = GradedLinearMap::from(map);
         let cokernel = linear_map.get_cokernel();
 
-        // The dimensions of the cokernel matrices depend on the implementation of FieldMatrix::cokernel()
+        // The dimensions of the cokernel matrices depend on the implementation of RowMatrix::cokernel()
         assert!(cokernel.maps.get(&0).is_some());
         assert!(cokernel.maps.get(&1).is_some());
     }
@@ -60,13 +61,13 @@ mod tests {
     fn test_graded_linear_map_get_kernel() {
         // Test get_kernel() produces a correct GradedLinearMap
         let mut map = HashMap::new();
-        map.insert(0, FieldMatrix::zero(3, 2));
-        map.insert(1, FieldMatrix::zero(4, 3));
+        map.insert(0, RowMatrix::zero(3, 2));
+        map.insert(1, RowMatrix::zero(4, 3));
 
         let linear_map: GradedLinearMap<G, F, M> = GradedLinearMap::from(map);
         let kernel = linear_map.get_kernel();
 
-        // The dimensions of the kernel matrices depend on the implementation of FieldMatrix::kernel()
+        // The dimensions of the kernel matrices depend on the implementation of RowMatrix::kernel()
         assert!(kernel.maps.get(&0).is_some());
         assert!(kernel.maps.get(&1).is_some());
     }
@@ -75,12 +76,12 @@ mod tests {
     fn test_graded_linear_map_vstack() {
         // Test vstack combines matrices vertically for each grade
         let mut map1 = HashMap::new();
-        map1.insert(0, FieldMatrix::zero(2, 3));
-        map1.insert(1, FieldMatrix::zero(2, 4));
+        map1.insert(0, RowMatrix::zero(2, 3));
+        map1.insert(1, RowMatrix::zero(2, 4));
 
         let mut map2 = HashMap::new();
-        map2.insert(0, FieldMatrix::zero(2, 6));
-        map2.insert(1, FieldMatrix::zero(2, 2));
+        map2.insert(0, RowMatrix::zero(2, 6));
+        map2.insert(1, RowMatrix::zero(2, 2));
 
         let mut linear_map1: GradedLinearMap<G, F, M> = GradedLinearMap::from(map1);
         let mut linear_map2: GradedLinearMap<G, F, M> = GradedLinearMap::from(map2);
@@ -97,12 +98,12 @@ mod tests {
     fn test_graded_linear_map_block_sum() {
         // Test block_sum combines matrices block-wise
         let mut map1 = HashMap::new();
-        map1.insert(0, FieldMatrix::zero(2, 3));
-        map1.insert(1, FieldMatrix::zero(1, 2));
+        map1.insert(0, RowMatrix::zero(2, 3));
+        map1.insert(1, RowMatrix::zero(1, 2));
 
         let mut map2 = HashMap::new();
-        map2.insert(0, FieldMatrix::zero(2, 4));
-        map2.insert(1, FieldMatrix::zero(1, 3));
+        map2.insert(0, RowMatrix::zero(2, 4));
+        map2.insert(1, RowMatrix::zero(1, 3));
 
         let mut linear_map1: GradedLinearMap<G, F, M> = GradedLinearMap::from(map1);
         let mut linear_map2: GradedLinearMap<G, F, M> = GradedLinearMap::from(map2);
@@ -119,12 +120,12 @@ mod tests {
     fn test_graded_linear_map_compose() {
         // Test composing two graded linear maps
         let mut map1 = HashMap::new();
-        map1.insert(0, FieldMatrix::zero(2, 3));
-        map1.insert(1, FieldMatrix::zero(3, 2));
+        map1.insert(0, RowMatrix::zero(2, 3));
+        map1.insert(1, RowMatrix::zero(3, 2));
 
         let mut map2 = HashMap::new();
-        map2.insert(0, FieldMatrix::zero(3, 4));
-        map2.insert(1, FieldMatrix::zero(2, 5));
+        map2.insert(0, RowMatrix::zero(3, 4));
+        map2.insert(1, RowMatrix::zero(2, 5));
 
         let linear_map1: GradedLinearMap<G, F, M> = GradedLinearMap::from(map1);
         let linear_map2: GradedLinearMap<G, F, M> = GradedLinearMap::from(map2);
@@ -143,8 +144,8 @@ mod tests {
     fn test_graded_linear_map_pivots() {
         // Test pivots retrieves pivot positions
         let mut map = HashMap::new();
-        map.insert(0, FieldMatrix::identity(3));
-        map.insert(1, FieldMatrix::zero(4, 4));
+        map.insert(0, RowMatrix::identity(3));
+        map.insert(1, RowMatrix::zero(4, 4));
 
         let linear_map: GradedLinearMap<G, F, M> = GradedLinearMap::from(map);
         let pivots = linear_map.pivots();

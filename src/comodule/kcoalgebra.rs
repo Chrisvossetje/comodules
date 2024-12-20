@@ -4,8 +4,10 @@ use itertools::Itertools;
 
 use crate::linalg::{
     field::{Field, F2},
-    graded::{BasisIndex, GradedLinearMap, GradedVectorSpace, Grading, UniGrading},
-    matrix::{FieldMatrix, Matrix},
+    graded::{BasisIndex, GradedLinearMap, GradedVectorSpace},
+    grading::{Grading, UniGrading},
+    matrix::Matrix,
+    row_matrix::RowMatrix,
 };
 
 use super::{kcomodule::kBasisElement, ktensor::kTensor};
@@ -213,7 +215,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
 }
 
 #[allow(non_snake_case)]
-pub fn A0_coalgebra() -> kCoalgebra<UniGrading, F2, FieldMatrix<F2>> {
+pub fn A0_coalgebra() -> kCoalgebra<UniGrading, F2, RowMatrix<F2>> {
     let mut space = GradedVectorSpace::new();
     space.0.insert(
         0,
@@ -264,7 +266,7 @@ pub fn A0_coalgebra() -> kCoalgebra<UniGrading, F2, FieldMatrix<F2>> {
     let mut coaction = GradedLinearMap::empty();
     coaction.maps.insert(
         0,
-        FieldMatrix {
+        RowMatrix {
             data: vec![vec![F2::one()]],
             domain: 1,
             codomain: 1,
@@ -272,7 +274,7 @@ pub fn A0_coalgebra() -> kCoalgebra<UniGrading, F2, FieldMatrix<F2>> {
     );
     coaction.maps.insert(
         1,
-        FieldMatrix {
+        RowMatrix {
             data: vec![vec![F2::one()], vec![F2::one()]],
             domain: 1,
             codomain: 2,

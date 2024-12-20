@@ -4,14 +4,14 @@ mod tests {
 
     use crate::{
         comodule::kcoalgebra::{kCoalgebra, A0_coalgebra},
-        linalg::{field::F2, matrix::FieldMatrix},
+        linalg::{field::F2, row_matrix::RowMatrix},
     };
 
     #[test]
     fn test_a0() {
         let input = include_str!("../../../examples/kcoalgebras/A(0).txt");
 
-        let (kcoalg, _) = kCoalgebra::<i32, F2, FieldMatrix<F2>>::parse(input).unwrap();
+        let (kcoalg, _) = kCoalgebra::<i32, F2, RowMatrix<F2>>::parse(input).unwrap();
 
         assert_eq!(kcoalg.coaction, A0_coalgebra().coaction);
 
@@ -27,7 +27,7 @@ mod tests {
         for _ in 0..10 {
             let input = include_str!("../../../examples/kcoalgebras/A(2).txt");
 
-            let (kcoalg, _) = kCoalgebra::<i32, F2, FieldMatrix<F2>>::parse(input).unwrap();
+            let (kcoalg, _) = kCoalgebra::<i32, F2, RowMatrix<F2>>::parse(input).unwrap();
             comps.push(kcoalg);
         }
         assert!(comps.iter().all_equal())

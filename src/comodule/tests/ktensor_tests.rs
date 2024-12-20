@@ -1,4 +1,6 @@
-use crate::linalg::graded::{BasisElement, GradedVectorSpace, Grading};
+use crate::linalg::graded::{BasisElement, GradedVectorSpace};
+use crate::linalg::grading::Grading;
+
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]

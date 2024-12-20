@@ -12,7 +12,8 @@ mod tests {
         linalg::{
             field::{Field, F2},
             graded::{GradedLinearMap, GradedVectorSpace},
-            matrix::{FieldMatrix, Matrix},
+            matrix::Matrix,
+            row_matrix::RowMatrix,
         },
     };
 
@@ -44,7 +45,7 @@ mod tests {
 
         let codomain = Arc::new(kComodule::cofree_comodule(coalgebra, 0, 0, 5));
 
-        let mut map: GradedLinearMap<i32, F2, FieldMatrix<F2>> =
+        let mut map: GradedLinearMap<i32, F2, RowMatrix<F2>> =
             GradedLinearMap::zero(&domain.space, &codomain.space);
         map.maps.get_mut(&0).unwrap().data[0][0] = F2::one();
 
@@ -59,10 +60,10 @@ mod tests {
         // Assertions
         assert_eq!(cokernel_morphism.domain, morphism.codomain);
 
-        let expected_map: GradedLinearMap<i32, F2, FieldMatrix<F2>> =
+        let expected_map: GradedLinearMap<i32, F2, RowMatrix<F2>> =
             GradedLinearMap::from(HashMap::from([
-                (0, FieldMatrix::zero(1, 0)),
-                (1, FieldMatrix::identity(1)),
+                (0, RowMatrix::zero(1, 0)),
+                (1, RowMatrix::identity(1)),
             ]));
         assert_eq!(cokernel_morphism.map, expected_map);
     }
@@ -75,7 +76,7 @@ mod tests {
 
         let codomain = Arc::new(kComodule::cofree_comodule(coalgebra, 0, 1, 5));
 
-        let mut map: GradedLinearMap<i32, F2, FieldMatrix<F2>> =
+        let mut map: GradedLinearMap<i32, F2, RowMatrix<F2>> =
             GradedLinearMap::zero(&domain.space, &codomain.space);
         map.maps.get_mut(&1).unwrap().data[0][0] = F2::one();
 

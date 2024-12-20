@@ -12,7 +12,8 @@ mod tests {
         linalg::{
             field::F2,
             graded::{GradedLinearMap, GradedVectorSpace},
-            matrix::{FieldMatrix, Matrix},
+            matrix::Matrix,
+            row_matrix::RowMatrix,
         },
     };
 
@@ -46,7 +47,7 @@ mod tests {
 
         assert!(comodule.coaction.maps.contains_key(&0));
         assert_eq!(comodule.coaction.maps.len(), 1);
-        assert_eq!(comodule.coaction.maps[&0], FieldMatrix::<F2>::identity(1));
+        assert_eq!(comodule.coaction.maps[&0], RowMatrix::<F2>::identity(1));
     }
 
     // Test for kComodule::direct_sum
