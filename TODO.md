@@ -1,8 +1,8 @@
-- 2d matrix => 1d matrix (underlying vec)
-- Slowest functions are:
-    - Block Sum (40%) (flat matrix will prob, make this WAY faster, should be able to parallelisze/? this as well)
-    - kTensor Direct Sum (9%)
-    - kTensor Generate (7%)
+- Slow functions are:
+    - kTensor Direct Sum (9%) 
+    - kTensor Generate (12%)
+    - kTensor add_and_restrict (12%)
+    - GradedLinear block sum (16%) # probably is the fasted it can go ?
     
 - HopfAlgebra parser
 - Refactor cokernel's solve commutative diagram
