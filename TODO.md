@@ -1,1 +1,5 @@
 - 2d matrix => 1d matrix (underlying vec)
+- Slowest functions are:
+    - Block Sum (40%) (flat matrix will prob, make this WAY faster, should be able to parallelisze/? this as well)
+    - kTensor Direct Sum (9%)
+    - kTensor Generate (7%)
