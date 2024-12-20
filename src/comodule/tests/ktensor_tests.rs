@@ -38,14 +38,15 @@ mod tests {
 
         assert_eq!(tensor.dimensions.get(&0), Some(&1));
         assert_eq!(tensor.dimensions.get(&1), Some(&2));
+        
+        let mut map = HashMap::default();
+        map.insert((0, 0), ((0, 0), (0, 0)));
+        map.insert((1, 0), ((0, 0), (1, 0)));
+        map.insert((1, 1), ((1, 0), (0, 0)));
 
         assert_eq!(
             tensor.deconstruct,
-            HashMap::from([
-                ((0, 0), ((0, 0), (0, 0))),
-                ((1, 0), ((0, 0), (1, 0))),
-                ((1, 1), ((1, 0), (0, 0))),
-            ])
+            map
         );
     }
 

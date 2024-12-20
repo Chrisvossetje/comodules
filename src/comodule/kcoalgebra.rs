@@ -1,5 +1,6 @@
 use std::{collections::HashMap, fmt::Error};
 
+use ahash::RandomState;
 use itertools::Itertools;
 
 use crate::linalg::{
@@ -46,7 +47,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
 
     pub fn parse(
         input: &str,
-    ) -> Result<(kCoalgebra<G, F, M>, HashMap<String, BasisIndex<G>>), Error> {
+    ) -> Result<(kCoalgebra<G, F, M>, HashMap<String, BasisIndex<G>, RandomState>), Error> {
         #[derive(Debug, Clone, PartialEq)]
         enum State {
             None,
@@ -147,7 +148,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         }
 
         // Create basis dictionary
-        let mut basis_dict = HashMap::new();
+        let mut basis_dict: HashMap<String, (kBasisElement, G), RandomState> = HashMap::default();
         for (name, grade) in basis.iter() {
             if basis_dict.contains_key(name) {
                 panic!("Name in basis appears twice");
@@ -167,8 +168,8 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         }
 
         // Transform basis
-        let mut transformed = HashMap::new();
-        let mut basis_translate = HashMap::new();
+        let mut transformed = HashMap::default();
+        let mut basis_translate = HashMap::default();
 
         for (name, (el, gr)) in basis_dict.iter().sorted_by_key(|(name, _)| *name) {
             transformed.entry(*gr).or_insert(vec![]).push(el.clone());
@@ -178,7 +179,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         let graded_space = GradedVectorSpace(transformed);
         let tensor = kTensor::generate(&graded_space, &graded_space);
 
-        let mut coaction: HashMap<G, M> = HashMap::new();
+        let mut coaction: HashMap<G, M, RandomState> = HashMap::default();
         for (gr, elements) in &graded_space.0 {
             let domain = elements.len();
             let codomain = *tensor.dimensions.get(gr).unwrap_or(&0);
@@ -235,22 +236,22 @@ pub fn A0_coalgebra() -> kCoalgebra<UniGrading, F2, FieldMatrix<F2>> {
         }],
     );
 
-    let mut dimensions = HashMap::new();
+    let mut dimensions = HashMap::default();
     dimensions.insert(0, 1);
     dimensions.insert(1, 2);
 
-    let mut construct = HashMap::new();
-    let mut first_entry = HashMap::new();
+    let mut construct = HashMap::default();
+    let mut first_entry = HashMap::default();
     first_entry.insert((0, 0), (0, 0));
     first_entry.insert((1, 0), (1, 1));
 
-    let mut second_entry = HashMap::new();
+    let mut second_entry = HashMap::default();
     second_entry.insert((0, 0), (1, 0));
 
     construct.insert((0, 0), first_entry);
     construct.insert((1, 0), second_entry);
 
-    let mut deconstruct = HashMap::new();
+    let mut deconstruct = HashMap::default();
     deconstruct.insert((0, 0), ((0, 0), (0, 0)));
     deconstruct.insert((1, 1), ((1, 0), (0, 0)));
     deconstruct.insert((1, 0), ((0, 0), (1, 0)));

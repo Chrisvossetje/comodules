@@ -22,7 +22,7 @@ mod tests {
     #[test]
     fn test_graded_vector_space_from() {
         // Test creating a GradedVectorSpace from a HashMap
-        let mut space = HashMap::new();
+        let mut space = HashMap::default();
         space.insert(0, vec![1, 2, 3]);
         space.insert(1, vec![4, 5]);
 
@@ -33,7 +33,7 @@ mod tests {
     #[test]
     fn test_graded_linear_map_from() {
         // Test creating a GradedLinearMap from a HashMap
-        let mut map = HashMap::new();
+        let mut map = HashMap::default();
         map.insert(0, FieldMatrix::zero(2, 2));
         map.insert(1, FieldMatrix::zero(3, 3));
 
@@ -44,7 +44,7 @@ mod tests {
     #[test]
     fn test_graded_linear_map_get_cokernel() {
         // Test get_cokernel() produces a correct GradedLinearMap
-        let mut map = HashMap::new();
+        let mut map = HashMap::default();
         map.insert(0, FieldMatrix::zero(2, 3));
         map.insert(1, FieldMatrix::zero(3, 4));
 
@@ -59,7 +59,7 @@ mod tests {
     #[test]
     fn test_graded_linear_map_get_kernel() {
         // Test get_kernel() produces a correct GradedLinearMap
-        let mut map = HashMap::new();
+        let mut map = HashMap::default();
         map.insert(0, FieldMatrix::zero(3, 2));
         map.insert(1, FieldMatrix::zero(4, 3));
 
@@ -74,11 +74,11 @@ mod tests {
     #[test]
     fn test_graded_linear_map_vstack() {
         // Test vstack combines matrices vertically for each grade
-        let mut map1 = HashMap::new();
+        let mut map1 = HashMap::default();
         map1.insert(0, FieldMatrix::zero(2, 3));
         map1.insert(1, FieldMatrix::zero(2, 4));
 
-        let mut map2 = HashMap::new();
+        let mut map2 = HashMap::default();
         map2.insert(0, FieldMatrix::zero(2, 6));
         map2.insert(1, FieldMatrix::zero(2, 2));
 
@@ -96,11 +96,11 @@ mod tests {
     #[test]
     fn test_graded_linear_map_block_sum() {
         // Test block_sum combines matrices block-wise
-        let mut map1 = HashMap::new();
+        let mut map1 = HashMap::default();
         map1.insert(0, FieldMatrix::zero(2, 3));
         map1.insert(1, FieldMatrix::zero(1, 2));
 
-        let mut map2 = HashMap::new();
+        let mut map2 = HashMap::default();
         map2.insert(0, FieldMatrix::zero(2, 4));
         map2.insert(1, FieldMatrix::zero(1, 3));
 
@@ -118,11 +118,11 @@ mod tests {
     #[test]
     fn test_graded_linear_map_compose() {
         // Test composing two graded linear maps
-        let mut map1 = HashMap::new();
+        let mut map1 = HashMap::default();
         map1.insert(0, FieldMatrix::zero(2, 3));
         map1.insert(1, FieldMatrix::zero(3, 2));
 
-        let mut map2 = HashMap::new();
+        let mut map2 = HashMap::default();
         map2.insert(0, FieldMatrix::zero(3, 4));
         map2.insert(1, FieldMatrix::zero(2, 5));
 
@@ -142,7 +142,7 @@ mod tests {
     #[test]
     fn test_graded_linear_map_pivots() {
         // Test pivots retrieves pivot positions
-        let mut map = HashMap::new();
+        let mut map = HashMap::default();
         map.insert(0, FieldMatrix::identity(3));
         map.insert(1, FieldMatrix::zero(4, 4));
 
@@ -158,7 +158,7 @@ mod tests {
     #[test]
     fn test_graded_linear_map_zero_codomain() {
         // Test zero_codomain produces a map with empty domain
-        let mut codomain_space = HashMap::new();
+        let mut codomain_space = HashMap::default();
         codomain_space.insert(0, vec![0; 3]);
         codomain_space.insert(1, vec![0; 2]);
 

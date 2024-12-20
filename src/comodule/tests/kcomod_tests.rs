@@ -81,7 +81,7 @@ mod tests {
     // Test for kComodule::get_generators
     #[test]
     fn test_get_generators() {
-        let mut space_map = HashMap::new();
+        let mut space_map = HashMap::default();
         space_map.insert(
             0,
             vec![
