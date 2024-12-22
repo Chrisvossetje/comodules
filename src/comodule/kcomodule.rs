@@ -164,9 +164,9 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
                 .0
                 .entry(*g)
                 .and_modify(|self_els| {
-                    self_els.append(other_els);
+                    self_els.extend(other_els.drain(0..));
                 })
-                .or_insert(other_els.clone());
+                .or_insert(other_els.drain(0..).collect());
         });
 
         self.tensor.direct_sum(&mut other.tensor, &self_dimensions);

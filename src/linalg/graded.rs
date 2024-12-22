@@ -84,14 +84,17 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
     }
 
     pub fn block_sum(&mut self, other: &mut Self) { 
-        other.maps.iter_mut().for_each(|(grade, other_mat)| {
-            self.maps
-                .entry(*grade)
-                .and_modify(|self_mat| {
-                    self_mat.block_sum(other_mat);
-                })
-                .or_insert(other_mat.clone());
+        self.maps.par_iter_mut().for_each(|(grade, self_mat)| {
+            match other.maps.get(grade) {
+                Some(other_mat) => {self_mat.block_sum(other_mat);},
+                None => {},
+            }
         });
+        other.maps.drain().for_each(|(g,map)|
+            if !self.maps.contains_key(&g) {
+                self.maps.insert(g, map);
+            }
+        );
     }
 
     pub fn compose(&self, rhs: &Self) -> Self {

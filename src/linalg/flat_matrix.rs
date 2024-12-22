@@ -146,7 +146,7 @@ impl<F: Field> Matrix<F> for FlatMatrix<F> {
         self.codomain += other.codomain;
     }
 
-    fn block_sum(&mut self, other: &mut Self) {
+    fn block_sum(&mut self, other: &Self) {
         let new_domain = self.domain + other.domain;
         let new_codomain = self.codomain + other.codomain;
         let mut new = Self::zero(new_domain, new_codomain);

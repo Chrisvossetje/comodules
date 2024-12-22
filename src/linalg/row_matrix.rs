@@ -149,22 +149,21 @@ impl<F: Field> Matrix<F> for RowMatrix<F> {
         self.codomain += other.codomain;
     }
 
-    fn block_sum(&mut self, other: &mut Self) {
-        let self_domain = self.domain;
-        let other_domain = other.domain;
+    fn block_sum(&mut self, other: &Self) {
+
         for el in self.data.iter_mut() {
-            let mut zeros = vec![F::zero(); other_domain];
+            let mut zeros = vec![F::zero(); other.domain];
             el.append(&mut zeros);
         }
 
-        for oth in other.data.iter_mut() {
-            let mut zeros = vec![F::zero(); self_domain];
-            zeros.append(oth);
+        for oth in other.data.iter() {
+            let mut zeros = vec![F::zero(); self.domain + other.domain];
+            zeros[self.domain..(self.domain + other.domain)].copy_from_slice(&oth);
 
             self.data.push(zeros);
         }
 
-        self.domain += other_domain;
+        self.domain += other.domain;
         self.codomain += other.codomain;
     }
 

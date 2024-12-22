@@ -166,8 +166,8 @@ impl<G: Grading> kTensor<G> {
     ///
     /// After careful thinking, this direct sum is not dependent on the non-determinism of the hashmap
     pub fn direct_sum(&mut self, other: &mut Self, self_space_dimensions: &HashMap<G, usize>) {
-        other.construct.iter().for_each(|((m_gr, m_id), maps)| {
-            let m_id_new = self_space_dimensions.get(m_gr).unwrap_or(&0) + m_id;
+        other.construct.drain().for_each(|((m_gr, m_id), maps)| {
+            let m_id_new = self_space_dimensions.get(&m_gr).unwrap_or(&0) + m_id;
 
             let new_map = maps
                 .iter()
@@ -177,18 +177,18 @@ impl<G: Grading> kTensor<G> {
                 })
                 .collect();
 
-            self.construct.insert((*m_gr, m_id_new), new_map);
+            self.construct.insert((m_gr, m_id_new), new_map);
         });
 
         other
             .deconstruct
-            .iter()
+            .drain()
             .for_each(|((t_gr, t_id), ((a_gr, a_id), (m_gr, m_id)))| {
-                let m_id_new = self_space_dimensions.get(m_gr).unwrap_or(&0) + m_id;
-                let t_id_new = self.dimensions.get(t_gr).unwrap_or(&0) + t_id;
+                let m_id_new = self_space_dimensions.get(&m_gr).unwrap_or(&0) + m_id;
+                let t_id_new = self.dimensions.get(&t_gr).unwrap_or(&0) + t_id;
 
                 self.deconstruct
-                    .insert((*t_gr, t_id_new), ((*a_gr, *a_id), (*m_gr, m_id_new)));
+                    .insert((t_gr, t_id_new), ((a_gr, a_id), (m_gr, m_id_new)));
             });
 
         other.dimensions.iter().for_each(|(gr, other_size)| {
