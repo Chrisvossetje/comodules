@@ -69,6 +69,22 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
         debug_assert!(com.verify());
         com
     }
+
+    pub fn find_cogens(&self, limit: G) -> usize {
+        let mut temp_coac = self.coaction.clone();
+
+        self.space.0.iter().for_each(|(g,els)| {
+            (0..els.len()).into_iter().for_each(|domain| {
+                let (_, codomain) = self.tensor.construct[&(*g,domain)][&(G::zero(), 0)];
+                temp_coac.maps.get_mut(&g).unwrap().set(domain, codomain, F::zero());
+            })
+        });
+
+        temp_coac.maps.iter().filter(|(&gr,_)| {gr <= limit}).map(|(gr, map)| {
+            let kernel = map.kernel();
+            kernel.codomain()
+        }).sum()
+    }
 }
 
 impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
