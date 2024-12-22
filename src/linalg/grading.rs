@@ -1,8 +1,5 @@
 use std::{
-    fmt::Debug,
-    hash::Hash,
-    ops::{Add, AddAssign, Sub, SubAssign},
-    str::FromStr,
+    fmt::Debug, hash::Hash, iter::Sum, ops::{Add, AddAssign, Sub, SubAssign}, str::FromStr
 };
 
 pub trait Grading:
@@ -22,6 +19,8 @@ pub trait Grading:
     + Ord
     + Sync
     + Send
+    + FromStr
+    + Sum
 {
     fn degree_names() -> Vec<char>;
     fn default_formulas() -> (String, String);
@@ -29,6 +28,8 @@ pub trait Grading:
 
     fn incr(self) -> Self;
     fn zero() -> Self;
+
+    fn integer_multiplication(self, other: i32) -> Self;
 
     fn parse(parse: &str) -> Result<Self, ()>;
 }
@@ -56,6 +57,10 @@ impl Grading for i32 {
 
     fn parse(parse: &str) -> Result<Self, ()> {
         i32::from_str(parse).map_err(|_| ())
+    }
+    
+    fn integer_multiplication(self, other: i32) -> Self {
+        self * other
     }
 }
 
