@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use ahash::RandomState;
 use itertools::Itertools;
+use rayon::iter::{IntoParallelRefIterator, ParallelDrainFull, ParallelExtend};
 use serde::{Deserialize, Serialize};
 
 use crate::linalg::{
@@ -166,30 +167,33 @@ impl<G: Grading> kTensor<G> {
     ///
     /// After careful thinking, this direct sum is not dependent on the non-determinism of the hashmap
     pub fn direct_sum(&mut self, other: &mut Self, self_space_dimensions: &HashMap<G, usize>) {
-        other.construct.drain().for_each(|((m_gr, m_id), maps)| {
-            let m_id_new = self_space_dimensions.get(&m_gr).unwrap_or(&0) + m_id;
-
-            let new_map = maps
-                .iter()
-                .map(|((a_gr, a_id), (t_gr, t_id))| {
-                    let t_id_new = self.dimensions.get(t_gr).unwrap_or(&0) + t_id;
-                    ((*a_gr, *a_id), (*t_gr, t_id_new))
-                })
-                .collect();
-
-            self.construct.insert((m_gr, m_id_new), new_map);
-        });
-
-        other
-            .deconstruct
-            .drain()
-            .for_each(|((t_gr, t_id), ((a_gr, a_id), (m_gr, m_id)))| {
+        // TODO: Consider using parallel here for bigger coalgebras ?
+        self.construct.extend(
+            other.construct.drain().map(|((m_gr, m_id), maps)| {
                 let m_id_new = self_space_dimensions.get(&m_gr).unwrap_or(&0) + m_id;
-                let t_id_new = self.dimensions.get(&t_gr).unwrap_or(&0) + t_id;
+    
+                let new_map = maps
+                    .iter()
+                    .map(|((a_gr, a_id), (t_gr, t_id))| {
+                        let t_id_new = self.dimensions.get(t_gr).unwrap_or(&0) + t_id;
+                        ((*a_gr, *a_id), (*t_gr, t_id_new))
+                    })
+                    .collect();
+    
+                ((m_gr, m_id_new), new_map)
+            })
+        );
 
-                self.deconstruct
-                    .insert((t_gr, t_id_new), ((a_gr, a_id), (m_gr, m_id_new)));
-            });
+        self.deconstruct.extend(
+            other
+                .deconstruct
+                .drain()
+                .map(|((t_gr, t_id), ((a_gr, a_id), (m_gr, m_id)))| {
+                    let m_id_new = self_space_dimensions.get(&m_gr).unwrap_or(&0) + m_id;
+                    let t_id_new = self.dimensions.get(&t_gr).unwrap_or(&0) + t_id;
+                    ((t_gr, t_id_new), ((a_gr, a_id), (m_gr, m_id_new)))
+                })
+        );
 
         other.dimensions.iter().for_each(|(gr, other_size)| {
             self.dimensions
