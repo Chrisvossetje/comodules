@@ -87,7 +87,7 @@ mod tests {
     #[test]
     fn test_a1_resolution() {
         let input = include_str!("../examples/kcoalgebras/A(1).txt");
-        let coalgebra = Arc::new(kCoalgebra::parse(input).unwrap().0);
+        let coalgebra = Arc::new(kCoalgebra::parse_direct(input).unwrap().0);
 
         let fp = kComodule::fp_comodule(coalgebra);
 
@@ -105,9 +105,9 @@ mod tests {
     }
 
     #[test]
-    fn test_a2_resolution() {
+    fn test_a2_resolution_direct() {
         let input = include_str!("../examples/kcoalgebras/A(2).txt");
-        let coalgebra = Arc::new(kCoalgebra::parse(input).unwrap().0);
+        let coalgebra = Arc::new(kCoalgebra::parse_direct(input).unwrap().0);
 
         let fp = kComodule::fp_comodule(coalgebra);
 
@@ -118,6 +118,27 @@ mod tests {
         > = Resolution::new(fp);
 
         res.resolve_to_s(8, 12);
+
+        let p = res.generate_page();
+        let comp_p: Page = serde_json::from_str(include_str!("./A(2)page.json")).unwrap();
+        assert_eq!(p, comp_p);
+    }
+
+    #[test]
+    fn test_a2_resolution_poly() {
+        let input = include_str!("../examples/kcoalgebras/A(2)_gen.txt");
+        let coalgebra = Arc::new(kCoalgebra::parse_polynomial_hopf_algebra(input, i32::MAX).unwrap().0);
+
+        let fp = kComodule::fp_comodule(coalgebra);
+
+        let mut res: Resolution<
+            UniGrading,
+            kComodule<UniGrading, F2, RowMatrix<F2>>,
+            kComoduleMorphism<UniGrading, F2, RowMatrix<F2>>,
+        > = Resolution::new(fp);
+
+        res.resolve_to_s(8, 12);
+        dbg!(&res);
 
         let p = res.generate_page();
         let comp_p: Page = serde_json::from_str(include_str!("./A(2)page.json")).unwrap();

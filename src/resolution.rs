@@ -15,7 +15,7 @@ use crate::{
 #[derive(Debug, Clone, PartialEq)]
 pub struct Resolution<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> {
     comodule: Arc<M>,
-    resolution: Vec<Morph>,
+    pub resolution: Vec<Morph>,
     _grading: PhantomData<G>,
 }
 

@@ -1,5 +1,5 @@
 use std::{
-    fmt::Debug, hash::Hash, iter::Sum, ops::{Add, AddAssign, Sub, SubAssign}, str::FromStr
+    fmt::{Debug, Display}, hash::Hash, iter::Sum, ops::{Add, AddAssign, Sub, SubAssign}, str::FromStr
 };
 
 pub trait Grading:
@@ -8,6 +8,7 @@ pub trait Grading:
     + Hash
     + Copy
     + Debug
+    + Display
     + Sized
     + Add<Output = Self>
     + Sub<Output = Self>
@@ -28,6 +29,7 @@ pub trait Grading:
 
     fn incr(self) -> Self;
     fn zero() -> Self;
+    fn infty() -> Self;
 
     fn integer_multiplication(self, other: i32) -> Self;
 
@@ -49,6 +51,10 @@ impl Grading for i32 {
 
     fn zero() -> Self {
         0
+    }
+
+    fn infty() -> Self {
+        i32::MAX
     }
 
     fn incr(self) -> Self {

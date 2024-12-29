@@ -1,6 +1,7 @@
 use crate::linalg::field::Field;
+use std::fmt::Debug;
 
-pub trait Matrix<F: Field>: Clone + Send + Sync + PartialEq {
+pub trait Matrix<F: Field>: Clone + Send + Sync + PartialEq + Debug {
     fn zero(domain: usize, codomain: usize) -> Self;
     fn identity(d: usize) -> Self;
 

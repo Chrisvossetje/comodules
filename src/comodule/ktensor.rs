@@ -59,7 +59,7 @@ impl<G: Grading> kTensor<G> {
 
     pub fn generate<B: BasisElement>(
         left: &GradedVectorSpace<G, B>,
-        right: &GradedVectorSpace<G, B>,
+        right: &GradedVectorSpace<G, B>
     ) -> Self {
         let mut construct = HashMap::default();
         let mut deconstruct = HashMap::default();

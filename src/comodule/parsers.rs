@@ -229,7 +229,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                     }
                     state = State::Generator;
                 }
-                _ if line.starts_with("- RELATIONS") => {
+                _ if line.starts_with("- RELATION") => {
                     if state != State::Generator {
                         panic!("Expected GENERATOR to be parsed first");
                     }
@@ -249,7 +249,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                         field = Some(line.parse::<usize>().expect("Invalid field value"));
                     }
                     State::Generator => {
-                        let (name, grade) = line.split_once(':').expect("Invalid GENERATOR format");
+                        let (name, grade) = line.split_once(':').expect(format!("Invalid GENERATOR format, got: {}", line).as_str());
                         let grade = G::parse(grade.trim()).expect("Invalid grading");
                         generator_translate.insert(name.trim().to_string(), generators.len());
                         generators.push((name.trim().to_string(), grade));
@@ -291,78 +291,94 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
 
         // BFS loop
         while let Some((current_monomial, generator_index)) = queue.pop() {
-            let next_monomial = multiply_monomial_by_generator(&current_monomial, generator_index, &relations);
+            if let Some(next_monomial) = multiply_monomial_by_generator(&current_monomial, generator_index, &relations) {
+                // Check if `next_monomial` is already processed
+                if !basis_information.contains_key(&next_monomial) {
+                    // Check if the grade of the monomial is valid
+                    let next_grade = monomial_to_grade(&next_monomial, &generators);
+                    if next_grade <= max_grading {
+                        // Calculate the coaction for the new monomial
+                        let coaction_result = multiply_coaction_elements(
+                            basis_information.get(&current_monomial).unwrap(),
+                            &coactions[generator_index],
+                            &relations,
+                        );
 
-            // Check if `next_monomial` is already processed
-            if !basis_information.contains_key(&next_monomial) {
-                // Check if the grade of the monomial is valid
-                let next_grade = monomial_to_grade(&next_monomial, &generators);
-                if next_grade <= max_grading {
-                    // Calculate the coaction for the new monomial
-                    let coaction_result = multiply_coaction_elements(
-                        basis_information.get(&current_monomial).unwrap(),
-                        &coactions[generator_index],
-                        &relations,
-                    );
-
-                    // Store the result and push new states to the queue
-                    basis_information.insert(next_monomial.clone(), coaction_result);
-                    for i in 0..n {
-                        queue.push((next_monomial.clone(), i));
+                        // Store the result and push new states to the queue
+                        basis_information.insert(next_monomial.clone(), coaction_result);
+                        for i in 0..n {
+                            queue.push((next_monomial.clone(), i));
+                        }
                     }
                 }
             }
         }
         // Construct the basis structure
-        let mut basis: HashMap<G, Vec<kBasisElement>> = HashMap::new();
-        let mut basis_index: HashMap<Monomial, (G, usize)> = HashMap::new();
+        let mut basis: HashMap<G, Vec<kBasisElement>, RandomState> = HashMap::default();
+        let mut monomial_to_grade_index: HashMap<Monomial, (G, usize), RandomState> = HashMap::default();
 
-        for (monomial, coaction) in &basis_information {
+        for monomial in basis_information.keys() {
             let grade = monomial_to_grade(monomial, &generators);
             let label = monomial_to_string(monomial, &generators);
 
             let element = kBasisElement {
-                name: label,
-                generator: false,
+                name: label.clone(),
+                generator: generators.contains(&(label, grade)),
                 primitive: None,
                 generated_index: 0,
             };
 
             let index = basis.entry(grade).or_insert_with(Vec::new).len();
-            basis_index.insert(monomial.clone(), (grade, index));
+            monomial_to_grade_index.insert(monomial.clone(), (grade, index));
             basis.entry(grade).or_insert_with(Vec::new).push(element);
         }
 
-        // Generate tensored and moduled structures
-        let (tensored, moduled) = generate_tensored_moduled(&basis, &basis);
+        // Create the graded vector space A
+        let coalg_vector_space = GradedVectorSpace::from(basis.clone());
+
+        // create A \otimes A
+        let tensor = kTensor::generate(&coalg_vector_space, &coalg_vector_space);
 
         // Create the coaction map
-        let mut coaction_map: HashMap<G, GradedMap<F>> = HashMap::new();
+        let mut coaction: HashMap<G, M, RandomState> = HashMap::default();
 
-        for grade in tensored.keys() {
-            let tensor_rows = tensored[grade].len();
-            let basis_cols = basis[grade].len();
-            let mut map = GradedMap::zero(tensor_rows, basis_cols);
+        for grade in tensor.dimensions.keys() { 
+            
+            // This loop is really weird, it should be a loop over basis_information, but I am too lazy to rewrite it
+            // Todo: Create and store mutable 'map' for each grade, then iterate over basis_information 
+            let tensor_rows = tensor.dimensions[grade];
+            let basis_cols = &basis[grade].len();
+            let mut map = M::zero(*basis_cols, tensor_rows);
 
-            for (monomial, coaction_elements) in &basis_information {
-                let (basis_grade, basis_index) = basis_index.get(monomial).unwrap();
+            for (monomial, coaction_elements) in &basis_information { 
+                let (basis_grade, basis_index) = monomial_to_grade_index.get(monomial).unwrap();
                 if basis_grade != grade {
                     continue;
                 }
 
-                for (coeff, left, right) in coaction_elements {
-                    let (left_grade, left_index) = basis_index.get(left).unwrap();
-                    let (right_grade, right_index) = basis_index.get(right).unwrap();
-                    let tensor_index = moduled[right_grade][right_index][left_grade][left_index];
+                for (coeff, a, b) in coaction_elements {
+                    let a_grade_index = monomial_to_grade_index.get(a).unwrap();
+                    let b_grade_index = monomial_to_grade_index.get(b).unwrap();
+                    let (_, tensor_index) = tensor.construct[&b_grade_index][&a_grade_index];
 
-                    map.set(tensor_index, *basis_index, F::from(*coeff));
+                    map.set(*basis_index, tensor_index, *coeff);
                 }
             }
 
-            coaction_map.insert(*grade, map);
+            coaction.insert(*grade, map);
         }
+        
+        let coalg = kCoalgebra {
+            space: coalg_vector_space,
+            tensor: tensor,
+            coaction: GradedLinearMap::from(coaction),
+        };
 
-        unimplemented!()
+        // I think we don't need the generator translate in the rest of the code
+        // but i left it here for now ¯\_(ツ)_/¯
+        let empty_generator_translate = generator_translate.into_iter().map(|(name, _)| (name, (G::zero(), 0))).collect();
+
+        Ok((coalg, empty_generator_translate))
 
     }
 }
@@ -400,9 +416,9 @@ fn increment_monomial(m: &Monomial, index: usize) -> Monomial {
     new_monomial
 }
 
-fn multiply_monomial_by_generator(m: &Monomial, index: usize, relations: &Vec<Monomial>) -> Monomial {
+fn multiply_monomial_by_generator(m: &Monomial, index: usize, relations: &Vec<Monomial>) -> Option<Monomial> {
     let new_monomial = increment_monomial(m, index);
-    reduce_monomial(&new_monomial, relations).unwrap()
+    reduce_monomial(&new_monomial, relations)
 }
 
 fn add_monomials(a: &Monomial, b: &Monomial) -> Monomial {
@@ -427,13 +443,18 @@ fn monomial_to_grade<G: Grading>(m: &Monomial, generators: &Vec<(String, G)>) ->
 }
 
 fn monomial_to_string<G: Grading>(m: &Monomial, generators: &Vec<(String, G)>) -> String {
-    m.iter().zip(generators.iter()).filter(|(x, _)| **x > 0).map(|(x, (name, _))| {
+    let generators = m.iter().zip(generators.iter()).filter(|(x, _)| **x > 0).map(|(x, (name, _))| {
         if *x == 1 {
             name.clone()
         } else {
             format!("{}^{}", name, x)
         }
-    }).collect::<Vec<String>>().join("*")
+    }).collect::<Vec<String>>(); 
+    if generators.len() == 0 {
+        1.to_string()
+    } else {
+        generators.join("*")
+    }
 }
 
 fn multiply_monomials(
@@ -480,6 +501,6 @@ fn multiply_coaction_elements<F: Field>(
         }
     }
 
-    result.retain(|(coeff, _, _)| coeff.clone() != F::zero());
+    result.retain(|(coeff, _, _)| *coeff != F::zero());
     result
 }

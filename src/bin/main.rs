@@ -14,8 +14,10 @@ use comodules::{
 fn main() {
     let start = Instant::now();
 
-    let input = include_str!("../../examples/kcoalgebras/A(2).txt");
-    let coalgebra = Arc::new(kCoalgebra::parse(input).unwrap().0);
+    let input = include_str!("../../examples/kcoalgebras/A(2)_gen.txt");
+    const MAX_GRADING: i32 = 20;
+    let coalgebra = Arc::new(kCoalgebra::parse_polynomial_hopf_algebra(input, MAX_GRADING).unwrap().0);
+    // let coalgebra = Arc::new(kCoalgebra::parse_direct(input).unwrap().0);
 
     let fp = kComodule::fp_comodule(coalgebra);
 
@@ -25,7 +27,7 @@ fn main() {
         kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>,
     > = Resolution::new(fp);
 
-    res.resolve_to_s(80, 140);
+    res.resolve_to_s(5, 50);
 
     let page = res.generate_page();
 
