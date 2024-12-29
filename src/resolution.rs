@@ -13,13 +13,13 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Resolution<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> {
+pub struct Resolution<G: Grading, M: Comodule<G>> {
     comodule: Arc<M>,
-    resolution: Vec<Morph>,
+    resolution: Vec<M::Morphism>,
     _grading: PhantomData<G>,
 }
 
-impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M, Morph> {
+impl<G: Grading, M: Comodule<G>> Resolution<G, M> {
     pub fn new(comodule: M) -> Self {
         Resolution {
             comodule: Arc::new(comodule),
@@ -37,7 +37,7 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
             io::stdout().flush().unwrap();
             let inject_time = std::time::Instant::now();
 
-            let zero_morph = Morph::zero_morphism(self.comodule.clone());
+            let zero_morph = M::Morphism::zero_morphism(self.comodule.clone());
             let fixed_limit = limit.incr().incr();
 
             println!("took: {:.2?}\n", inject_time.elapsed());
@@ -71,7 +71,7 @@ impl<G: Grading, M: Comodule<G>, Morph: ComoduleMorphism<G, M>> Resolution<G, M,
             print!("Composing both morphisms    ");
             // Compose
             io::stdout().flush().unwrap();
-            let combine = Morph::compose(inject, coker);
+            let combine = M::Morphism::compose(inject, coker);
             println!("took: {:.2?}", compose_time.elapsed());
 
             println!(

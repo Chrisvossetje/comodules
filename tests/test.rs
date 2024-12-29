@@ -6,7 +6,6 @@ mod tests {
         comodule::{
             kcoalgebra::{kCoalgebra, A0_coalgebra},
             kcomodule::kComodule,
-            kmorphism::kComoduleMorphism,
             traits::Comodule,
         },
         linalg::{field::F2, grading::UniGrading, row_matrix::RowMatrix},
@@ -21,11 +20,8 @@ mod tests {
 
         let fp = kComodule::fp_comodule(coalgebra);
 
-        let mut res: Resolution<
-            UniGrading,
-            kComodule<UniGrading, F2, RowMatrix<F2>>,
-            kComoduleMorphism<UniGrading, F2, RowMatrix<F2>>,
-        > = Resolution::new(fp);
+        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
+            Resolution::new(fp);
 
         res.resolve_to_s(4, 10);
 
@@ -71,11 +67,8 @@ mod tests {
 
         let fp = kComodule::fp_comodule(coalgebra);
 
-        let mut res: Resolution<
-            UniGrading,
-            kComodule<UniGrading, F2, RowMatrix<F2>>,
-            kComoduleMorphism<UniGrading, F2, RowMatrix<F2>>,
-        > = Resolution::new(fp);
+        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
+            Resolution::new(fp);
 
         res.resolve_to_s(20, 20);
 
@@ -91,11 +84,8 @@ mod tests {
 
         let fp = kComodule::fp_comodule(coalgebra);
 
-        let mut res: Resolution<
-            UniGrading,
-            kComodule<UniGrading, F2, RowMatrix<F2>>,
-            kComoduleMorphism<UniGrading, F2, RowMatrix<F2>>,
-        > = Resolution::new(fp);
+        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
+            Resolution::new(fp);
 
         res.resolve_to_s(20, 20);
 
@@ -111,11 +101,8 @@ mod tests {
 
         let fp = kComodule::fp_comodule(coalgebra);
 
-        let mut res: Resolution<
-            UniGrading,
-            kComodule<UniGrading, F2, RowMatrix<F2>>,
-            kComoduleMorphism<UniGrading, F2, RowMatrix<F2>>,
-        > = Resolution::new(fp);
+        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
+            Resolution::new(fp);
 
         res.resolve_to_s(8, 12);
 

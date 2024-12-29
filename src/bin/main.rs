@@ -3,11 +3,8 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use comodules::{
-    comodule::{
-        kcoalgebra::kCoalgebra, kcomodule::kComodule, kmorphism::kComoduleMorphism,
-        traits::Comodule,
-    },
-    linalg::{field::F2, flat_matrix::FlatMatrix, grading::UniGrading, row_matrix::RowMatrix},
+    comodule::{kcoalgebra::kCoalgebra, kcomodule::kComodule, traits::Comodule},
+    linalg::{field::F2, flat_matrix::FlatMatrix, grading::UniGrading},
     resolution::Resolution,
 };
 
@@ -19,11 +16,8 @@ fn main() {
 
     let fp = kComodule::fp_comodule(coalgebra);
 
-    let mut res: Resolution<
-        UniGrading,
-        kComodule<UniGrading, F2, FlatMatrix<F2>>,
-        kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>,
-    > = Resolution::new(fp);
+    let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
+        Resolution::new(fp);
 
     res.resolve_to_s(80, 140);
 

@@ -2,9 +2,10 @@ use std::sync::Arc;
 
 use crate::linalg::{graded::BasisElement, grading::Grading};
 
-pub trait Comodule<G: Grading> {
+pub trait Comodule<G: Grading>: Sized {
     type Element: BasisElement;
     type Coalgebra;
+    type Morphism: ComoduleMorphism<G, Self>;
 
     fn zero_comodule(coalgebra: Arc<Self::Coalgebra>) -> Self;
 

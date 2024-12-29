@@ -1,7 +1,4 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use std::{collections::HashMap, sync::Arc};
 
 use ahash::RandomState;
 use itertools::Itertools;
@@ -245,7 +242,6 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                 pivot_grade,
                 fixed_limit,
             );
-
 
             growing_comodule.direct_sum(&mut f);
             growing_map.vstack(&mut GradedLinearMap::from(cofree_map));
