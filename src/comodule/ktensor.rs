@@ -19,12 +19,13 @@ pub type TensorDimension<G> = HashMap<G, usize, RandomState>;
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 #[allow(non_camel_case_types)]
 pub struct kTensor<G: Grading> {
-    // # Module Grade + Index -> Algebra Grading + index -> Tensor Grading + index
+    // Module BasisIndex -> Coalgebra BasisIndex -> Tensor BasisIndex
     pub construct: TensorConstruct<G>,
 
-    // # Module Grade + Index -> Algebra Grading + index -> Tensor Grading + index
+    // Tensor BasisIndex -> (Coalgebra BasisIndex, Comodule BasisIndex)
     pub deconstruct: TensorDeconstruct<G>,
-
+    
+    // Tensor Grade -> usize (Dimension of tensor in that grade)
     pub dimensions: TensorDimension<G>,
 }
 
