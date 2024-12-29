@@ -150,7 +150,6 @@ impl<F: Field> Matrix<F> for RowMatrix<F> {
     }
 
     fn block_sum(&mut self, other: &Self) {
-
         for el in self.data.iter_mut() {
             let mut zeros = vec![F::zero(); other.domain];
             el.append(&mut zeros);

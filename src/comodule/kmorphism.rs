@@ -1,7 +1,4 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, Mutex},
-};
+use std::{collections::HashMap, sync::Arc};
 
 use ahash::RandomState;
 use itertools::Itertools;
@@ -34,12 +31,14 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComoduleMorphism<G, F, M> {
     fn verify_dimensions(&self) -> bool {
         for k in self.domain.space.0.keys() {
             if !self.map.maps.contains_key(k) {
+                dbg!("1");
                 return false;
             };
         }
-
+        
         for k in self.codomain.space.0.keys() {
             if !self.map.maps.contains_key(k) {
+                dbg!("2", k);
                 return false;
             };
         }
@@ -48,9 +47,11 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComoduleMorphism<G, F, M> {
             let dom_dim = self.domain.space.dimension_in_grade(g);
             let codom_dim = self.codomain.space.dimension_in_grade(g);
             if dom_dim != map.domain() {
+                dbg!("3");
                 return false;
             };
             if codom_dim != map.codomain() {
+                dbg!("4");
                 return false;
             };
         }
@@ -239,17 +240,16 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                 Some((t_gr, map))
             }).collect();
 
-            let mut f = kComodule::cofree_comodule(
-                self.codomain.coalgebra.clone(),
-                iteration,
-                pivot_grade,
-                fixed_limit,
-            );
+            // let mut f = kComodule::cofree_comodule(
+            //     self.codomain.coalgebra.clone(),
+            //     iteration,
+            //     pivot_grade,
+            //     fixed_limit,
+            // );
 
-
-            growing_comodule.direct_sum(&mut f);
+            growing_comodule.add_cofree_in_g(iteration, pivot_grade, fixed_limit);
             growing_map.vstack(&mut GradedLinearMap::from(cofree_map));
-
+            
             iteration += 1;
         }
 

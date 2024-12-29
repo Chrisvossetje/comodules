@@ -73,17 +73,61 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
     pub fn find_cogens(&self, limit: G) -> usize {
         let mut temp_coac = self.coaction.clone();
 
-        self.space.0.iter().for_each(|(g,els)| {
+        self.space.0.iter().for_each(|(g, els)| {
             (0..els.len()).into_iter().for_each(|domain| {
-                let (_, codomain) = self.tensor.construct[&(*g,domain)][&(G::zero(), 0)];
-                temp_coac.maps.get_mut(&g).unwrap().set(domain, codomain, F::zero());
+                let (_, codomain) = self.tensor.construct[&(*g, domain)][&(G::zero(), 0)];
+                temp_coac
+                    .maps
+                    .get_mut(&g)
+                    .unwrap()
+                    .set(domain, codomain, F::zero());
             })
         });
 
-        temp_coac.maps.iter().filter(|(&gr,_)| {gr <= limit}).map(|(gr, map)| {
-            let kernel = map.kernel();
-            kernel.codomain()
-        }).sum()
+        temp_coac
+            .maps
+            .iter()
+            .filter(|(&gr, _)| gr <= limit)
+            .map(|(_, map)| {
+                let kernel = map.kernel();
+                kernel.codomain()
+            })
+            .sum()
+    }
+
+
+    pub fn add_cofree_in_g(&mut self, iteration: usize, grade: G, limit: G) {
+        let other = self.coalgebra.clone();
+
+        let self_dimensions = self.space.0.iter().map(|(g, v)| (*g, v.len())).collect();
+
+        fn space_change_iter(space: &Vec<kBasisElement>, iteration: usize) -> Vec<kBasisElement> {
+            space.iter().map(|el| {
+                let mut new_el = el.clone();
+                new_el.generated_index = iteration;
+                new_el
+            }).collect()
+        }
+        
+        other.space.0.iter().for_each(|(&g, other_els)| {
+            let new_g = g + grade;
+            if new_g <= limit {
+                self.space
+                    .0
+                    .entry(new_g)
+                    .and_modify(|self_els| {
+                        self_els.extend(space_change_iter(other_els, iteration));
+                    })
+                    .or_insert(space_change_iter(other_els, iteration));
+            }
+        });
+
+        self.tensor.direct_sum_add_g(&other.tensor, &self_dimensions, grade, limit);
+
+        self.coaction.block_sum_add(&other.coaction, grade, limit);
+
+
+        debug_assert!(self.verify());
     }
 }
 
@@ -189,6 +233,8 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
 
         debug_assert!(self.verify());
     }
+
+
 
     fn cofree_comodule(coalgebra: Arc<Self::Coalgebra>, index: usize, grade: G, limit: G) -> Self {
         let coaction: HashMap<G, M, RandomState> = coalgebra

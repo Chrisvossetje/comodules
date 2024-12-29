@@ -79,6 +79,59 @@ mod tests {
         comodule1.tensor.is_correct();
     }
 
+    #[test]
+    fn test_add_direct_sum_1() {
+        let coalgebra = Arc::new(A0_coalgebra());
+        let mut comodule1 = kComodule::zero_comodule(coalgebra.clone());
+
+
+        comodule1.add_cofree_in_g(0, 0, 10);
+
+        assert_eq!(comodule1.space.0.get(&0).unwrap().len(), 1);
+        assert_eq!(comodule1.space.0.get(&1).unwrap().len(), 1);
+
+        let elements = &comodule1.space.0[&0];
+        assert_eq!(elements[0].name, "1");
+
+        let elements = &comodule1.space.0[&1];
+        assert_eq!(elements[0].name, "xi1");
+
+        let dims = &comodule1.tensor.dimensions;
+        assert_eq!(dims.get(&0), Some(&1));
+        assert_eq!(dims.get(&1), Some(&2));
+        comodule1.tensor.is_correct();
+    }
+
+    #[test]
+    fn test_add_direct_sum_2() {
+        let coalgebra = Arc::new(A0_coalgebra());
+        let mut comodule1 = kComodule::fp_comodule(coalgebra.clone());
+
+
+        comodule1.add_cofree_in_g(0, 2, 10);
+
+        assert_eq!(comodule1.space.0.get(&0).unwrap().len(), 1);
+        assert_eq!(comodule1.space.0.get(&1), None);
+        assert_eq!(comodule1.space.0.get(&2).unwrap().len(), 1);
+        assert_eq!(comodule1.space.0.get(&3).unwrap().len(), 1);
+
+        let elements = &comodule1.space.0[&0];
+        assert_eq!(elements[0].name, "fp");
+
+        let elements = &comodule1.space.0[&2];
+        assert_eq!(elements[0].name, "1");
+
+        let elements = &comodule1.space.0[&3];
+        assert_eq!(elements[0].name, "xi1");
+
+        let dims = &comodule1.tensor.dimensions;
+        assert_eq!(dims.get(&0), Some(&1));
+        assert_eq!(dims.get(&1), None);
+        assert_eq!(dims.get(&2), Some(&1));
+        assert_eq!(dims.get(&3), Some(&2));
+        comodule1.tensor.is_correct();
+    }
+
     // Test for kComodule::get_generators
     #[test]
     fn test_get_generators() {

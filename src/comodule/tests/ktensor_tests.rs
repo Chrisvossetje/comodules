@@ -43,8 +43,8 @@ mod tests {
 
         let mut map = HashMap::default();
         map.insert((0, 0), ((0, 0), (0, 0)));
-        map.insert((1, 0), ((0, 0), (1, 0)));
-        map.insert((1, 1), ((1, 0), (0, 0)));
+        map.insert((1, 0), ((1, 0), (0, 0)));
+        map.insert((1, 1), ((0, 0), (1, 0)));
 
         assert_eq!(tensor.deconstruct, map);
     }

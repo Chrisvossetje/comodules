@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use ahash::RandomState;
 use itertools::Itertools;
-use rayon::iter::{IntoParallelRefIterator, ParallelDrainFull, ParallelExtend};
 use serde::{Deserialize, Serialize};
 
 use crate::linalg::{
@@ -67,23 +66,21 @@ impl<G: Grading> kTensor<G> {
         let mut dimensions = HashMap::default();
 
         // This sorted is important for consistency !
-        for (l_grade, l_elements) in left.0.iter().sorted_by_key(|(&lg, _)| lg) {
-            for l_id in 0..l_elements.len() {
-                for (r_grade, r_elements) in right.0.iter() {
+        for (r_grade, r_elements) in right.0.iter().sorted_by_key(|(&g, _)| g) {
+            for r_id in 0..r_elements.len() {
+                let entry = construct
+                    .entry((*r_grade, r_id))
+                    .or_insert(HashMap::default());
+                for (l_grade, l_elements) in left.0.iter() {
                     let t_grade = *l_grade + *r_grade;
 
                     if !right.0.contains_key(&t_grade) {
                         continue;
                     }
+                    let t_id = dimensions.entry(t_grade).or_insert(0);
 
-                    for r_id in 0..r_elements.len() {
-                        let t_id = dimensions.entry(t_grade).or_insert(0);
-
-                        construct
-                            .entry((*r_grade, r_id))
-                            .or_insert(HashMap::default())
-                            .insert((*l_grade, l_id), (t_grade, *t_id));
-
+                    for l_id in 0..l_elements.len() {
+                        entry.insert((*l_grade, l_id), (t_grade, *t_id));
                         deconstruct.insert((t_grade, *t_id), ((*l_grade, l_id), (*r_grade, r_id)));
                         *t_id = *t_id + 1;
                     }
@@ -161,17 +158,82 @@ impl<G: Grading> kTensor<G> {
         tens
     }
 
+
+
     /// Special care should be taken here,
     /// as this tensor object usually relates to certain graded linear maps
     /// We should expect that direct summing the underlying vector spaces creates the correct new tensor object
     ///
     /// After careful thinking, this direct sum is not dependent on the non-determinism of the hashmap
-    pub fn direct_sum(&mut self, other: &mut Self, self_space_dimensions: &HashMap<G, usize>) {
+    pub fn direct_sum_add_g(&mut self, other: &Self, self_space_dimensions: &HashMap<G, usize>, grade: G, limit: G) {
         // TODO: Consider using parallel here for bigger coalgebras ?
-        self.construct.extend(
-            other.construct.drain().map(|((m_gr, m_id), maps)| {
+        self.construct
+            .extend(other.construct.iter().filter_map(|(&(m_gr, m_id), maps)| {
+                let new_m_gr = m_gr + grade;
+                if new_m_gr > limit {
+                    return None
+                }
+
+                let m_id_new = self_space_dimensions.get(&new_m_gr).unwrap_or(&0) + m_id;
+
+                let new_map = maps
+                    .iter()
+                    .filter_map(|((a_gr, a_id), (t_gr, t_id))| {
+                        let new_t_gr = *t_gr + grade;
+                        if new_t_gr > limit {
+                            return None
+                        }
+
+                        let t_id_new = self.dimensions.get(&new_t_gr).unwrap_or(&0) + t_id;
+                        Some(((*a_gr, *a_id), (new_t_gr, t_id_new)))
+                    })
+                    .collect();
+
+                Some(((new_m_gr, m_id_new), new_map))
+            }));
+
+        self.deconstruct.extend(other.deconstruct.iter().filter_map(
+            |(&(t_gr, t_id), &((a_gr, a_id), (m_gr, m_id)))| {
+                let new_m_gr = m_gr + grade;
+                let new_t_gr = t_gr + grade;
+
+                if new_t_gr > limit {
+                   return None
+                }
+
+                let m_id_new = self_space_dimensions.get(&new_m_gr).unwrap_or(&0) + m_id;
+                let t_id_new = self.dimensions.get(&new_t_gr).unwrap_or(&0) + t_id;
+                Some(((new_t_gr, t_id_new), ((a_gr, a_id), (new_m_gr, m_id_new))))
+            },
+        ));
+
+        other.dimensions.iter().for_each(|(gr, other_size)| {
+            let new_gr = *gr + grade;
+            if new_gr <= limit {
+                self.dimensions
+                    .entry(new_gr)
+                    .and_modify(|size| {
+                        *size += *other_size;
+                    })
+                    .or_insert(*other_size);
+            }
+        });
+
+        debug_assert!(self.is_correct());
+    }
+
+
+    /// Special care should be taken here,
+    /// as this tensor object usually relates to certain graded linear maps
+    /// We should expect that direct summing the underlying vector spaces creates the correct new tensor object
+    ///
+    /// After careful thinking, this direct sum is not dependent on the non-determinism of the hashmap
+    pub fn direct_sum(&mut self, other: &Self, self_space_dimensions: &HashMap<G, usize>) {
+        // TODO: Consider using parallel here for bigger coalgebras ?
+        self.construct
+            .extend(other.construct.iter().map(|(&(m_gr, m_id), maps)| {
                 let m_id_new = self_space_dimensions.get(&m_gr).unwrap_or(&0) + m_id;
-    
+
                 let new_map = maps
                     .iter()
                     .map(|((a_gr, a_id), (t_gr, t_id))| {
@@ -179,21 +241,17 @@ impl<G: Grading> kTensor<G> {
                         ((*a_gr, *a_id), (*t_gr, t_id_new))
                     })
                     .collect();
-    
-                ((m_gr, m_id_new), new_map)
-            })
-        );
 
-        self.deconstruct.extend(
-            other
-                .deconstruct
-                .drain()
-                .map(|((t_gr, t_id), ((a_gr, a_id), (m_gr, m_id)))| {
-                    let m_id_new = self_space_dimensions.get(&m_gr).unwrap_or(&0) + m_id;
-                    let t_id_new = self.dimensions.get(&t_gr).unwrap_or(&0) + t_id;
-                    ((t_gr, t_id_new), ((a_gr, a_id), (m_gr, m_id_new)))
-                })
-        );
+                ((m_gr, m_id_new), new_map)
+            }));
+
+        self.deconstruct.extend(other.deconstruct.iter().map(
+            |(&(t_gr, t_id), &((a_gr, a_id), (m_gr, m_id)))| {
+                let m_id_new = self_space_dimensions.get(&m_gr).unwrap_or(&0) + m_id;
+                let t_id_new = self.dimensions.get(&t_gr).unwrap_or(&0) + t_id;
+                ((t_gr, t_id_new), ((a_gr, a_id), (m_gr, m_id_new)))
+            },
+        ));
 
         other.dimensions.iter().for_each(|(gr, other_size)| {
             self.dimensions

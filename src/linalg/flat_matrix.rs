@@ -153,12 +153,12 @@ impl<F: Field> Matrix<F> for FlatMatrix<F> {
 
         for i in 0..self.codomain {
             let start = i * new_domain;
-            new.data[start..(start+self.domain)].copy_from_slice(self.get_row(i));
+            new.data[start..(start + self.domain)].copy_from_slice(self.get_row(i));
         }
-        
+
         for i in 0..other.codomain {
             let start = (self.codomain + i) * new_domain + self.domain;
-            new.data[start..(start+other.domain)].copy_from_slice(other.get_row(i));
+            new.data[start..(start + other.domain)].copy_from_slice(other.get_row(i));
         }
 
         *self = new

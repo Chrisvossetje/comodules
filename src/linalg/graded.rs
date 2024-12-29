@@ -13,6 +13,7 @@ pub type BasisIndex<G> = (G, usize);
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct GradedVectorSpace<G: Grading, B: BasisElement>(pub HashMap<G, Vec<B>, RandomState>);
 
+
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct GradedLinearMap<G: Grading, F: Field, M: Matrix<F>> {
     pub maps: HashMap<G, M, RandomState>,
@@ -83,18 +84,38 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
         });
     }
 
-    pub fn block_sum(&mut self, other: &mut Self) { 
-        self.maps.par_iter_mut().for_each(|(grade, self_mat)| {
-            match other.maps.get(grade) {
-                Some(other_mat) => {self_mat.block_sum(other_mat);},
-                None => {},
+    pub fn block_sum(&mut self, other: &Self) {
+        self.maps
+            .par_iter_mut()
+            .for_each(|(grade, self_mat)| match other.maps.get(grade) {
+                Some(other_mat) => {
+                    self_mat.block_sum(other_mat);
+                }
+                None => {}
+            });
+        other.maps.iter().for_each(|(g, map)| {
+            if !self.maps.contains_key(&g) {
+                self.maps.insert(*g, map.clone());
             }
         });
-        other.maps.drain().for_each(|(g,map)|
-            if !self.maps.contains_key(&g) {
-                self.maps.insert(g, map);
+    }
+
+    pub fn block_sum_add(&mut self, other: &Self, grade: G, limit: G) {
+        self.maps
+            .par_iter_mut()
+            .for_each(|(&g, self_mat)| match other.maps.get(&(g-grade)) {
+                Some(other_mat) => {
+                    self_mat.block_sum(other_mat);
+                }
+                None => {}
+            });
+        other.maps.iter().for_each(|(&g, map)| {
+            if g + grade <= limit {
+                if !self.maps.contains_key(&(g+grade)) {
+                    self.maps.insert(g+grade, map.clone());
+                }
             }
-        );
+        });
     }
 
     pub fn compose(&self, rhs: &Self) -> Self {

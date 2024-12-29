@@ -7,7 +7,7 @@ use comodules::{
         kcoalgebra::kCoalgebra, kcomodule::kComodule, kmorphism::kComoduleMorphism,
         traits::Comodule,
     },
-    linalg::{field::F2, flat_matrix::FlatMatrix, grading::UniGrading, row_matrix::RowMatrix},
+    linalg::{field::F2, flat_matrix::FlatMatrix, grading::UniGrading},
     resolution::Resolution,
 };
 
