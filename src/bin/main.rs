@@ -19,7 +19,7 @@ fn main() {
     let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
         Resolution::new(fp);
 
-    res.resolve_to_s(80, 140);
+    res.resolve_to_s_with_print(80, 140);
 
     let page = res.generate_page();
 
