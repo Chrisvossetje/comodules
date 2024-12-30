@@ -1,3 +1,4 @@
+use core::panic;
 use std::{collections::HashMap, fmt::Error};
 
 use ahash::RandomState;
@@ -44,6 +45,21 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                     primitive_index += 1;
                 }
             }
+        }
+    }
+    
+    pub fn set_generator(&mut self) {
+        let grade_zero = self.space.0.get_mut(&G::zero());
+        if let Some(basis) = grade_zero {
+            if basis.len() == 1 {
+                if let Some(basis_element) = basis.first_mut() {
+                    basis_element.generator = true;
+                }
+            } else {
+                panic!("Coalgebra is not connected, no unique generator found in grade 0");
+            }
+        } else {
+            panic!("Grade 0 not found in space");
         }
     }
 }

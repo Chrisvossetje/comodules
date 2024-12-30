@@ -130,7 +130,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                 (
                     kBasisElement {
                         name: name.clone(),
-                        generator: generator.contains(name),
+                        generator: false,
                         primitive: None,
                         generated_index: 0,
                     },
@@ -323,7 +323,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
 
             let element = kBasisElement {
                 name: label.clone(),
-                generator: generators.contains(&(label, grade)),
+                generator: false,
                 primitive: None,
                 generated_index: 0,
             };
@@ -375,6 +375,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         };
 
         coalg.set_primitives();
+        coalg.set_generator();
 
         // I think we don't need the generator translate in the rest of the code
         // but i left it here for now ¯\_(ツ)_/¯
