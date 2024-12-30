@@ -67,9 +67,6 @@ xi1^5xi2^3xi3^1 :  21
 xi1^6xi2^3xi3^1 :  22 
 xi1^7xi2^3xi3^1 :  23 
 
-- GENERATOR
-1
-
 - COACTION
 1 : 1|1
 xi1^1 : xi1^1|1 + 1|xi1^1

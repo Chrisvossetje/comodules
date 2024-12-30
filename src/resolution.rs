@@ -32,13 +32,12 @@ impl<G: Grading, M: Comodule<G>> Resolution<G, M> {
         if self.resolution.len() == 0 {
             let zero_morph = M::Morphism::zero_morphism(self.comodule.clone());
             let fixed_limit = limit.incr().incr();
-        
 
             let initial_inject = zero_morph.inject_codomain_to_cofree(limit, fixed_limit);
             self.resolution.push(initial_inject);
         }
 
-        for i in self.resolution.len()..=s {
+        for _ in self.resolution.len()..=s {
             // Increment limit and get last morphism
             limit = limit.incr();
             let fixed_limit = limit.incr().incr();
@@ -54,12 +53,10 @@ impl<G: Grading, M: Comodule<G>> Resolution<G, M> {
 
     /// This crashes on WASM
     pub fn resolve_to_s_with_print(&mut self, s: usize, mut limit: G) {
-        
         #[cfg(not(target_arch = "wasm32"))]
         println!("Resolving to filtration index: {} \n", s);
 
         if self.resolution.len() == 0 {
-
             #[cfg(not(target_arch = "wasm32"))]
             println!("Resolving for 0",);
             print!("Injecting to 0              ",);
@@ -68,8 +65,9 @@ impl<G: Grading, M: Comodule<G>> Resolution<G, M> {
 
             let zero_morph = M::Morphism::zero_morphism(self.comodule.clone());
             let fixed_limit = limit.incr().incr();
-            
-            #[cfg(not(target_arch = "wasm32"))] {
+
+            #[cfg(not(target_arch = "wasm32"))]
+            {
                 println!("took: {:.2?}\n", inject_time.elapsed());
             }
 
