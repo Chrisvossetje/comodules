@@ -79,7 +79,7 @@ mod tests {
 
     #[test]
     fn test_a1_resolution() {
-        let input = include_str!("../examples/kcoalgebras/A(1).txt");
+        let input = include_str!("../examples/direct/A(1).txt");
         let coalgebra = Arc::new(kCoalgebra::parse_direct(input).unwrap().0);
 
         let fp = kComodule::fp_comodule(coalgebra);
@@ -96,7 +96,7 @@ mod tests {
 
     #[test]
     fn test_a2_resolution_direct() {
-        let input = include_str!("../examples/kcoalgebras/A(2).txt");
+        let input = include_str!("../examples/direct/A(2).txt");
         let coalgebra = Arc::new(kCoalgebra::parse_direct(input).unwrap().0);
 
         let fp = kComodule::fp_comodule(coalgebra);
@@ -113,7 +113,7 @@ mod tests {
 
     #[test]
     fn test_a2_resolution_poly() {
-        let input = include_str!("../examples/kcoalgebras/A(2)_gen.txt");
+        let input = include_str!("../examples/polynomial/A(2).txt");
         let coalgebra = Arc::new(
             kCoalgebra::parse_polynomial_hopf_algebra(input, i32::MAX)
                 .unwrap()

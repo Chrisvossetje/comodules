@@ -14,7 +14,7 @@ mod tests {
 
     #[test]
     fn test_a0() {
-        let input = include_str!("../../../examples/kcoalgebras/A(0).txt");
+        let input = include_str!("../../../examples/direct/A(0).txt");
 
         let (kcoalg, _) = kCoalgebra::<i32, F2, RowMatrix<F2>>::parse_direct(input).unwrap();
 
@@ -30,7 +30,7 @@ mod tests {
     fn test_a2_consistency_direct() {
         let mut comps = vec![];
         for _ in 0..10 {
-            let input = include_str!("../../../examples/kcoalgebras/A(2).txt");
+            let input = include_str!("../../../examples/direct/A(2).txt");
 
             let (kcoalg, _) = kCoalgebra::<i32, F2, RowMatrix<F2>>::parse_direct(input).unwrap();
             comps.push(kcoalg);
@@ -42,7 +42,7 @@ mod tests {
     fn test_a2_consistency_poly() {
         let mut comps = vec![];
         for _ in 0..10 {
-            let input = include_str!("../../../examples/kcoalgebras/A(2)_gen.txt");
+            let input = include_str!("../../../examples/polynomial/A(2).txt");
 
             let (kcoalg, _) = kCoalgebra::<i32, F2, RowMatrix<F2>>::parse_polynomial_hopf_algebra(
                 input,
@@ -56,8 +56,8 @@ mod tests {
 
     #[test]
     fn test_poly_vs_direct_tensor() {
-        let input_direct = include_str!("../../../examples/kcoalgebras/A(2).txt");
-        let input_poly = include_str!("../../../examples/kcoalgebras/A(2)_gen.txt");
+        let input_direct = include_str!("../../../examples/direct/A(2).txt");
+        let input_poly = include_str!("../../../examples/polynomial/A(2).txt");
 
         let (kcoalg_direct, _) =
             kCoalgebra::<i32, F2, RowMatrix<F2>>::parse_direct(input_direct).unwrap();
