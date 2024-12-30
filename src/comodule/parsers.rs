@@ -26,13 +26,11 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
             None,
             Field,
             Basis,
-            Generator,
             Coaction,
         }
         let mut state = State::None;
         let mut field: Option<i32> = None;
         let mut basis: Vec<(String, G)> = vec![];
-        let mut generator = vec![];
         let mut coaction_lut = vec![];
 
         for line in input.lines() {
@@ -54,14 +52,8 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                     }
                     state = State::Basis;
                 }
-                _ if line.starts_with("- GENERATOR") => {
-                    if state != State::Basis {
-                        panic!("Expected BASIS to be parsed first");
-                    }
-                    state = State::Generator;
-                }
                 _ if line.starts_with("- COACTION") => {
-                    if state != State::Generator {
+                    if state != State::Basis {
                         panic!("Expected GENERATOR to be parsed first");
                     }
                     state = State::Coaction;
@@ -76,9 +68,6 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                     State::Basis => {
                         let (name, grade) = line.split_once(":").expect("Invalid BASIS format");
                         basis.push((name.trim().to_string(), (G::parse(grade.trim()).unwrap())));
-                    }
-                    State::Generator => {
-                        generator.push(line.to_string());
                     }
                     State::Coaction => {
                         let (name, tensors) =
@@ -180,6 +169,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         };
 
         coalg.set_primitives();
+        coalg.set_generator();
 
         Ok((coalg, basis_translate))
     }
@@ -317,7 +307,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         let mut basis: HashMap<G, Vec<kBasisElement>, RandomState> = HashMap::default();
         let mut monomial_to_grade_index: HashMap<Monomial, (G, usize), RandomState> = HashMap::default();
 
-        for monomial in basis_information.keys() {
+        for monomial in basis_information.keys().sorted() {
             let grade = monomial_to_grade(monomial, &generators);
             let label = monomial_to_string(monomial, &generators);
 
@@ -342,7 +332,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         // Create the coaction map
         let mut coaction: HashMap<G, M, RandomState> = HashMap::default();
 
-        for grade in tensor.dimensions.keys() { 
+        for grade in tensor.dimensions.keys().sorted() { 
             
             // This loop is really weird, it should be a loop over basis_information, but I am too lazy to rewrite it
             // Todo: Create and store mutable 'map' for each grade, then iterate over basis_information 
