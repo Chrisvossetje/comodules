@@ -368,11 +368,13 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
             coaction.insert(*grade, map);
         }
         
-        let coalg = kCoalgebra {
+        let mut coalg = kCoalgebra {
             space: coalg_vector_space,
             tensor: tensor,
             coaction: GradedLinearMap::from(coaction),
         };
+
+        coalg.set_primitives();
 
         // I think we don't need the generator translate in the rest of the code
         // but i left it here for now ¯\_(ツ)_/¯
