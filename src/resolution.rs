@@ -33,7 +33,7 @@ impl<G: Grading, M: Comodule<G>> Resolution<G, M> {
             let zero_morph = M::Morphism::zero_morphism(self.comodule.clone());
             let fixed_limit = limit.incr().incr();
 
-            let initial_inject = zero_morph.inject_codomain_to_cofree(limit, fixed_limit);
+            let initial_inject = zero_morph.inject_codomain_to_cofree(limit);
             self.resolution.push(initial_inject);
         }
 
@@ -44,7 +44,7 @@ impl<G: Grading, M: Comodule<G>> Resolution<G, M> {
             let last_morph = self.resolution.last().unwrap();
 
             let coker = last_morph.cokernel();
-            let inject = coker.inject_codomain_to_cofree(limit, fixed_limit);
+            let inject = coker.inject_codomain_to_cofree(limit);
             let combine = M::Morphism::compose(inject, coker);
 
             self.resolution.push(combine);
@@ -71,7 +71,7 @@ impl<G: Grading, M: Comodule<G>> Resolution<G, M> {
                 println!("took: {:.2?}\n", inject_time.elapsed());
             }
 
-            let initial_inject = zero_morph.inject_codomain_to_cofree(limit, fixed_limit);
+            let initial_inject = zero_morph.inject_codomain_to_cofree(limit);
             self.resolution.push(initial_inject);
         }
 
@@ -93,7 +93,7 @@ impl<G: Grading, M: Comodule<G>> Resolution<G, M> {
             print!("Injecting cokernel          ");
             io::stdout().flush().unwrap();
             // Inject to cofree
-            let inject = coker.inject_codomain_to_cofree(limit, fixed_limit);
+            let inject = coker.inject_codomain_to_cofree(limit);
             println!("took: {:.2?}", inject_time.elapsed());
 
             let compose_time = std::time::Instant::now();

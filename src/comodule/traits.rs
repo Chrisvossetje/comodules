@@ -21,7 +21,7 @@ pub trait Comodule<G: Grading>: Sized {
 
 pub trait ComoduleMorphism<G: Grading, M: Comodule<G>> {
     fn cokernel(&self) -> Self;
-    fn inject_codomain_to_cofree(&self, limit: G, fixed_limit: G) -> Self; // Question: Shouldn't 'codomain' be 'cokernel'/'comodule'?
+    fn inject_codomain_to_cofree(&self, limit: G) -> Self; // Question: Shouldn't 'codomain' be 'cokernel'/'comodule'?
 
     fn zero_morphism(comodule: Arc<M>) -> Self;
 

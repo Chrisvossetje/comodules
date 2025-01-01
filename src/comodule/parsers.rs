@@ -177,7 +177,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
 
     pub fn parse_polynomial_hopf_algebra(
         input: &str,
-        max_grading: G,
+        mut max_grading: G,
     ) -> Result<
         (
             kCoalgebra<G, F, M>,
@@ -193,7 +193,8 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
             Relations,
             Coaction,
         }
-
+        
+        let max_grading = max_grading.incr().incr();
         let mut state = State::None;
         let mut field: Option<usize> = None;
         let mut generators: Vec<(String, G)> = vec![];
