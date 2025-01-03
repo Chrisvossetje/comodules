@@ -11,8 +11,8 @@ use comodules::{
 fn main() {
     let start = Instant::now();
 
-    let input = include_str!("../../examples/polynomial/A(2).txt");
-    const MAX_GRADING: i32 = 24;
+    let input = include_str!("../../examples/polynomial/A.txt");
+    const MAX_GRADING: i32 = 50;
     let coalgebra = Arc::new(
         kCoalgebra::parse_polynomial_hopf_algebra(input, MAX_GRADING)
             .unwrap()
@@ -25,7 +25,7 @@ fn main() {
     let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
         Resolution::new(fp);
 
-    res.resolve_to_s_with_print(80, 140);
+    res.resolve_to_s_with_print(20, MAX_GRADING);
 
     let page = res.generate_page();
 

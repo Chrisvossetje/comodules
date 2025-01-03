@@ -24,7 +24,7 @@ mod tests {
 
         let morphism = kComoduleMorphism::zero_morphism(comodule);
 
-        let cofree_morphism = morphism.inject_codomain_to_cofree(5, 7);
+        let cofree_morphism = morphism.inject_codomain_to_cofree(5);
 
         let comp = kComodule::cofree_comodule(coalgebra, 0, 0, 5);
 

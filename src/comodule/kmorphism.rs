@@ -152,7 +152,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
         Self::new(self.codomain.clone(), Arc::new(comodule), cokernel_map)
     }
 
-    fn inject_codomain_to_cofree(&self, limit: G, fixed_limit: G) -> Self {
+    fn inject_codomain_to_cofree(&self, limit: G) -> Self {
         let mut growing_map: GradedLinearMap<G, F, M> =
             GradedLinearMap::zero_codomain(&self.codomain.space);
         let mut growing_comodule = kComodule::zero_comodule(self.codomain.coalgebra.clone());
@@ -166,6 +166,8 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
             .filter(|&g| g <= limit)
             .collect();
         let mut prev_grade = 0;
+
+        let fixed_limit = limit.incr().incr();
 
         loop {
             // Get lowest graded pivot element
