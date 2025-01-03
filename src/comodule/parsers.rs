@@ -292,7 +292,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         let n = generators.len();
         let one_monomial: Monomial = vec![0; n]; // All exponents zero => 1
         let mut basis_information: HashMap<Monomial, Tensor<F>> = HashMap::new();
-        let mut queue: Vec<(Monomial, usize)> = vec![];
+        let mut queue: Vec<Monomial> = vec![one_monomial.clone()];
 
         // Initialize basis information for the unit monomial (1)
         basis_information.insert(
@@ -300,32 +300,37 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
             vec![(F::one(), one_monomial.clone(), one_monomial.clone())],
         );
 
-        // Populate the queue with initial values
-        for i in 0..n {
-            queue.push((one_monomial.clone(), i));
-        }
-
+        // // Populate the queue with initial values
+        // for i in 0..n {
+        //     queue.push((one_monomial.clone(), i));
+        // }
+        println!("Entering BFS");
+        let mut i = 0;
         // BFS loop
-        while let Some((current_monomial, generator_index)) = queue.pop() {
-            if let Some(next_monomial) =
-                multiply_monomial_by_generator(&current_monomial, generator_index, &relations)
-            {
-                // Check if `next_monomial` is already processed
-                if !basis_information.contains_key(&next_monomial) {
-                    // Check if the grade of the monomial is valid
-                    let next_grade = monomial_to_grade(&next_monomial, &generators);
-                    if next_grade <= max_grading {
-                        // Calculate the coaction for the new monomial
-                        let coaction_result = multiply_coaction_elements(
-                            basis_information.get(&current_monomial).unwrap(),
-                            &coactions[generator_index],
-                            &relations,
-                        );
+        while let Some(current_monomial) = queue.pop() {
+            for generator_index in 0..n {
+                if let Some(next_monomial) =
+                    multiply_monomial_by_generator(&current_monomial, generator_index, &relations)
+                {
+                    i += 1;
+                    if i % 100 == 0 {
+                        println!("Processed {} elements, current basis_information length: {}", i, basis_information.len());
+                    }
+                    // Check if `next_monomial` is already processed
+                    if !basis_information.contains_key(&next_monomial) {
+                        // Check if the grade of the monomial is valid
+                        let next_grade = monomial_to_grade(&next_monomial, &generators);
+                        if next_grade <= max_grading {
+                            // Calculate the coaction for the new monomial
+                            let coaction_result = multiply_coaction_elements(
+                                basis_information.get(&current_monomial).unwrap(),
+                                &coactions[generator_index],
+                                &relations,
+                            );
 
-                        // Store the result and push new states to the queue
-                        basis_information.insert(next_monomial.clone(), coaction_result);
-                        for i in 0..n {
-                            queue.push((next_monomial.clone(), i));
+                            // Store the result and push new state to the queue
+                            basis_information.insert(next_monomial.clone(), coaction_result);
+                            queue.push(next_monomial.clone());
                         }
                     }
                 }
