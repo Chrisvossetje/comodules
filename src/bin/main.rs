@@ -11,14 +11,14 @@ use comodules::{
 fn main() {
     let start = Instant::now();
 
-    let input = include_str!("../../examples/polynomial/A.txt");
-    const MAX_GRADING: i32 = 50;
-    let coalgebra = Arc::new(
-        kCoalgebra::parse_polynomial_hopf_algebra(input, MAX_GRADING)
-            .unwrap()
-            .0,
-    );
-    // let coalgebra = Arc::new(kCoalgebra::parse_direct(input).unwrap().0);
+    let input = include_str!("../../examples/direct/A(2).txt");
+    const MAX_GRADING: i32 = 20;
+    // let coalgebra = Arc::new(
+    //     kCoalgebra::parse_polynomial_hopf_algebra(input, MAX_GRADING)
+    //         .unwrap()
+    //         .0,
+    // );
+    let coalgebra = Arc::new(kCoalgebra::parse_direct(input).unwrap().0);
 
     let fp = kComodule::fp_comodule(coalgebra);
 

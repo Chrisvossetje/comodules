@@ -110,7 +110,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
             .flat_map(|(k, v)| {
                 v.iter().filter_map(|b| {
                     if b.generator {
-                        Some((b.generated_index, *k, Some(b.name.clone())))
+                        Some((b.generated_index, *k, None))
                     } else {
                         None
                     }

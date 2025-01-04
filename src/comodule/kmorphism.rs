@@ -306,7 +306,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                                         els[el_id].generated_index,
                                         t_el.generated_index,
                                         gr_map.get(el_id, t_id).as_usize(),
-                                        prim_id.to_string(),
+                                        "h_".to_string() + &prim_id.to_string(),
                                     ));
                                 }
                             }

@@ -53,10 +53,10 @@ mod tests {
         assert_eq!(
             sorted_lines,
             vec![
-                ((0, 0), (1, 0), 1, "0".to_string()),
-                ((1, 0), (2, 0), 1, "0".to_string()),
-                ((2, 0), (3, 0), 1, "0".to_string()),
-                ((3, 0), (4, 0), 1, "0".to_string()),
+                ((0, 0), (1, 0), 1, "h_0".to_string()),
+                ((1, 0), (2, 0), 1, "h_0".to_string()),
+                ((2, 0), (3, 0), 1, "h_0".to_string()),
+                ((3, 0), (4, 0), 1, "h_0".to_string()),
             ]
         );
     }
@@ -104,7 +104,7 @@ mod tests {
         let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
             Resolution::new(fp);
 
-        res.resolve_to_s(8, 12);
+        res.resolve_to_s(20, 20);
 
         let p = res.generate_page();
         let comp_p: Page = serde_json::from_str(include_str!("./A(2)page.json")).unwrap();
@@ -114,8 +114,9 @@ mod tests {
     #[test]
     fn test_a2_resolution_poly() {
         let input = include_str!("../examples/polynomial/A(2).txt");
+
         let coalgebra = Arc::new(
-            kCoalgebra::parse_polynomial_hopf_algebra(input, i32::MAX)
+            kCoalgebra::parse_polynomial_hopf_algebra(input, i32::MAX-10)
                 .unwrap()
                 .0,
         );
@@ -125,7 +126,7 @@ mod tests {
         let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
             Resolution::new(fp);
 
-        res.resolve_to_s(8, 12);
+        res.resolve_to_s(20, 20);
         dbg!(&res);
 
         let p = res.generate_page();

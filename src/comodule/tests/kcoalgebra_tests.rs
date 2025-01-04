@@ -46,7 +46,7 @@ mod tests {
 
             let (kcoalg, _) = kCoalgebra::<i32, F2, RowMatrix<F2>>::parse_polynomial_hopf_algebra(
                 input,
-                i32::MAX,
+                i32::MAX - 10,
             )
             .unwrap();
             comps.push(kcoalg);
@@ -63,7 +63,7 @@ mod tests {
             kCoalgebra::<i32, F2, RowMatrix<F2>>::parse_direct(input_direct).unwrap();
         let (kcoalg_poly, _) = kCoalgebra::<i32, F2, RowMatrix<F2>>::parse_polynomial_hopf_algebra(
             input_poly,
-            i32::MAX,
+            i32::MAX - 10,
         )
         .unwrap();
 

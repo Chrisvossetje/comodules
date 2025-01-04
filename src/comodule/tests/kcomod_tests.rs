@@ -114,6 +114,6 @@ mod tests {
 
         assert_eq!(generators.len(), 1);
         assert_eq!(generators[0].1, 0);
-        assert_eq!(generators[0].2, Some("gen1".to_string()));
+        assert_eq!(generators[0].2, None);
     }
 }
