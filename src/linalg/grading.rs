@@ -37,7 +37,7 @@ pub trait Grading:
 
     fn integer_multiplication(self, other: i32) -> Self;
 
-    fn parse(parse: &str) -> Result<Self, ()>;
+    fn parse(parse: &str) -> Result<Self, String>;
 }
 
 impl Grading for i32 {
@@ -65,8 +65,8 @@ impl Grading for i32 {
         self + 1
     }
 
-    fn parse(parse: &str) -> Result<Self, ()> {
-        i32::from_str(parse).map_err(|_| ())
+    fn parse(parse: &str) -> Result<Self, String> {
+        i32::from_str(parse).map_err(|_| format!("Grade: {} could not be parsed", parse))
     }
 
     fn integer_multiplication(self, other: i32) -> Self {

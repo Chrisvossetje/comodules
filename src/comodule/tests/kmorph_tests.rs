@@ -85,7 +85,10 @@ mod tests {
             map,
         };
 
-        assert_eq!(morphism.get_structure_lines(), [(0, 0, 1, "h_0".to_string())]);
+        assert_eq!(
+            morphism.get_structure_lines(),
+            [(0, 0, 1, "h_0".to_string())]
+        );
     }
 
     #[test]

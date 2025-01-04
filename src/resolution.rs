@@ -31,7 +31,6 @@ impl<G: Grading, M: Comodule<G>> Resolution<G, M> {
     pub fn resolve_to_s(&mut self, s: usize, mut limit: G) {
         if self.resolution.len() == 0 {
             let zero_morph = M::Morphism::zero_morphism(self.comodule.clone());
-            let fixed_limit = limit.incr().incr();
 
             let initial_inject = zero_morph.inject_codomain_to_cofree(limit);
             self.resolution.push(initial_inject);
@@ -40,7 +39,6 @@ impl<G: Grading, M: Comodule<G>> Resolution<G, M> {
         for _ in self.resolution.len()..=s {
             // Increment limit and get last morphism
             limit = limit.incr();
-            let fixed_limit = limit.incr().incr();
             let last_morph = self.resolution.last().unwrap();
 
             let coker = last_morph.cokernel();
@@ -53,23 +51,17 @@ impl<G: Grading, M: Comodule<G>> Resolution<G, M> {
 
     /// This crashes on WASM
     pub fn resolve_to_s_with_print(&mut self, s: usize, mut limit: G) {
-        #[cfg(not(target_arch = "wasm32"))]
         println!("Resolving to filtration index: {} \n", s);
 
         if self.resolution.len() == 0 {
-            #[cfg(not(target_arch = "wasm32"))]
             println!("Resolving for 0",);
             print!("Injecting to 0              ",);
             io::stdout().flush().unwrap();
             let inject_time = std::time::Instant::now();
 
             let zero_morph = M::Morphism::zero_morphism(self.comodule.clone());
-            let fixed_limit = limit.incr().incr();
 
-            #[cfg(not(target_arch = "wasm32"))]
-            {
-                println!("took: {:.2?}\n", inject_time.elapsed());
-            }
+            println!("took: {:.2?}\n", inject_time.elapsed());
 
             let initial_inject = zero_morph.inject_codomain_to_cofree(limit);
             self.resolution.push(initial_inject);
@@ -78,7 +70,6 @@ impl<G: Grading, M: Comodule<G>> Resolution<G, M> {
         for i in self.resolution.len()..=s {
             // Increment limit and get last morphism
             limit = limit.incr();
-            let fixed_limit = limit.incr().incr();
             let last_morph = self.resolution.last().unwrap();
 
             println!("Resolving for {}", i);

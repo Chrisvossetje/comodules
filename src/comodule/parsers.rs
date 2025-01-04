@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Error};
+use std::collections::HashMap;
 
 use ahash::RandomState;
 use itertools::Itertools;
@@ -20,7 +20,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
             kCoalgebra<G, F, M>,
             HashMap<String, BasisIndex<G>, RandomState>,
         ),
-        Error,
+        String,
     > {
         #[derive(Debug, Clone, PartialEq)]
         enum State {
@@ -43,42 +43,50 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
             match line {
                 _ if line.starts_with("- FIELD") => {
                     if state != State::None {
-                        panic!("Field should be first to parse");
+                        return Err("Field should be first to parse".to_owned());
                     }
                     state = State::Field;
                 }
                 _ if line.starts_with("- BASIS") => {
                     if state != State::Field {
-                        panic!("Expected FIELD to be parsed first");
+                        return Err("Expected FIELD to be parsed first".to_owned());
                     }
                     state = State::Basis;
                 }
                 _ if line.starts_with("- COACTION") => {
                     if state != State::Basis {
-                        panic!("Expected GENERATOR to be parsed first");
+                        return Err("Expected GENERATOR to be parsed first".to_owned());
                     }
                     state = State::Coaction;
                 }
                 _ => match state {
                     State::Field => {
                         if field.is_some() {
-                            panic!("Field already parsed");
+                            return Err("Field already parsed".to_owned());
                         }
-                        field = Some(line.parse::<i32>().expect("Invalid field value"));
+                        field = Some(
+                            line.parse::<i32>()
+                                .map_err(|_| "Invalid field value".to_owned())?,
+                        );
                     }
                     State::Basis => {
-                        let (name, grade) = line.split_once(":").expect("Invalid BASIS format");
-                        basis.push((name.trim().to_string(), (G::parse(grade.trim()).unwrap())));
+                        let (name, grade) = line
+                            .split_once(":")
+                            .ok_or("Invalid BASIS format".to_owned())?;
+                        basis.push((name.trim().to_string(), (G::parse(grade.trim())?)));
                     }
                     State::Coaction => {
-                        let (name, tensors) =
-                            line.split_once(":").expect("Invalid COACTION format");
+                        let (name, tensors) = line
+                            .split_once(":")
+                            .ok_or("Invalid COACTION format".to_owned())?;
                         let mut ts = vec![];
                         for t in tensors.split('+') {
                             let t = t.trim();
                             if let Some(f) = field {
                                 if f == 2 {
-                                    let (l, r) = t.split_once('|').expect("Invalid tensor format");
+                                    let (l, r) = t
+                                        .split_once('|')
+                                        .ok_or("Invalid tensor format".to_owned())?;
                                     ts.push((
                                         1.to_string(),
                                         l.trim().to_string(),
@@ -86,9 +94,9 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                                     ));
                                 } else {
                                     let (v, rest) =
-                                        t.split_once('*').expect("Invalid tensor scalar");
+                                        t.split_once('*').ok_or("Invalid tensor scalar")?;
                                     let (l, r) =
-                                        rest.split_once('|').expect("Invalid tensor format");
+                                        rest.split_once('|').ok_or("Invalid tensor format")?;
                                     ts.push((
                                         v.trim().to_string(),
                                         l.trim().to_string(),
@@ -99,21 +107,21 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                         }
                         coaction_lut.push((name.trim().to_string(), ts));
                     }
-                    _ => panic!("Unexpected state"),
+                    _ => return Err("Unexpected state".to_owned()),
                 },
             }
         }
 
         // Verify state
         if state != State::Coaction {
-            panic!("Coalgebra definition is not complete");
+            return Err("Coalgebra definition is not complete".to_owned());
         }
 
         // Create basis dictionary
         let mut basis_dict: HashMap<String, (kBasisElement, G), RandomState> = HashMap::default();
         for (name, grade) in basis.iter() {
             if basis_dict.contains_key(name) {
-                panic!("Name in basis appears twice");
+                return Err("Name in basis appears twice".to_owned());
             }
             basis_dict.insert(
                 name.clone(),
@@ -153,13 +161,17 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
             for (scalar, l, r) in ls {
                 let l_id = basis_translate[&l];
                 let r_id = basis_translate[&r];
-                assert_eq!((l_id.0 + r_id.0), gr, "Grades are not homogenous");
+                if (l_id.0 + r_id.0) != gr {
+                    return Err("Grades are not homogenous".to_owned());
+                };
                 let t_id = tensor.construct[&r_id][&l_id];
-                assert_eq!(t_id.0, gr, "Grades are not homogenous");
+                if (t_id.0) != gr {
+                    return Err("Grades are not homogenous".to_owned());
+                };
                 coaction
                     .get_mut(&gr)
-                    .unwrap()
-                    .set(id, t_id.1, F::parse(&scalar).unwrap());
+                    .ok_or("expected coaction to exist in this grade")?
+                    .set(id, t_id.1, F::parse(&scalar)?);
             }
         }
 
@@ -170,20 +182,20 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         };
 
         coalg.set_primitives();
-        coalg.set_generator();
+        coalg.set_generator()?;
 
         Ok((coalg, basis_translate))
     }
 
     pub fn parse_polynomial_hopf_algebra(
         input: &str,
-        mut max_grading: G,
+        max_grading: G,
     ) -> Result<
         (
             kCoalgebra<G, F, M>,
             HashMap<String, BasisIndex<G>, RandomState>,
         ),
-        Error,
+        String,
     > {
         #[derive(Debug, Clone, PartialEq)]
         enum State {
@@ -193,7 +205,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
             Relations,
             Coaction,
         }
-        
+
         let max_grading = max_grading.incr().incr();
         let mut state = State::None;
         let mut field: Option<usize> = None;
@@ -211,83 +223,87 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
             match line {
                 _ if line.starts_with("- FIELD") => {
                     if state != State::None {
-                        panic!("Field should be the first to parse");
+                        return Err("Field should be the first to parse".to_owned());
                     }
                     state = State::Field;
                 }
                 _ if line.starts_with("- GENERATOR") => {
                     if state != State::Field {
-                        panic!("Expected FIELD to be parsed first");
+                        return Err("Expected FIELD to be parsed first".to_owned());
                     }
                     state = State::Generator;
                 }
                 _ if line.starts_with("- RELATION") => {
                     if state != State::Generator {
-                        panic!("Expected GENERATOR to be parsed first");
+                        return Err("Expected GENERATOR to be parsed first".to_owned());
                     }
                     state = State::Relations;
                 }
                 _ if line.starts_with("- COACTION") => {
                     if state != State::Relations {
-                        panic!("Expected RELATIONS to be parsed first");
+                        return Err("Expected RELATIONS to be parsed first".to_owned());
                     }
                     state = State::Coaction;
                 }
                 _ => match state {
                     State::Field => {
                         if field.is_some() {
-                            panic!("Field already parsed");
+                            return Err("Field already parsed".to_owned());
                         }
-                        field = Some(line.parse::<usize>().expect("Invalid field value"));
+                        field = Some(
+                            line.parse::<usize>()
+                                .map_err(|_| "Invalid field value".to_owned())?,
+                        );
                     }
                     State::Generator => {
                         let (name, grade) = line
                             .split_once(':')
-                            .expect(format!("Invalid GENERATOR format, got: {}", line).as_str());
-                        let grade = G::parse(grade.trim()).expect("Invalid grading");
+                            .ok_or(format!("Invalid GENERATOR format, got: {}", line))?;
+                        let grade =
+                            G::parse(grade.trim()).map_err(|_| "Invalid grading".to_owned())?;
                         generator_translate.insert(name.trim().to_string(), generators.len());
                         generators.push((name.trim().to_string(), grade));
                     }
                     State::Relations => {
-                        let monomial = parse_monomial(line, &generator_translate, generators.len());
+                        let monomial =
+                            parse_monomial(line, &generator_translate, generators.len())?;
                         relations.push(monomial);
                     }
                     State::Coaction => {
-                        let (name, tensors) =
-                            line.split_once(':').expect("Invalid COACTION format");
-                        let tensors: Vec<_> = tensors
+                        let (name, tensors) = line
+                            .split_once(':')
+                            .ok_or("Invalid COACTION format".to_owned())?;
+                        let tensors: Vec<(F, Vec<usize>, Vec<usize>)> = tensors
                             .split('+')
-                            .map(|t| {
-                                let (l, r) = t.split_once('|').expect("Invalid tensor format");
-                                (
-                                    F::one(),
-                                    parse_monomial(
-                                        l.trim(),
-                                        &generator_translate,
-                                        generators.len(),
-                                    ),
-                                    parse_monomial(
-                                        r.trim(),
-                                        &generator_translate,
-                                        generators.len(),
-                                    ),
-                                )
+                            .map::<Result<(F, Vec<usize>, Vec<usize>), String>, _>(|t| {
+                                let (l, r) = t
+                                    .split_once('|')
+                                    .ok_or("Invalid tensor format".to_owned())?;
+                                let left = parse_monomial(
+                                    l.trim(),
+                                    &generator_translate,
+                                    generators.len(),
+                                )?;
+                                let right = parse_monomial(
+                                    r.trim(),
+                                    &generator_translate,
+                                    generators.len(),
+                                )?;
+                                Ok((F::one(), left, right))
                             })
-                            .collect();
-                        assert_eq!(
-                            name.trim(),
-                            generators[coactions.len()].0,
-                            "Coaction must match generator order"
-                        );
+                            .try_collect()?;
+                        if name.trim() != generators[coactions.len()].0 {
+                            return Err("Coaction must match generator order".to_owned());
+                        }
                         coactions.push(tensors);
                     }
-                    _ => panic!("Unexpected state"),
+                    _ => return Err("Unexpected state".to_owned()),
                 },
             }
         }
 
         if state != State::Coaction {
-            panic!("Coalgebra definition is not complete");
+            return Err("Coalgebra definition is not complete".to_owned());
         }
 
         let n = generators.len();
@@ -315,7 +331,11 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                 {
                     i += 1;
                     if i % 100 == 0 {
-                        println!("Processed {} elements, current basis_information length: {}", i, basis_information.len());
+                        println!(
+                            "Processed {} elements, current basis_information length: {}",
+                            i,
+                            basis_information.len()
+                        );
                     }
                     // Check if `next_monomial` is already processed
                     if !basis_information.contains_key(&next_monomial) {
@@ -324,7 +344,9 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                         if next_grade <= max_grading {
                             // Calculate the coaction for the new monomial
                             let coaction_result = multiply_coaction_elements(
-                                basis_information.get(&current_monomial).unwrap(),
+                                basis_information
+                                    .get(&current_monomial)
+                                    .ok_or("Basis name could not be found in some queue")?,
                                 &coactions[generator_index],
                                 &relations,
                             );
@@ -375,14 +397,20 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
             let mut map = M::zero(*basis_cols, tensor_rows);
 
             for (monomial, coaction_elements) in &basis_information {
-                let (basis_grade, basis_index) = monomial_to_grade_index.get(monomial).unwrap();
+                let (basis_grade, basis_index) = monomial_to_grade_index
+                    .get(monomial)
+                    .ok_or("Expected monomial to exist in lookup".to_owned())?;
                 if basis_grade != grade {
                     continue;
                 }
 
                 for (coeff, a, b) in coaction_elements {
-                    let a_grade_index = monomial_to_grade_index.get(a).unwrap();
-                    let b_grade_index = monomial_to_grade_index.get(b).unwrap();
+                    let a_grade_index = monomial_to_grade_index
+                        .get(a)
+                        .ok_or("Expected lhs to exist when construction coaction".to_owned())?;
+                    let b_grade_index = monomial_to_grade_index
+                        .get(b)
+                        .ok_or("Expected rhs to exist when construction coaction".to_owned())?;
                     let (_, tensor_index) = tensor.construct[&b_grade_index][&a_grade_index];
 
                     map.set(*basis_index, tensor_index, *coeff);
@@ -399,7 +427,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         };
 
         coalg.set_primitives();
-        coalg.set_generator();
+        coalg.set_generator()?;
 
         // I think we don't need the generator translate in the rest of the code
         // but i left it here for now ¯\_(ツ)_/¯
@@ -421,7 +449,7 @@ fn parse_monomial(
     name: &str,
     generator_translate: &HashMap<String, usize>,
     size: usize,
-) -> Monomial {
+) -> Result<Monomial, String> {
     let mut mon = vec![0; size];
     for el in name.split('*') {
         let parts: Vec<&str> = el.split('^').collect();
@@ -429,17 +457,17 @@ fn parse_monomial(
             1 => (parts[0].trim(), 1),
             2 => (
                 parts[0].trim(),
-                parts[1].parse::<usize>().expect("Invalid exponent"),
+                parts[1].parse::<usize>().map_err(|_| "Invalid exponent")?,
             ),
-            _ => panic!("Invalid monomial format"),
+            _ => return Err("Invalid monomial format".to_owned()),
         };
         if name == "1" {
             continue;
         }
-        let index = *generator_translate.get(name).expect("Generator not found");
+        let index = *generator_translate.get(name).ok_or("Generator not found")?;
         mon[index] = expo;
     }
-    mon
+    Ok(mon)
 }
 
 // monomial opertations

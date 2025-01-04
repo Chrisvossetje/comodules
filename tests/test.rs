@@ -116,7 +116,7 @@ mod tests {
         let input = include_str!("../examples/polynomial/A(2).txt");
 
         let coalgebra = Arc::new(
-            kCoalgebra::parse_polynomial_hopf_algebra(input, i32::MAX-10)
+            kCoalgebra::parse_polynomial_hopf_algebra(input, i32::MAX - 10)
                 .unwrap()
                 .0,
         );

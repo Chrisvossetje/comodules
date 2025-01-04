@@ -136,7 +136,7 @@ impl<F: Field> Matrix<F> for FlatMatrix<F> {
     }
 
     fn vstack(&mut self, other: &mut Self) {
-        assert_eq!(
+        debug_assert_eq!(
             self.domain(),
             other.domain(),
             "Domains of the two matrices do not have the same dimension"
@@ -210,7 +210,7 @@ impl<F: Field> Matrix<F> for FlatMatrix<F> {
     }
 
     fn compose(&self, rhs: &Self) -> Self {
-        assert_eq!(
+        debug_assert_eq!(
             self.domain, rhs.codomain,
             "Matrix domain not equal to codomain"
         );

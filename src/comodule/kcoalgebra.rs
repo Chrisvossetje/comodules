@@ -1,4 +1,3 @@
-use core::panic;
 use std::collections::HashMap;
 
 use itertools::Itertools;
@@ -47,7 +46,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         }
     }
 
-    pub fn set_generator(&mut self) {
+    pub fn set_generator(&mut self) -> Result<(), &str> {
         let grade_zero = self.space.0.get_mut(&G::zero());
         if let Some(basis) = grade_zero {
             if basis.len() == 1 {
@@ -55,11 +54,12 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                     basis_element.generator = true;
                 }
             } else {
-                panic!("Coalgebra is not connected, no unique generator found in grade 0");
+                Err("Coalgebra is not connected, no unique generator found in grade 0")?;
             }
         } else {
-            panic!("Grade 0 not found in space");
+            Err("Grade 0 not found in space")?;
         }
+        Ok(())
     }
 }
 

@@ -146,7 +146,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
         let coact_map: HashMap<G, M, RandomState> = [(zero, M::identity(1))].into_iter().collect();
         let coaction = GradedLinearMap::from(coact_map);
 
-        assert_eq!(
+        debug_assert_eq!(
             coalgebra
                 .space
                 .0

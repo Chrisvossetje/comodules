@@ -27,7 +27,7 @@ pub trait Field:
     fn zero() -> Self;
     fn as_usize(self) -> usize;
 
-    fn parse(input: &str) -> Result<Self, ()>;
+    fn parse(input: &str) -> Result<Self, String>;
 
     fn dot_product(l: &Vec<Self>, r: &Vec<Self>) -> Self {
         l.iter().zip(r.iter()).map(|(x, y)| *x * *y).sum()
@@ -63,8 +63,10 @@ impl Field for f64 {
         self as usize
     }
 
-    fn parse(input: &str) -> Result<Self, ()> {
-        input.parse().map_err(|_| ())
+    fn parse(input: &str) -> Result<Self, String> {
+        input
+            .parse()
+            .map_err(|_| format!("Field: {} could not be parsed", input))
     }
 }
 
@@ -183,8 +185,10 @@ impl<const P: u8> Field for Fp<P> {
         self.0 as usize
     }
 
-    fn parse(input: &str) -> Result<Self, ()> {
-        let chr: i32 = input.parse().map_err(|_| ())?;
+    fn parse(input: &str) -> Result<Self, String> {
+        let chr: i32 = input
+            .parse()
+            .map_err(|_| format!("Field: {} could not be parsed", input))?;
         Ok(Self((chr % (P as i32)) as u8))
     }
 }
@@ -293,8 +297,10 @@ impl Field for F2 {
         self.0 as usize
     }
 
-    fn parse(input: &str) -> Result<Self, ()> {
-        let chr: i32 = input.parse().map_err(|_| ())?;
+    fn parse(input: &str) -> Result<Self, String> {
+        let chr: i32 = input
+            .parse()
+            .map_err(|_| format!("Field: {} could not be parsed", input))?;
         Ok(Self((chr & 1) as u8))
     }
 }
