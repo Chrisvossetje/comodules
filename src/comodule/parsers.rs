@@ -260,7 +260,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                             .split_once(':')
                             .ok_or(format!("Invalid GENERATOR format, got: {}", line))?;
                         let grade =
-                            G::parse(grade.trim()).map_err(|_| "Invalid grading".to_owned())?;
+                            G::parse(grade.trim())?;
                         generator_translate.insert(name.trim().to_string(), generators.len());
                         generators.push((name.trim().to_string(), grade));
                     }
