@@ -183,6 +183,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
 
         coalg.set_primitives();
         coalg.set_generator()?;
+        coalg.reduce();
 
         Ok((coalg, basis_translate))
     }
@@ -259,8 +260,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                         let (name, grade) = line
                             .split_once(':')
                             .ok_or(format!("Invalid GENERATOR format, got: {}", line))?;
-                        let grade =
-                            G::parse(grade.trim())?;
+                        let grade = G::parse(grade.trim())?;
                         generator_translate.insert(name.trim().to_string(), generators.len());
                         generators.push((name.trim().to_string(), grade));
                     }
@@ -428,6 +428,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
 
         coalg.set_primitives();
         coalg.set_generator()?;
+        coalg.reduce();
 
         // I think we don't need the generator translate in the rest of the code
         // but i left it here for now ¯\_(ツ)_/¯

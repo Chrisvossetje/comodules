@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
+use ahash::RandomState;
 use itertools::Itertools;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::linalg::{
     field::{Field, F2},
@@ -10,7 +12,7 @@ use crate::linalg::{
     row_matrix::RowMatrix,
 };
 
-use super::{kcomodule::kBasisElement, ktensor::kTensor};
+use super::{kcomodule::kBasisElement, ktensor::kTensor, traits::Tensor};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -60,6 +62,64 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
             Err("Grade 0 not found in space")?;
         }
         Ok(())
+    }
+
+    pub fn reduce(&mut self) {
+        reduce_helper(&mut self.coaction, &mut self.tensor);
+
+        // // Left vec goes from old t_id -> new t_id, right vec goes from new t_id -> old t_id, right usize is dimension
+        // let mapping: HashMap<G, (Vec<Option<usize>>, Vec<usize>, usize), RandomState> = self.space.0.par_iter().map(|(grade,_)| {
+        //     let dimension = self.tensor.get_dimension(grade);
+        //     let mut new_dimension: usize = 0;
+        //     let mut to_new = vec![];
+        //     let mut to_old = vec![];
+        //     for codomain in 0..dimension {
+        //         if self.coaction.maps.get(grade).unwrap().is_row_non_zero(codomain) {
+        //             to_new.push(Some(new_dimension));
+        //             to_old.push(codomain);
+        //             new_dimension += 1;
+        //         } else {
+        //             to_new.push(None);
+        //         }
+        //     }
+        //     (*grade, (to_new, to_old, new_dimension))
+        // }).collect();
+
+        // // This should happen before the others !
+        // self.tensor.dimensions = mapping.iter().map(|(g,(_,_,new_dim))| {
+        //     (*g, *new_dim)
+        // }).collect();
+
+        // let new_coaction = self.coaction.maps.par_iter().map(|(grade, matrix)| {
+        //     let new_codom = self.tensor.dimensions.get(grade).unwrap();
+        //     let  mut new_matrix = M::zero(matrix.domain(), *new_codom);
+        //     for (new_row, old_row) in mapping.get(grade).unwrap().1.iter().enumerate() {
+        //         new_matrix.set_row(new_row, matrix.get_row(*old_row));
+        //     }
+        //     (*grade, new_matrix )
+        // }).collect();
+        // self.coaction.maps = new_coaction;
+
+        // let new_deconstruct = self.tensor.deconstruct.iter().filter_map(|((grade, old_tid), &target)| {
+        //     match mapping.get(grade).unwrap().0[*old_tid] {
+        //         Some(new_id) => { Some(((*grade, new_id), target)) },
+        //         None => {None}
+        //     }
+        // }).collect();
+        // self.tensor.deconstruct = new_deconstruct;
+
+        // let new_construct = self.tensor.construct.par_iter().map(|((m_gr, m_id), map)| {
+        //     let new_map = map.iter().filter_map(|((a_gr,a_id),(t_gr, old_t_id))| {
+        //         match mapping.get(t_gr).unwrap().0[*old_t_id] {
+        //             Some(new_tid) => {Some(((*a_gr,*a_id),(*t_gr, new_tid)))},
+        //             None => {None},
+        //         }
+        //     }).collect();
+        //     ((*m_gr, *m_id), new_map)
+        // }).collect();
+        // self.tensor.construct = new_construct;
+
+        // debug_assert!(self.tensor.is_correct(), "Tensor is not correct after reducing :(");
     }
 }
 
@@ -135,4 +195,89 @@ pub fn A0_coalgebra() -> kCoalgebra<UniGrading, F2, RowMatrix<F2>> {
         coaction,
         tensor,
     }
+}
+
+pub fn reduce_helper<G: Grading, F: Field, M: Matrix<F>>(
+    coaction: &mut GradedLinearMap<G, F, M>,
+    tensor: &mut kTensor<G>,
+) {
+    // Left vec goes from old t_id -> new t_id, usize is dimension
+    let mapping: HashMap<G, (Vec<Option<usize>>, usize), RandomState> = tensor
+        .dimensions
+        .par_iter()
+        .map(|(grade, _)| {
+            let dimension = tensor.get_dimension(grade);
+            let mut new_dimension: usize = 0;
+            let mut to_new = vec![];
+            for codomain in 0..dimension {
+                if coaction.maps.get(grade).unwrap().is_row_non_zero(codomain) {
+                    to_new.push(Some(new_dimension));
+                    new_dimension += 1;
+                } else {
+                    to_new.push(None);
+                }
+            }
+            (*grade, (to_new, new_dimension))
+        })
+        .collect();
+
+    // This should happen before the others !
+    tensor.dimensions = mapping
+        .iter()
+        .map(|(g, (_, new_dim))| (*g, *new_dim))
+        .collect();
+
+    let new_coaction = coaction
+        .maps
+        .par_iter()
+        .map(|(grade, matrix)| {
+            let new_codom = tensor.dimensions.get(grade).unwrap();
+            let mut new_matrix = M::zero(matrix.domain(), *new_codom);
+            for (old_row, new_maybe) in mapping.get(grade).unwrap().0.iter().enumerate() {
+                match new_maybe {
+                    Some(new_row) => {
+                        new_matrix.set_row(*new_row, matrix.get_row(old_row));
+                    }
+                    None => {}
+                }
+            }
+            (*grade, new_matrix)
+        })
+        .collect();
+    coaction.maps = new_coaction;
+
+    let new_deconstruct = tensor
+        .deconstruct
+        .iter()
+        .filter_map(
+            |((grade, old_tid), &target)| match mapping.get(grade).unwrap().0[*old_tid] {
+                Some(new_id) => Some(((*grade, new_id), target)),
+                None => None,
+            },
+        )
+        .collect();
+    tensor.deconstruct = new_deconstruct;
+
+    let new_construct = tensor
+        .construct
+        .par_iter()
+        .map(|((m_gr, m_id), map)| {
+            let new_map = map
+                .iter()
+                .filter_map(|((a_gr, a_id), (t_gr, old_t_id))| {
+                    match mapping.get(t_gr).unwrap().0[*old_t_id] {
+                        Some(new_tid) => Some(((*a_gr, *a_id), (*t_gr, new_tid))),
+                        None => None,
+                    }
+                })
+                .collect();
+            ((*m_gr, *m_id), new_map)
+        })
+        .collect();
+    tensor.construct = new_construct;
+
+    debug_assert!(
+        tensor.is_correct(),
+        "Tensor is not correct after reducing :("
+    );
 }

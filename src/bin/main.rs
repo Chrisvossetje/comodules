@@ -11,21 +11,21 @@ use comodules::{
 fn main() {
     let start = Instant::now();
 
-    let input = include_str!("../../examples/direct/A(2).txt");
-    const MAX_GRADING: i32 = 20;
-    // let coalgebra = Arc::new(
-    //     kCoalgebra::parse_polynomial_hopf_algebra(input, MAX_GRADING)
-    //         .unwrap()
-    //         .0,
-    // );
-    let coalgebra = Arc::new(kCoalgebra::parse_direct(input).unwrap().0);
+    let input = include_str!("../../examples/polynomial/A.txt");
+    const MAX_GRADING: i32 = 12;
+    let coalgebra = Arc::new(
+        kCoalgebra::parse_polynomial_hopf_algebra(input, MAX_GRADING)
+            .unwrap()
+            .0,
+    );
+    // let coalgebra = Arc::new(kCoalgebra::parse_direct(input).unwrap().0);
 
     let fp = kComodule::fp_comodule(coalgebra);
 
     let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
         Resolution::new(fp);
 
-    res.resolve_to_s_with_print(20, MAX_GRADING);
+    res.resolve_to_s_with_print(3, MAX_GRADING);
 
     let page = res.generate_page();
 
