@@ -3,7 +3,7 @@ use std::{
     ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
-pub trait Field:
+pub trait CRing:
     Clone
     + Copy
     + Debug
@@ -20,12 +20,9 @@ pub trait Field:
     + Sync
     + Send
 {
-    fn inv(self) -> Option<Self>;
-    fn get_characteristic(&self) -> usize;
     fn is_zero(&self) -> bool;
     fn one() -> Self;
     fn zero() -> Self;
-    fn as_usize(self) -> usize;
 
     fn parse(input: &str) -> Result<Self, String>;
 
@@ -34,12 +31,39 @@ pub trait Field:
     }
 }
 
+pub trait Field: CRing {
+    fn inv(self) -> Option<Self>;
+    fn get_characteristic(&self) -> usize;
+
+    fn as_usize(self) -> usize;
+}
+
+impl CRing for f64 {
+    fn is_zero(&self) -> bool {
+        *self == 0.0
+    }
+
+    fn one() -> Self {
+        1.0
+    }
+
+    fn zero() -> Self {
+        0.0
+    }
+
+    fn parse(input: &str) -> Result<Self, String> {
+        input
+            .parse()
+            .map_err(|_| format!("Field: {} could not be parsed", input))
+    }
+}
+
 impl Field for f64 {
     fn inv(self) -> Option<Self> {
         if self.is_zero() {
             None
         } else {
-            Some(1.0f64 / self)
+            Some(1.0 / self)
         }
     }
 
@@ -47,26 +71,8 @@ impl Field for f64 {
         0
     }
 
-    fn is_zero(&self) -> bool {
-        return self.is_normal();
-    }
-
-    fn one() -> Self {
-        1.0f64
-    }
-
-    fn zero() -> Self {
-        0.0f64
-    }
-
     fn as_usize(self) -> usize {
         self as usize
-    }
-
-    fn parse(input: &str) -> Result<Self, String> {
-        input
-            .parse()
-            .map_err(|_| format!("Field: {} could not be parsed", input))
     }
 }
 
@@ -80,6 +86,7 @@ impl<const P: u8> Add for Fp<P> {
         Fp(((self.0 as u64 + rhs.0 as u64) % P as u64) as u8)
     }
 }
+
 impl<const P: u8> Mul for Fp<P> {
     type Output = Self;
 
@@ -109,6 +116,7 @@ impl<const P: u8> AddAssign for Fp<P> {
         self.0 = ((self.0 as u64 + rhs.0 as u64) % P as u64) as u8;
     }
 }
+
 impl<const P: u8> MulAssign for Fp<P> {
     fn mul_assign(&mut self, rhs: Self) {
         self.0 = ((self.0 as u64 * rhs.0 as u64) % P as u64) as u8;
@@ -137,38 +145,7 @@ impl<const P: u8> std::iter::Sum for Fp<P> {
     }
 }
 
-impl<const P: u8> Field for Fp<P> {
-    fn inv(self) -> Option<Self> {
-        if self.is_zero() {
-            None
-        } else {
-            match P {
-                2 | 3 => Some(self),
-                _ => {
-                    let mut result: u64 = 1;
-                    let mut exp = P - 2;
-                    let mut base = self.0 as u64;
-                    while exp > 0 {
-                        // If the current bit of the exponent is 1, multiply the result by the current base.
-                        if exp % 2 == 1 {
-                            result = (result * base) % P as u64;
-                        }
-                        // Square the base and reduce it modulo the modulus.
-                        base = (base * base) % P as u64;
-                        // Shift the exponent right by 1 bit (divide by 2).
-                        exp /= 2;
-                    }
-
-                    Some(Fp(result as u8))
-                }
-            }
-        }
-    }
-
-    fn get_characteristic(&self) -> usize {
-        P as usize
-    }
-
+impl<const P: u8> CRing for Fp<P> {
     fn is_zero(&self) -> bool {
         self.0 == 0
     }
@@ -181,15 +158,44 @@ impl<const P: u8> Field for Fp<P> {
         Fp(0)
     }
 
-    fn as_usize(self) -> usize {
-        self.0 as usize
-    }
-
     fn parse(input: &str) -> Result<Self, String> {
         let chr: i32 = input
             .parse()
             .map_err(|_| format!("Field: {} could not be parsed", input))?;
         Ok(Self((chr % (P as i32)) as u8))
+    }
+}
+
+impl<const P: u8> Field for Fp<P> {
+    fn inv(self) -> Option<Self> {
+        if self.is_zero() {
+            None
+        } else {
+            match P {
+                2 | 3 => Some(self),
+                _ => {
+                    let mut result: u64 = 1;
+                    let mut exp = P - 2;
+                    let mut base = self.0 as u64;
+                    while exp > 0 {
+                        if exp % 2 == 1 {
+                            result = (result * base) % P as u64;
+                        }
+                        base = (base * base) % P as u64;
+                        exp /= 2;
+                    }
+                    Some(Fp(result as u8))
+                }
+            }
+        }
+    }
+
+    fn get_characteristic(&self) -> usize {
+        P as usize
+    }
+
+    fn as_usize(self) -> usize {
+        self.0 as usize
     }
 }
 
@@ -268,19 +274,7 @@ impl std::iter::Sum for F2 {
     }
 }
 
-impl Field for F2 {
-    fn get_characteristic(&self) -> usize {
-        2
-    }
-
-    fn inv(self) -> Option<Self> {
-        if self.is_zero() {
-            None
-        } else {
-            Some(self)
-        }
-    }
-
+impl CRing for F2 {
     fn is_zero(&self) -> bool {
         self.0 == 0
     }
@@ -293,14 +287,28 @@ impl Field for F2 {
         F2(0)
     }
 
-    fn as_usize(self) -> usize {
-        self.0 as usize
-    }
-
     fn parse(input: &str) -> Result<Self, String> {
         let chr: i32 = input
             .parse()
             .map_err(|_| format!("Field: {} could not be parsed", input))?;
         Ok(Self((chr & 1) as u8))
+    }
+}
+
+impl Field for F2 {
+    fn inv(self) -> Option<Self> {
+        if self.is_zero() {
+            None
+        } else {
+            Some(self)
+        }
+    }
+
+    fn get_characteristic(&self) -> usize {
+        2
+    }
+
+    fn as_usize(self) -> usize {
+        self.0 as usize
     }
 }

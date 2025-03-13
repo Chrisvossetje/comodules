@@ -12,7 +12,7 @@ mod tests {
         linalg::{
             field::F2,
             graded::{GradedLinearMap, GradedVectorSpace},
-            matrix::Matrix,
+            matrix::RModMorphism,
             row_matrix::RowMatrix,
         },
     };

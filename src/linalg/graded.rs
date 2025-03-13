@@ -3,7 +3,11 @@ use std::{collections::HashMap, fmt::Debug, marker::PhantomData};
 use ahash::RandomState;
 use rayon::prelude::*;
 
-use super::{field::Field, grading::Grading, matrix::Matrix};
+use super::{
+    field::Field,
+    grading::Grading,
+    matrix::{Matrix, RModMorphism},
+};
 use serde::{Deserialize, Serialize};
 
 pub trait BasisElement: 'static + Debug + Clone {}
@@ -150,12 +154,12 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
             .iter()
             .map(|(g, els)| {
                 let codom_len = codomain.dimension_in_grade(g);
-                (*g, Matrix::zero(els.len(), codom_len))
+                (*g, RModMorphism::zero(els.len(), codom_len))
             })
             .collect();
         codomain.0.iter().for_each(|(g, v)| {
             if !maps.contains_key(g) {
-                maps.insert(*g, Matrix::zero(0, v.len()));
+                maps.insert(*g, RModMorphism::zero(0, v.len()));
             }
         });
         Self {
@@ -168,7 +172,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
         let maps = codomain
             .0
             .iter()
-            .map(|(g, els)| (*g, Matrix::zero(els.len(), 0)))
+            .map(|(g, els)| (*g, RModMorphism::zero(els.len(), 0)))
             .collect();
         Self {
             maps,

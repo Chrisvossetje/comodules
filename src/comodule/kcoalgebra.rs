@@ -5,7 +5,7 @@ use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::linalg::{
-    field::{Field, F2},
+    field::{CRing, Field, F2},
     graded::{GradedLinearMap, GradedVectorSpace},
     grading::{Grading, UniGrading},
     matrix::Matrix,

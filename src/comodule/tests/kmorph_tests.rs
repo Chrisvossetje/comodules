@@ -10,9 +10,9 @@ mod tests {
             traits::{Comodule, ComoduleMorphism},
         },
         linalg::{
-            field::{Field, F2},
+            field::{CRing, F2},
             graded::{GradedLinearMap, GradedVectorSpace},
-            matrix::Matrix,
+            matrix::RModMorphism,
             row_matrix::RowMatrix,
         },
     };

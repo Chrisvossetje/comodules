@@ -1,9 +1,6 @@
-
 #[cfg(test)]
 mod tests {
     use crate::linalg::grading::{BiGrading, Grading};
-
-    use super::*;
 
     #[test]
     fn test_add() {
@@ -73,7 +70,10 @@ mod tests {
     fn test_grading_trait() {
         let a = BiGrading(1, 2);
         assert_eq!(BiGrading::degree_names(), vec!['t', 's']);
-        assert_eq!(BiGrading::default_formulas(), ("t-s".to_string(), "s".to_string()));
+        assert_eq!(
+            BiGrading::default_formulas(),
+            ("t-s".to_string(), "s".to_string())
+        );
         assert_eq!(a.export_grade(), vec![1, 2]);
         assert_eq!(a.incr(), BiGrading(2, 3));
         assert_eq!(BiGrading::zero(), BiGrading(0, 0));

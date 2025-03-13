@@ -191,7 +191,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
             }
             let (pivot, pivot_grade) = match pivot {
                 Some(p) => p,
-                None => {
+                _ => {
                     break;
                 }
             };

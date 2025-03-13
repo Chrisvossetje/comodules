@@ -1,5 +1,9 @@
 use std::{
-    fmt::{Debug, Display, Formatter}, hash::Hash, iter::Sum, ops::{Add, AddAssign, Sub, SubAssign}, str::FromStr
+    fmt::{Debug, Display, Formatter},
+    hash::Hash,
+    iter::Sum,
+    ops::{Add, AddAssign, Sub, SubAssign},
+    str::FromStr,
 };
 
 pub trait Grading:
@@ -115,7 +119,10 @@ impl FromStr for BiGrading {
     type Err = ();
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts: Vec<&str> = s.trim_matches(|p| p == '(' || p == ')').split(',').collect();
+        let parts: Vec<&str> = s
+            .trim_matches(|p| p == '(' || p == ')')
+            .split(',')
+            .collect();
         if parts.len() != 2 {
             return Err(());
         }
@@ -161,8 +168,10 @@ impl Grading for BiGrading {
         if parts.len() != 2 {
             return Err(format!("Grade: {} could not be parsed", parse));
         }
-        let t = i32::from_str(parts[0].trim()).map_err(|_| format!("Grade: {} could not be parsed", parse))?;
-        let s = i32::from_str(parts[1].trim()).map_err(|_| format!("Grade: {} could not be parsed", parse))?;
+        let t = i32::from_str(parts[0].trim())
+            .map_err(|_| format!("Grade: {} could not be parsed", parse))?;
+        let s = i32::from_str(parts[1].trim())
+            .map_err(|_| format!("Grade: {} could not be parsed", parse))?;
         Ok(BiGrading(t, s))
     }
 

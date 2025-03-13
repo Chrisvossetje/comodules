@@ -3,7 +3,7 @@ mod tests {
 
     use crate::linalg::field::F2;
     use crate::linalg::graded::{BasisElement, GradedLinearMap, GradedVectorSpace};
-    use crate::linalg::matrix::Matrix;
+    use crate::linalg::matrix::RModMorphism;
     use crate::linalg::row_matrix::RowMatrix;
     use std::collections::HashMap; // Assuming F2 is implemented as a Field type.
 

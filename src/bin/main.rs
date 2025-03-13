@@ -12,7 +12,7 @@ fn main() {
     let start = Instant::now();
 
     let input = include_str!("../../examples/polynomial/A.txt");
-    const MAX_GRADING: i32 = 12;
+    const MAX_GRADING: i32 = 60;
     let coalgebra = Arc::new(
         kCoalgebra::parse_polynomial_hopf_algebra(input, MAX_GRADING)
             .unwrap()

@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
 use std::vec;
 
-use super::{field::Field, matrix::Matrix};
+use super::{
+    field::Field,
+    matrix::{Matrix, RModMorphism},
+};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct RowMatrix<F: Field> {
@@ -51,24 +54,6 @@ impl<F: Field> Matrix<F> for RowMatrix<F> {
         // let mut transformed_kernel = kernel.compose(&mut changeofbasis);
         kernel.rref();
         kernel
-    }
-
-    fn transpose(&self) -> Self {
-        let rows = self.codomain;
-        let cols = self.domain;
-        let mut new_matrix = vec![vec![F::zero(); rows]; cols];
-
-        for i in 0..rows {
-            for j in 0..cols {
-                new_matrix[j][i] = self.data[i][j];
-            }
-        }
-
-        Self {
-            data: new_matrix,
-            domain: rows,
-            codomain: cols,
-        }
     }
 
     fn rref(&mut self) {
@@ -136,6 +121,38 @@ impl<F: Field> Matrix<F> for RowMatrix<F> {
             }
         }
         pivots
+    }
+
+    // (Row, Column) == (codomain, domain)
+    fn first_non_zero_entry(&self) -> Option<(usize, usize)> {
+        for codom_id in 0..self.codomain {
+            for dom_id in 0..self.domain {
+                if !self.data[codom_id][dom_id].is_zero() {
+                    return Some((codom_id, dom_id));
+                }
+            }
+        }
+        None
+    }
+}
+
+impl<F: Field> RModMorphism<F> for RowMatrix<F> {
+    fn transpose(&self) -> Self {
+        let rows = self.codomain;
+        let cols = self.domain;
+        let mut new_matrix = vec![vec![F::zero(); rows]; cols];
+
+        for i in 0..rows {
+            for j in 0..cols {
+                new_matrix[j][i] = self.data[i][j];
+            }
+        }
+
+        Self {
+            data: new_matrix,
+            domain: rows,
+            codomain: cols,
+        }
     }
 
     fn vstack(&mut self, other: &mut Self) {
@@ -240,18 +257,6 @@ impl<F: Field> Matrix<F> for RowMatrix<F> {
             domain,
             codomain,
         }
-    }
-
-    // (Row, Column) == (codomain, domain)
-    fn first_non_zero_entry(&self) -> Option<(usize, usize)> {
-        for codom_id in 0..self.codomain {
-            for dom_id in 0..self.domain {
-                if !self.data[codom_id][dom_id].is_zero() {
-                    return Some((codom_id, dom_id));
-                }
-            }
-        }
-        None
     }
 }
 

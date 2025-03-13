@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use super::{field::Field, matrix::Matrix};
+use super::{
+    field::Field,
+    matrix::{Matrix, RModMorphism},
+};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct FlatMatrix<F: Field> {
@@ -54,21 +57,6 @@ impl<F: Field> Matrix<F> for FlatMatrix<F> {
         let mut kernel = clone.rref_kernel();
         kernel.rref();
         kernel
-    }
-
-    fn transpose(&self) -> Self {
-        let mut new_matrix = vec![F::zero(); self.data.len()];
-        for i in 0..self.codomain {
-            for j in 0..self.domain {
-                new_matrix[j * self.codomain + i] = self.get_element(i, j);
-            }
-        }
-
-        Self {
-            data: new_matrix,
-            domain: self.codomain,
-            codomain: self.domain,
-        }
     }
 
     fn rref(&mut self) {
@@ -133,6 +121,34 @@ impl<F: Field> Matrix<F> for FlatMatrix<F> {
             }
         }
         pivots
+    }
+
+    fn first_non_zero_entry(&self) -> Option<(usize, usize)> {
+        for codom_id in 0..self.codomain {
+            for dom_id in 0..self.domain {
+                if !self.get_element(codom_id, dom_id).is_zero() {
+                    return Some((codom_id, dom_id));
+                }
+            }
+        }
+        None
+    }
+}
+
+impl<F: Field> RModMorphism<F> for FlatMatrix<F> {
+    fn transpose(&self) -> Self {
+        let mut new_matrix = vec![F::zero(); self.data.len()];
+        for i in 0..self.codomain {
+            for j in 0..self.domain {
+                new_matrix[j * self.codomain + i] = self.get_element(i, j);
+            }
+        }
+
+        Self {
+            data: new_matrix,
+            domain: self.codomain,
+            codomain: self.domain,
+        }
     }
 
     fn vstack(&mut self, other: &mut Self) {
@@ -240,17 +256,6 @@ impl<F: Field> Matrix<F> for FlatMatrix<F> {
             domain,
             codomain,
         }
-    }
-
-    fn first_non_zero_entry(&self) -> Option<(usize, usize)> {
-        for codom_id in 0..self.codomain {
-            for dom_id in 0..self.domain {
-                if !self.get_element(codom_id, dom_id).is_zero() {
-                    return Some((codom_id, dom_id));
-                }
-            }
-        }
-        None
     }
 }
 

@@ -7,7 +7,7 @@ mod tests {
     use crate::{
         comodule::kcoalgebra::{kCoalgebra, A0_coalgebra},
         linalg::{
-            field::{Field, F2},
+            field::{CRing, F2},
             row_matrix::RowMatrix,
         },
     };

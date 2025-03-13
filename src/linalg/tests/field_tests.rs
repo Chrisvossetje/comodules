@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::linalg::field::{Field, Fp};
+    use crate::linalg::field::{CRing, Field, Fp};
 
     type Fp23 = Fp<23>;
 

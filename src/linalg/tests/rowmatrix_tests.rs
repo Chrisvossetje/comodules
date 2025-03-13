@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
     use crate::linalg::{
-        field::{Field, Fp, F2},
-        matrix::Matrix,
+        field::{CRing, Fp, F2},
+        matrix::{Matrix, RModMorphism},
         row_matrix::RowMatrix,
     };
 
