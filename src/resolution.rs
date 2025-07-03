@@ -8,8 +8,8 @@ use itertools::Itertools;
 
 use crate::{
     comodule::traits::{Comodule, ComoduleMorphism},
+    export::{Page, SSeq},
     linalg::grading::Grading,
-    page::Page,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -102,7 +102,7 @@ impl<G: Grading, M: Comodule<G>> Resolution<G, M> {
         }
     }
 
-    pub fn generate_page(&self) -> Page {
+    pub fn generate_sseq(&self, name: String) -> SSeq {
         let (x_formula, y_formula) = G::default_formulas();
 
         let gens = self
@@ -131,14 +131,18 @@ impl<G: Grading, M: Comodule<G>> Resolution<G, M> {
             .sorted_by_key(|f| (f.0, f.1))
             .collect();
 
-        Page {
-            name: " ?? ".to_string(),
+        let page = Page {
             id: 2,
+            generators: gens,
+            structure_lines: lines,
+        };
+
+        SSeq {
+            name,
             degrees: G::degree_names(),
             x_formula,
             y_formula,
-            generators: gens,
-            structure_lines: lines,
+            pages: vec![page],
             differentials: vec![],
         }
     }

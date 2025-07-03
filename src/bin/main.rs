@@ -27,7 +27,7 @@ fn main() {
 
     res.resolve_to_s_with_print(3, MAX_GRADING);
 
-    let page = res.generate_page();
+    let page = res.generate_sseq("?".to_owned());
 
     let _ = page.save_to_json("page.json".to_owned());
 

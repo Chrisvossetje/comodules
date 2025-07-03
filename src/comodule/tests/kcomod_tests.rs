@@ -122,18 +122,23 @@ mod tests {
         let input_coalg = include_str!("../../../examples/direct/A(0).txt");
         let input_comod = include_str!("../../../examples/comodule/F2_comod.txt");
 
-        let (kcoalg, translator) = kCoalgebra::<i32, F2, RowMatrix<F2>>::parse_direct(input_coalg).unwrap();
+        let (kcoalg, translator) =
+            kCoalgebra::<i32, F2, RowMatrix<F2>>::parse_direct(input_coalg).unwrap();
 
-        match kComodule::<i32, F2, RowMatrix<F2>>::parse_direct(input_comod, Arc::new(kcoalg), &translator) {
+        match kComodule::<i32, F2, RowMatrix<F2>>::parse_direct(
+            input_comod,
+            Arc::new(kcoalg),
+            &translator,
+        ) {
             Ok(comod) => {
-                assert_eq!(comod.space.0[&0].len(), 1); 
-                assert!(!comod.space.0.contains_key(&1)); 
-                assert_eq!(comod.coaction.maps.len(), 1);  
-            },
+                assert_eq!(comod.space.0[&0].len(), 1);
+                assert!(!comod.space.0.contains_key(&1));
+                assert_eq!(comod.coaction.maps.len(), 1);
+            }
             Err(e) => {
                 println!("{}", e);
                 assert!(false);
-            },
+            }
         }
     }
 
@@ -142,34 +147,49 @@ mod tests {
         let input_coalg = include_str!("../../../examples/polynomial/A(0).txt");
         let input_comod = include_str!("../../../examples/comodule/A(0)_thing.txt");
 
-        let (kcoalg, translator) = kCoalgebra::<i32, F2, RowMatrix<F2>>::parse_polynomial_hopf_algebra(input_coalg, 32).unwrap();
+        let (kcoalg, translator) =
+            kCoalgebra::<i32, F2, RowMatrix<F2>>::parse_polynomial_hopf_algebra(input_coalg, 32)
+                .unwrap();
 
-        match kComodule::<i32, F2, RowMatrix<F2>>::parse_direct(input_comod, Arc::new(kcoalg), &translator) {
+        match kComodule::<i32, F2, RowMatrix<F2>>::parse_direct(
+            input_comod,
+            Arc::new(kcoalg),
+            &translator,
+        ) {
             Ok(comod) => {
                 println!("{:?}", comod.coaction);
-            },
+            }
             Err(e) => {
                 println!("{}", e);
                 assert!(false);
-            },
+            }
         }
     }
-    
-    
+
     #[test]
     fn test_gen_comod_parser() {
         let input_coalg = include_str!("../../../examples/polynomial/Test.txt");
         let input_comod = include_str!("../../../examples/comodule/gen_comod.txt");
-        
-        let (kcoalg, translator) = kCoalgebra::<i32, Fp<3>, RowMatrix<Fp<3>>>::parse_polynomial_hopf_algebra(input_coalg, 128).unwrap();
-        match kComodule::<i32, Fp<3>, RowMatrix<Fp<3>>>::parse_polynomial(input_comod, Arc::new(kcoalg), &translator, 6) {
+
+        let (kcoalg, translator) =
+            kCoalgebra::<i32, Fp<3>, RowMatrix<Fp<3>>>::parse_polynomial_hopf_algebra(
+                input_coalg,
+                128,
+            )
+            .unwrap();
+        match kComodule::<i32, Fp<3>, RowMatrix<Fp<3>>>::parse_polynomial(
+            input_comod,
+            Arc::new(kcoalg),
+            &translator,
+            6,
+        ) {
             Ok(comod) => {
                 println!("{:?}", comod.coaction);
-            },
+            }
             Err(e) => {
                 println!("{}", e);
                 assert!(false);
-            },
+            }
         }
     }
 }

@@ -54,14 +54,11 @@ mod tests {
         assert!(comps.iter().all_equal())
     }
 
-
     #[test]
     fn test_p3_imports() {
         let input = include_str!("../../../examples/polynomial/P(3).txt");
-        let res = kCoalgebra::<i32, Fp<3>, RowMatrix<Fp<3>>>::parse_polynomial_hopf_algebra(
-            input,
-            129
-        );
+        let res =
+            kCoalgebra::<i32, Fp<3>, RowMatrix<Fp<3>>>::parse_polynomial_hopf_algebra(input, 129);
 
         assert!(res.is_ok());
         let (_, trans) = res.unwrap();

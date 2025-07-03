@@ -8,11 +8,62 @@ mod tests {
             kcomodule::kComodule,
             traits::Comodule,
         },
+        export::SSeq,
         linalg::{field::F2, grading::UniGrading, row_matrix::RowMatrix},
-        page::Page,
         resolution::Resolution,
     };
     use itertools::Itertools;
+
+    // #[test]
+    fn generate_sseq_jsons() {
+        {
+            let coalgebra = Arc::new(A0_coalgebra());
+            let fp = kComodule::fp_comodule(coalgebra);
+            let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
+                Resolution::new(fp);
+
+            res.resolve_to_s(20, 20);
+
+            let a0_sseq = res.generate_sseq("A0".to_owned());
+            a0_sseq.save_to_json("./A(0)sseq.json".to_owned());
+        }
+
+        {
+            let input = include_str!("../examples/direct/A(1).txt");
+            let coalgebra = Arc::new(kCoalgebra::parse_direct(input).unwrap().0);
+
+            let fp = kComodule::fp_comodule(coalgebra);
+
+            let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
+                Resolution::new(fp);
+
+            res.resolve_to_s(20, 20);
+
+            let p = res.generate_sseq("A(1)".to_owned());
+            p.save_to_json("./A(1)sseq.json".to_owned());
+        }
+
+        {
+            let input = include_str!("../examples/polynomial/A(2).txt");
+
+            let coalgebra = Arc::new(
+                kCoalgebra::parse_polynomial_hopf_algebra(input, i32::MAX - 10)
+                    .unwrap()
+                    .0,
+            );
+
+            let fp = kComodule::fp_comodule(coalgebra);
+
+            let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
+                Resolution::new(fp);
+
+            res.resolve_to_s(20, 20);
+            dbg!(&res);
+
+            let p = res.generate_sseq("A(2)".to_owned());
+            p.save_to_json("./A(2)sseq.json".to_owned());
+        }
+    }
 
     #[test]
     fn test_a0_resolution() {
@@ -25,7 +76,8 @@ mod tests {
 
         res.resolve_to_s(4, 10);
 
-        let page = res.generate_page();
+        let sseq = res.generate_sseq("A0".to_owned());
+        let page = sseq.pages[0].clone();
 
         let sorted_gens: Vec<(usize, usize, Vec<i32>)> = page
             .generators
@@ -72,9 +124,9 @@ mod tests {
 
         res.resolve_to_s(20, 20);
 
-        let p = res.generate_page();
-        let comp_p: Page = serde_json::from_str(include_str!("./A(0)page.json")).unwrap();
-        assert_eq!(p, comp_p);
+        let sseq = res.generate_sseq("A0".to_owned());
+        let comp_sseq: SSeq = serde_json::from_str(include_str!("./A(0).json")).unwrap();
+        assert_eq!(sseq, comp_sseq);
     }
 
     #[test]
@@ -89,8 +141,8 @@ mod tests {
 
         res.resolve_to_s(20, 20);
 
-        let p = res.generate_page();
-        let comp_p: Page = serde_json::from_str(include_str!("./A(1)page.json")).unwrap();
+        let p = res.generate_sseq("A(1)".to_owned());
+        let comp_p: SSeq = serde_json::from_str(include_str!("./A(1).json")).unwrap();
         assert_eq!(p, comp_p);
     }
 
@@ -106,8 +158,8 @@ mod tests {
 
         res.resolve_to_s(20, 20);
 
-        let p = res.generate_page();
-        let comp_p: Page = serde_json::from_str(include_str!("./A(2)page.json")).unwrap();
+        let p = res.generate_sseq("A(2)".to_owned());
+        let comp_p: SSeq = serde_json::from_str(include_str!("./A(2).json")).unwrap();
         assert_eq!(p, comp_p);
     }
 
@@ -129,8 +181,8 @@ mod tests {
         res.resolve_to_s(20, 20);
         dbg!(&res);
 
-        let p = res.generate_page();
-        let comp_p: Page = serde_json::from_str(include_str!("./A(2)page.json")).unwrap();
+        let p = res.generate_sseq("A(2)".to_owned());
+        let comp_p: SSeq = serde_json::from_str(include_str!("./A(2).json")).unwrap();
         assert_eq!(p, comp_p);
     }
 }
