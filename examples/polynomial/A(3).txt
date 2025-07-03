@@ -1,0 +1,20 @@
+- FIELD
+2
+
+- GENERATOR
+xi1: 1
+xi2: 3
+xi3: 7
+xi4: 15
+
+- RELATION
+xi1^16
+xi2^8
+xi3^4
+xi4^2
+
+- COACTION
+xi1: 1|xi1 + xi1|1
+xi2: 1|xi2 + xi2|1 + xi1^2|xi1 
+xi3: 1|xi3 + xi3|1 + xi2^2|xi1 + xi1^4|xi2
+xi4: 1|xi4 + xi4|1 + xi3^2|xi1 + xi2^4|xi2 + xi1^8|xi3

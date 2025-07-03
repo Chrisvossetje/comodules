@@ -1,0 +1,14 @@
+- FIELD
+2
+
+- GENERATOR
+zeta1: 2
+zeta2: 6
+
+- RELATION
+zeta1^4
+zeta2^2
+
+- COACTION
+zeta1: 1|zeta1 + zeta1|1
+zeta2: 1|zeta2 + zeta1^2|zeta1 + zeta2|1

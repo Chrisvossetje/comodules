@@ -4,11 +4,11 @@
 - GENERATOR
 xi1: 4
 xi2: 16
-xi3: 52,0
+xi3: 52
 
 - RELATION
 
 - COACTION
-xi1: 1.1|xi1 + 1.xi1|1
-xi2: 1.1|xi2 + 1.xi2|1 + 1.xi1^3|xi1 
-xi3: 1.1|xi3 + 1.xi3|1 + 1.xi2^3|xi1 + 1.xi1^9|xi2 
+xi1: 1|xi1 + xi1|1
+xi2: 1|xi2 + xi2|1 + xi1^3|xi1 
+xi3: 1|xi3 + xi3|1 + xi2^3|xi1 + xi1^9|xi2 

@@ -1,0 +1,10 @@
+- FIELD
+3
+
+- GENERATOR
+q0: 3
+
+- RELATION
+
+- COACTION
+q0: 1|q0

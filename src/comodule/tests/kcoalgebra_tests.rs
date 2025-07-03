@@ -7,7 +7,7 @@ mod tests {
     use crate::{
         comodule::kcoalgebra::{kCoalgebra, A0_coalgebra},
         linalg::{
-            field::{CRing, F2},
+            field::{CRing, Fp, F2},
             row_matrix::RowMatrix,
         },
     };
@@ -52,6 +52,20 @@ mod tests {
             comps.push(kcoalg);
         }
         assert!(comps.iter().all_equal())
+    }
+
+
+    #[test]
+    fn test_p3_imports() {
+        let input = include_str!("../../../examples/polynomial/P(3).txt");
+        let res = kCoalgebra::<i32, Fp<3>, RowMatrix<Fp<3>>>::parse_polynomial_hopf_algebra(
+            input,
+            129
+        );
+
+        assert!(res.is_ok());
+        let (_, trans) = res.unwrap();
+        assert!(trans.len() > 3)
     }
 
     #[test]

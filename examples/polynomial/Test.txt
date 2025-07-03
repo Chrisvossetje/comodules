@@ -1,0 +1,14 @@
+- FIELD
+3
+
+- GENERATOR
+x1: 1
+x2: 3
+
+- RELATION
+x1^4
+x2^2
+
+- COACTION
+x1: 1|x1 + x1|1
+x2: 1|x2 + x2|1 + 2.x1^2|x1

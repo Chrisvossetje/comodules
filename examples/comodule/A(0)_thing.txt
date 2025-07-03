@@ -1,0 +1,13 @@
+- FIELD
+2
+
+- BASIS
+a1: 0
+aq0: 0
+aq1: 1
+
+
+- COACTION
+a1: 1|a1
+aq0: 1|aq0
+aq1: 1|aq1 + xi1|aq0

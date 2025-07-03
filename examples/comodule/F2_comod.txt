@@ -1,0 +1,9 @@
+- FIELD
+2
+
+- BASIS
+1: 0
+
+
+- COACTION
+1: 1|1
