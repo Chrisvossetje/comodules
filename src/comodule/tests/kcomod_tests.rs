@@ -158,7 +158,7 @@ mod tests {
     
     #[test]
     fn test_gen_comod_parser() {
-        let input_coalg = include_str!("../../../examples/coalgebra/ext_alg_p3.txt");
+        let input_coalg = include_str!("../../../examples/polynomial/Test.txt");
         let input_comod = include_str!("../../../examples/comodule/gen_comod.txt");
         
         let (kcoalg, translator) = kCoalgebra::<i32, Fp<3>, RowMatrix<Fp<3>>>::parse_polynomial_hopf_algebra(input_coalg, 128).unwrap();
