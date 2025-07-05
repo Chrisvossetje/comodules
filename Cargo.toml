@@ -1,6 +1,6 @@
 [package]
 name = "comodules"
-version = "0.1.8"
+version = "0.1.9"
 edition = "2021"
 description = "A library for calculating Ext for coalgebra and comodules. Also does Finite Field linear algebra."
 authors = ["Chris Vos", "Jacco Hijmans"]
