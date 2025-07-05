@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
+    use std::{i32, sync::Arc};
 
     use comodules::{
         comodule::{
@@ -15,6 +15,7 @@ mod tests {
     use itertools::Itertools;
 
     // #[test]
+    #[allow(dead_code)]
     fn generate_sseq_jsons() {
         {
             let coalgebra = Arc::new(A0_coalgebra());
@@ -24,13 +25,13 @@ mod tests {
 
             res.resolve_to_s(20, 20);
 
-            let a0_sseq = res.generate_sseq("A0".to_owned());
-            a0_sseq.save_to_json("./A(0)sseq.json".to_owned());
+            let a0_sseq = res.generate_sseq("A0");
+            a0_sseq.save_to_json("./A(0)sseq.json").unwrap();
         }
 
         {
             let input = include_str!("../examples/direct/A(1).txt");
-            let coalgebra = Arc::new(kCoalgebra::parse_direct(input).unwrap().0);
+            let coalgebra = Arc::new(kCoalgebra::parse(input, i32::MAX).unwrap().0);
 
             let fp = kComodule::fp_comodule(coalgebra);
 
@@ -39,18 +40,14 @@ mod tests {
 
             res.resolve_to_s(20, 20);
 
-            let p = res.generate_sseq("A(1)".to_owned());
-            p.save_to_json("./A(1)sseq.json".to_owned());
+            let p = res.generate_sseq("A(1)");
+            p.save_to_json("./A(1)sseq.json").unwrap();
         }
 
         {
             let input = include_str!("../examples/polynomial/A(2).txt");
 
-            let coalgebra = Arc::new(
-                kCoalgebra::parse_polynomial_hopf_algebra(input, i32::MAX - 10)
-                    .unwrap()
-                    .0,
-            );
+            let coalgebra = Arc::new(kCoalgebra::parse(input, i32::MAX - 10).unwrap().0);
 
             let fp = kComodule::fp_comodule(coalgebra);
 
@@ -60,8 +57,8 @@ mod tests {
             res.resolve_to_s(20, 20);
             dbg!(&res);
 
-            let p = res.generate_sseq("A(2)".to_owned());
-            p.save_to_json("./A(2)sseq.json".to_owned());
+            let p = res.generate_sseq("A(2)");
+            p.save_to_json("./A(2)sseq.json").unwrap();
         }
     }
 
@@ -76,7 +73,7 @@ mod tests {
 
         res.resolve_to_s(4, 10);
 
-        let sseq = res.generate_sseq("A0".to_owned());
+        let sseq = res.generate_sseq("A0");
         let page = sseq.pages[0].clone();
 
         let sorted_gens: Vec<(usize, usize, Vec<i32>)> = page
@@ -124,7 +121,7 @@ mod tests {
 
         res.resolve_to_s(20, 20);
 
-        let sseq = res.generate_sseq("A0".to_owned());
+        let sseq = res.generate_sseq("A0");
         let comp_sseq: SSeq = serde_json::from_str(include_str!("./A(0).json")).unwrap();
         assert_eq!(sseq, comp_sseq);
     }
@@ -132,7 +129,7 @@ mod tests {
     #[test]
     fn test_a1_resolution() {
         let input = include_str!("../examples/direct/A(1).txt");
-        let coalgebra = Arc::new(kCoalgebra::parse_direct(input).unwrap().0);
+        let coalgebra = Arc::new(kCoalgebra::parse(input, i32::MAX).unwrap().0);
 
         let fp = kComodule::fp_comodule(coalgebra);
 
@@ -141,7 +138,7 @@ mod tests {
 
         res.resolve_to_s(20, 20);
 
-        let p = res.generate_sseq("A(1)".to_owned());
+        let p = res.generate_sseq("A(1)");
         let comp_p: SSeq = serde_json::from_str(include_str!("./A(1).json")).unwrap();
         assert_eq!(p, comp_p);
     }
@@ -149,7 +146,7 @@ mod tests {
     #[test]
     fn test_a2_resolution_direct() {
         let input = include_str!("../examples/direct/A(2).txt");
-        let coalgebra = Arc::new(kCoalgebra::parse_direct(input).unwrap().0);
+        let coalgebra = Arc::new(kCoalgebra::parse(input, i32::MAX).unwrap().0);
 
         let fp = kComodule::fp_comodule(coalgebra);
 
@@ -158,7 +155,7 @@ mod tests {
 
         res.resolve_to_s(20, 20);
 
-        let p = res.generate_sseq("A(2)".to_owned());
+        let p = res.generate_sseq("A(2)");
         let comp_p: SSeq = serde_json::from_str(include_str!("./A(2).json")).unwrap();
         assert_eq!(p, comp_p);
     }
@@ -167,11 +164,7 @@ mod tests {
     fn test_a2_resolution_poly() {
         let input = include_str!("../examples/polynomial/A(2).txt");
 
-        let coalgebra = Arc::new(
-            kCoalgebra::parse_polynomial_hopf_algebra(input, i32::MAX - 10)
-                .unwrap()
-                .0,
-        );
+        let coalgebra = Arc::new(kCoalgebra::parse(input, i32::MAX - 10).unwrap().0);
 
         let fp = kComodule::fp_comodule(coalgebra);
 
@@ -181,7 +174,7 @@ mod tests {
         res.resolve_to_s(20, 20);
         dbg!(&res);
 
-        let p = res.generate_sseq("A(2)".to_owned());
+        let p = res.generate_sseq("A(2)");
         let comp_p: SSeq = serde_json::from_str(include_str!("./A(2).json")).unwrap();
         assert_eq!(p, comp_p);
     }

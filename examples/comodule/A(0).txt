@@ -1,7 +1,8 @@
 - GENERATOR
-q0: 3
+xi1: 1
 
 - RELATION
+xi1^2
 
 - COACTION
-q0: 1|q0
+xi1: 1|xi1 + xi1|1

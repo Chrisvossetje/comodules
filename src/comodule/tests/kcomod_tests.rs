@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashMap, sync::Arc};
+    use std::{collections::HashMap, i32, sync::Arc};
 
     use crate::{
         comodule::{
@@ -11,10 +11,12 @@ mod tests {
         },
         linalg::{
             field::{Fp, F2},
+            flat_matrix::FlatMatrix,
             graded::{GradedLinearMap, GradedVectorSpace},
             matrix::RModMorphism,
             row_matrix::RowMatrix,
         },
+        resolution::Resolution,
     };
 
     // Test for kComodule::zero_comodule
@@ -123,12 +125,13 @@ mod tests {
         let input_comod = include_str!("../../../examples/comodule/F2_comod.txt");
 
         let (kcoalg, translator) =
-            kCoalgebra::<i32, F2, RowMatrix<F2>>::parse_direct(input_coalg).unwrap();
+            kCoalgebra::<i32, F2, RowMatrix<F2>>::parse(input_coalg, i32::MAX).unwrap();
 
-        match kComodule::<i32, F2, RowMatrix<F2>>::parse_direct(
+        match kComodule::<i32, F2, RowMatrix<F2>>::parse(
             input_comod,
             Arc::new(kcoalg),
             &translator,
+            i32::MAX,
         ) {
             Ok(comod) => {
                 assert_eq!(comod.space.0[&0].len(), 1);
@@ -145,16 +148,16 @@ mod tests {
     #[test]
     fn test_a0_comod_parser() {
         let input_coalg = include_str!("../../../examples/polynomial/A(0).txt");
-        let input_comod = include_str!("../../../examples/comodule/A(0)_thing.txt");
+        let input_comod = include_str!("../../../examples/comodule/A(0)_comod.txt");
 
         let (kcoalg, translator) =
-            kCoalgebra::<i32, F2, RowMatrix<F2>>::parse_polynomial_hopf_algebra(input_coalg, 32)
-                .unwrap();
+            kCoalgebra::<i32, F2, RowMatrix<F2>>::parse(input_coalg, 32).unwrap();
 
-        match kComodule::<i32, F2, RowMatrix<F2>>::parse_direct(
+        match kComodule::<i32, F2, RowMatrix<F2>>::parse(
             input_comod,
             Arc::new(kcoalg),
             &translator,
+            i32::MAX,
         ) {
             Ok(comod) => {
                 println!("{:?}", comod.coaction);
@@ -172,12 +175,8 @@ mod tests {
         let input_comod = include_str!("../../../examples/comodule/gen_comod.txt");
 
         let (kcoalg, translator) =
-            kCoalgebra::<i32, Fp<3>, RowMatrix<Fp<3>>>::parse_polynomial_hopf_algebra(
-                input_coalg,
-                128,
-            )
-            .unwrap();
-        match kComodule::<i32, Fp<3>, RowMatrix<Fp<3>>>::parse_polynomial(
+            kCoalgebra::<i32, Fp<3>, RowMatrix<Fp<3>>>::parse(input_coalg, 128).unwrap();
+        match kComodule::<i32, Fp<3>, RowMatrix<Fp<3>>>::parse(
             input_comod,
             Arc::new(kcoalg),
             &translator,
@@ -191,5 +190,49 @@ mod tests {
                 assert!(false);
             }
         }
+    }
+
+    #[test]
+    fn test_a0_comod() {
+        let input = include_str!("../../../examples/polynomial/A(0).txt");
+        const MAX_GRADING: i32 = 60;
+        let (coalgebra, translate) =
+            kCoalgebra::<i32, F2, FlatMatrix<F2>>::parse(input, MAX_GRADING).unwrap();
+
+        let coalgebra = Arc::new(coalgebra);
+        let input = include_str!("../../../examples/comodule/A(0).txt");
+
+        let comod = kComodule::parse(input, coalgebra, &translate, MAX_GRADING).unwrap();
+
+        let mut res: Resolution<i32, kComodule<i32, F2, FlatMatrix<F2>>> = Resolution::new(comod);
+        res.resolve_to_s(10, 1234);
+        let sseq = res.generate_sseq("A(1)-comod");
+
+        assert_eq!(sseq.pages[0].generators.len(), 1);
+    }
+
+    #[test]
+    fn test_a1_comod() {
+        let input = include_str!("../../../examples/polynomial/A(1).txt");
+        const MAX_GRADING: i32 = 60;
+        let (coalgebra, translate) =
+            kCoalgebra::<i32, F2, FlatMatrix<F2>>::parse(input, MAX_GRADING).unwrap();
+
+        let coalclcone = coalgebra.clone();
+        let coalgebra = Arc::new(coalgebra);
+        let input = include_str!("../../../examples/comodule/A(1).txt");
+
+        let comod = kComodule::parse(input, coalgebra, &translate, MAX_GRADING).unwrap();
+        for n in 0..=6 {
+            println!("{:?}", coalclcone.coaction.maps[&n]);
+            println!("{:?}", comod.coaction.maps[&n]);
+            println!("");
+        }
+
+        let mut res: Resolution<i32, kComodule<i32, F2, FlatMatrix<F2>>> = Resolution::new(comod);
+        res.resolve_to_s(10, 1234);
+        let sseq = res.generate_sseq("A(1)-comod");
+
+        assert_eq!(sseq.pages[0].generators.len(), 1);
     }
 }

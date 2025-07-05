@@ -78,8 +78,7 @@ mod tests {
 
     #[test]
     fn test_fp23_characteristic() {
-        let a = Fp23 { 0: 7 };
-        assert_eq!(a.get_characteristic(), 23);
+        assert_eq!(Fp23::get_characteristic(), 23);
     }
 
     #[test]

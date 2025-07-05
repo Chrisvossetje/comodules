@@ -1,6 +1,3 @@
-- FIELD
-2
-
 - BASIS
 a1: 0
 aq0: 0

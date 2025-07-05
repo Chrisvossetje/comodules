@@ -1,6 +1,3 @@
-- FIELD
-2
-
 - BASIS
 1: 0
 

@@ -33,7 +33,7 @@ pub trait CRing:
 
 pub trait Field: CRing {
     fn inv(self) -> Option<Self>;
-    fn get_characteristic(&self) -> usize;
+    fn get_characteristic() -> usize;
 
     fn as_usize(self) -> usize;
 }
@@ -67,7 +67,7 @@ impl Field for f64 {
         }
     }
 
-    fn get_characteristic(&self) -> usize {
+    fn get_characteristic() -> usize {
         0
     }
 
@@ -190,7 +190,7 @@ impl<const P: u8> Field for Fp<P> {
         }
     }
 
-    fn get_characteristic(&self) -> usize {
+    fn get_characteristic() -> usize {
         P as usize
     }
 
@@ -304,7 +304,7 @@ impl Field for F2 {
         }
     }
 
-    fn get_characteristic(&self) -> usize {
+    fn get_characteristic() -> usize {
         2
     }
 

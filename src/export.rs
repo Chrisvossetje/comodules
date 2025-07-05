@@ -27,7 +27,7 @@ impl SSeq {
         serde_json::to_string(self).unwrap()
     }
 
-    pub fn save_to_json(&self, file_path: String) -> io::Result<()> {
+    pub fn save_to_json(&self, file_path: &str) -> io::Result<()> {
         let content = serde_json::to_string(self)?;
 
         // Create or open the file at the specified path

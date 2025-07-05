@@ -102,7 +102,7 @@ impl<G: Grading, M: Comodule<G>> Resolution<G, M> {
         }
     }
 
-    pub fn generate_sseq(&self, name: String) -> SSeq {
+    pub fn generate_sseq(&self, name: &str) -> SSeq {
         let (x_formula, y_formula) = G::default_formulas();
 
         let gens = self
@@ -138,7 +138,7 @@ impl<G: Grading, M: Comodule<G>> Resolution<G, M> {
         };
 
         SSeq {
-            name,
+            name: name.to_owned(),
             degrees: G::degree_names(),
             x_formula,
             y_formula,
