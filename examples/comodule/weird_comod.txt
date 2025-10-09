@@ -1,0 +1,14 @@
+- GENERATOR
+xi18: 8
+xi24: 12
+xi32: 14
+xi41: 15
+
+- RELATION
+
+
+- COACTION
+xi18: 1|xi18 + xi1^8|1
+xi24: 1|xi24 + xi2^4|1 + xi1^4|xi18  
+xi32: 1|xi32 + xi3^2|1 + xi1^2|xi24 + xi2^2|xi18
+xi41: 1|xi41 + xi4|1 + xi1|xi32 + xi2|xi24 + xi3|xi18

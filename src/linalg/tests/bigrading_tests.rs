@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::linalg::grading::{BiGrading, Grading};
+    use crate::linalg::grading::{BiGrading, Grading, OrderedGrading, Parse};
 
     #[test]
     fn test_add() {
@@ -42,7 +42,7 @@ mod tests {
 
     #[test]
     fn test_from_str() {
-        let a: BiGrading = "(1, 2)".parse().unwrap();
+        let a: BiGrading = BiGrading::parse("(1, 2)").unwrap();
         assert_eq!(a, BiGrading(1, 2));
     }
 

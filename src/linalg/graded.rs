@@ -1,25 +1,31 @@
-use std::{collections::HashMap, fmt::Debug, marker::PhantomData};
+use std::{convert::identity, fmt::Debug, marker::PhantomData};
 
-use ahash::RandomState;
+use ahash::HashMap;
 use rayon::prelude::*;
+
+use crate::linalg::grading::Grading;
 
 use super::{
     field::Field,
-    grading::Grading,
     matrix::{Matrix, RModMorphism},
 };
 use serde::{Deserialize, Serialize};
 
-pub trait BasisElement: 'static + Debug + Clone {}
+
+
+
+
+
+pub trait BasisElement: 'static + Debug + Clone + Default {}
 
 pub type BasisIndex<G> = (G, usize);
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-pub struct GradedVectorSpace<G: Grading, B: BasisElement>(pub HashMap<G, Vec<B>, RandomState>);
+pub struct GradedVectorSpace<G: Grading, B: BasisElement>(pub HashMap<G, Vec<B>>);
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct GradedLinearMap<G: Grading, F: Field, M: Matrix<F>> {
-    pub maps: HashMap<G, M, RandomState>,
+    pub maps: HashMap<G, M>,
     __: PhantomData<F>,
 }
 
@@ -32,18 +38,18 @@ impl<G: Grading, B: BasisElement> GradedVectorSpace<G, B> {
     }
 }
 
-impl<G: Grading, B: BasisElement> From<HashMap<G, Vec<B>, RandomState>>
+impl<G: Grading, B: BasisElement> From<HashMap<G, Vec<B>>>
     for GradedVectorSpace<G, B>
 {
-    fn from(value: HashMap<G, Vec<B>, RandomState>) -> Self {
+    fn from(value: HashMap<G, Vec<B>>) -> Self {
         Self(value)
     }
 }
 
-impl<G: Grading, F: Field, M: Matrix<F>> From<HashMap<G, M, RandomState>>
+impl<G: Grading, F: Field, M: Matrix<F>> From<HashMap<G, M>>
     for GradedLinearMap<G, F, M>
 {
-    fn from(value: HashMap<G, M, RandomState>) -> Self {
+    fn from(value: HashMap<G, M>) -> Self {
         Self {
             maps: value,
             __: PhantomData,
@@ -104,7 +110,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
     }
 
     pub fn compose(&self, rhs: &Self) -> Self {
-        let mut compose: HashMap<G, M, RandomState> = self
+        let mut compose: HashMap<G, M> = self
             .maps
             .par_iter()
             .filter_map(|(k, v)| match rhs.maps.get(&k) {
@@ -149,7 +155,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> GradedLinearMap<G, F, M> {
         domain: &GradedVectorSpace<G, B>,
         codomain: &GradedVectorSpace<G, B>,
     ) -> Self {
-        let mut maps: HashMap<G, M, RandomState> = domain
+        let mut maps: HashMap<G, M> = domain
             .0
             .iter()
             .map(|(g, els)| {

@@ -1,24 +1,27 @@
-use std::collections::HashMap;
-
-use ahash::RandomState;
+use ahash::HashMap;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::linalg::{
     graded::{BasisElement, BasisIndex, GradedVectorSpace},
-    grading::Grading,
+    grading::Grading, module::GradedModule,
 };
 
-use super::traits::Tensor;
-
 pub type TensorConstruct<G> =
-    HashMap<BasisIndex<G>, HashMap<BasisIndex<G>, BasisIndex<G>, RandomState>, RandomState>;
-pub type TensorDeconstruct<G> = HashMap<BasisIndex<G>, (BasisIndex<G>, BasisIndex<G>), RandomState>;
-pub type TensorDimension<G> = HashMap<G, usize, RandomState>;
+    HashMap<BasisIndex<G>, HashMap<BasisIndex<G>, BasisIndex<G>>>;
+pub type TensorDeconstruct<G> = HashMap<BasisIndex<G>, (BasisIndex<G>, BasisIndex<G>)>;
+pub type TensorDimension<G> = HashMap<G, usize>;
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-#[allow(non_camel_case_types)]
-pub struct kTensor<G: Grading> {
+
+
+pub trait ObjectGenerator<G: Grading> {
+    fn contains_grade(&self, grade: &G) -> bool;
+    fn els(&self, grade: &G) -> usize;
+    fn sorted_els(&self,) -> Vec<(G, usize)>;
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default)]
+pub struct Tensor<G: Grading> {
     // # Module Grade + Index -> Algebra Grading + index -> Tensor Grading + index
     pub construct: TensorConstruct<G>,
 
@@ -28,62 +31,79 @@ pub struct kTensor<G: Grading> {
     pub dimensions: TensorDimension<G>,
 }
 
-impl<G: Grading> Tensor<G> for kTensor<G> {
-    fn tensor_to_base() {
-        unimplemented!()
-    }
 
-    fn base_to_tensor() {
-        unimplemented!()
+impl<G: Grading, B: BasisElement> ObjectGenerator<G> for GradedVectorSpace<G, B> {
+    fn contains_grade(&self, grade: &G) -> bool {
+        self.0.contains_key(grade)
     }
-
-    fn get_dimension(&self, grading: &G) -> usize {
-        *self.dimensions.get(grading).unwrap_or(&0)
+    
+    fn els(&self, grade: &G) -> usize {
+        self.0.get(grade).map_or(0, |x| x.len())
+    }
+    
+    fn sorted_els(&self,) -> Vec<(G, usize)> {
+        self.0.iter().sorted_by_key(|(&g, _)| g).map(|(&g, l)| (g,l.len())).collect()
     }
 }
 
-impl<G: Grading> Default for kTensor<G> {
-    fn default() -> Self {
+impl<G: Grading, B: BasisElement> ObjectGenerator<G> for GradedModule<G, B> {
+    fn contains_grade(&self, grade: &G) -> bool {
+        self.0.contains_key(grade)
+    }
+    
+    fn els(&self, grade: &G) -> usize {
+        self.0.get(grade).map_or(0, |x| x.len())
+    }
+    
+    fn sorted_els(&self,) -> Vec<(G, usize)> {
+        self.0.iter().sorted_by_key(|(&g, _)| g).map(|(&g, l)| (g,l.len())).collect()
+    }
+}
+
+
+impl<G: Grading> Tensor<G> {
+    pub fn default() -> Self {
         Self {
             construct: Default::default(),
             deconstruct: Default::default(),
             dimensions: Default::default(),
         }
     }
-}
 
-impl<G: Grading> kTensor<G> {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn get_dimension(&self, grading: &G) -> usize {
+        *self.dimensions.get(grading).unwrap_or(&0)
     }
 
-    pub fn generate<B: BasisElement>(
-        left: &GradedVectorSpace<G, B>,
-        right: &GradedVectorSpace<G, B>,
+}
+
+impl<G: Grading> Tensor<G> {
+    pub fn generate<GENS: ObjectGenerator<G>>(
+        left: &GENS,
+        right: &GENS,
     ) -> Self {
         let mut construct = HashMap::default();
         let mut deconstruct = HashMap::default();
         let mut dimensions = HashMap::default();
-
+        
         // This sorted is important for consistency !
-        for (l_grade, l_elements) in left.0.iter().sorted_by_key(|(&lg, _)| lg) {
-            for l_id in 0..l_elements.len() {
-                for (r_grade, r_elements) in right.0.iter() {
-                    let t_grade = *l_grade + *r_grade;
+        for (l_grade, l_elements) in left.sorted_els() {
+            for l_id in 0..l_elements {
+                for (r_grade, r_elements) in right.sorted_els() {
+                    let t_grade = l_grade + r_grade;
 
-                    if !right.0.contains_key(&t_grade) {
+                    if !right.contains_grade(&t_grade) {
                         continue;
                     }
 
-                    for r_id in 0..r_elements.len() {
+                    for r_id in 0..r_elements {
                         let t_id = dimensions.entry(t_grade).or_insert(0);
 
                         construct
-                            .entry((*r_grade, r_id))
+                            .entry((r_grade, r_id))
                             .or_insert(HashMap::default())
-                            .insert((*l_grade, l_id), (t_grade, *t_id));
+                            .insert((l_grade, l_id), (t_grade, *t_id));
 
-                        deconstruct.insert((t_grade, *t_id), ((*l_grade, l_id), (*r_grade, r_id)));
+                        deconstruct.insert((t_grade, *t_id), ((l_grade, l_id), (r_grade, r_id)));
                         *t_id = *t_id + 1;
                     }
                 }
@@ -99,7 +119,7 @@ impl<G: Grading> kTensor<G> {
         tensor
     }
 
-    pub fn add_and_restrict(&self, add: G, limit: G) -> kTensor<G> {
+    pub fn add_and_restrict(&self, add: G, limit: G) -> Self {
         let cons = self
             .construct
             .iter()
@@ -151,7 +171,7 @@ impl<G: Grading> kTensor<G> {
                 }
             })
             .collect();
-        let tens = kTensor {
+        let tens = Self {
             construct: cons,
             deconstruct: decon,
             dimensions: dims,
@@ -223,7 +243,7 @@ impl<G: Grading> kTensor<G> {
 
         let mut dims = HashMap::default();
 
-        let mut found: HashMap<G, Vec<bool>, RandomState> = self
+        let mut found: HashMap<G, Vec<bool>> = self
             .dimensions
             .iter()
             .map(|(&gr, &size)| (gr, (0..size).map(|_| false).collect()))

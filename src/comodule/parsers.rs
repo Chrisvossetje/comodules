@@ -1,23 +1,23 @@
-use std::{collections::HashMap, ops::AddAssign, sync::Arc};
+use std::{ops::AddAssign, sync::Arc};
 
-use ahash::RandomState;
+use ahash::HashMap;
 use itertools::Itertools;
 
 use crate::linalg::{
     field::Field,
     graded::{BasisIndex, GradedLinearMap, GradedVectorSpace},
-    grading::Grading,
+    grading::{Grading, OrderedGrading},
     matrix::Matrix,
 };
 
 use super::{
     kcoalgebra::kCoalgebra,
     kcomodule::{kBasisElement, kComodule},
-    ktensor::kTensor,
+    tensor::Tensor,
 };
 
-impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
-    fn check_translator(&self, translate: &HashMap<String, BasisIndex<G>, RandomState>) -> bool {
+impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
+    fn check_translator(&self, translate: &HashMap<String, BasisIndex<G>>) -> bool {
         for (gr, space) in &self.space.0 {
             for (index, el) in space.iter().enumerate() {
                 let comp = translate.get(&el.name);
@@ -39,7 +39,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
     ) -> Result<
         (
             kCoalgebra<G, F, M>,
-            HashMap<String, BasisIndex<G>, RandomState>,
+            HashMap<String, BasisIndex<G>>,
         ),
         String,
     > {
@@ -55,7 +55,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
     ) -> Result<
         (
             kCoalgebra<G, F, M>,
-            HashMap<String, BasisIndex<G>, RandomState>,
+            HashMap<String, BasisIndex<G>>,
         ),
         String,
     > {
@@ -170,7 +170,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         }
 
         // Create basis dictionary
-        let mut basis_dict: HashMap<String, (kBasisElement, G), RandomState> = HashMap::default();
+        let mut basis_dict: HashMap<String, (kBasisElement, G)> = HashMap::default();
         for (name, grade) in basis.iter() {
             if basis_dict.contains_key(name) {
                 return Err(format!("Basis element '{}' appears twice", name));
@@ -199,9 +199,9 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         }
 
         let graded_space = GradedVectorSpace(transformed);
-        let tensor = kTensor::generate(&graded_space, &graded_space);
+        let tensor = Tensor::generate(&graded_space, &graded_space);
 
-        let mut coaction: HashMap<G, M, RandomState> = HashMap::default();
+        let mut coaction: HashMap<G, M> = HashMap::default();
         for (gr, elements) in &graded_space.0 {
             let domain = elements.len();
             let codomain = *tensor.dimensions.get(gr).unwrap_or(&0);
@@ -269,7 +269,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
     ) -> Result<
         (
             kCoalgebra<G, F, M>,
-            HashMap<String, BasisIndex<G>, RandomState>,
+            HashMap<String, BasisIndex<G>>,
         ),
         String,
     > {
@@ -287,9 +287,9 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         let mut field: Option<usize> = None;
         let mut generators: Vec<(String, G)> = vec![];
         let mut relations: Vec<Monomial> = vec![];
-        let mut coactions: Vec<Tensor<F>> = vec![];
-        let mut generator_translate: HashMap<String, usize> = HashMap::new();
-        let mut basis_translate: HashMap<String, BasisIndex<G>, RandomState> = HashMap::default();
+        let mut coactions: Vec<HelperTensor<F>> = vec![];
+        let mut generator_translate: HashMap<String, usize> = HashMap::default();
+        let mut basis_translate: HashMap<String, BasisIndex<G>> = HashMap::default();
 
         for (line_num, line) in input.lines().enumerate() {
             let line_num = line_num + 1;
@@ -432,7 +432,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
 
         let n = generators.len();
         let one_monomial: Monomial = vec![0; n]; // All exponents zero => 1
-        let mut monomial_coaction: HashMap<Monomial, Tensor<F>> = HashMap::new();
+        let mut monomial_coaction: HashMap<Monomial, HelperTensor<F>> = HashMap::default();
         let mut queue: Vec<Monomial> = vec![one_monomial.clone()];
 
         // Initialize basis information for the unit monomial (1)
@@ -484,8 +484,8 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
             }
         }
         // Construct the basis structure
-        let mut basis: HashMap<G, Vec<kBasisElement>, RandomState> = HashMap::default();
-        let mut monomial_to_grade_index: HashMap<Monomial, (G, usize), RandomState> =
+        let mut basis: HashMap<G, Vec<kBasisElement>> = HashMap::default();
+        let mut monomial_to_grade_index: HashMap<Monomial, (G, usize)> =
             HashMap::default();
 
         for monomial in monomial_coaction.keys().sorted() {
@@ -511,10 +511,10 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         let coalg_vector_space = GradedVectorSpace::from(basis.clone());
 
         // create A \otimes A
-        let tensor = kTensor::generate(&coalg_vector_space, &coalg_vector_space);
+        let tensor = Tensor::generate(&coalg_vector_space, &coalg_vector_space);
 
         // Create the coaction map
-        let mut coaction: HashMap<G, M, RandomState> = HashMap::default();
+        let mut coaction: HashMap<G, M> = HashMap::default();
 
         for (grade, els) in basis.iter() {
             let tensor_rows = tensor.dimensions[grade];
@@ -565,7 +565,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
 // Helper functions
 
 type Monomial = Vec<usize>;
-type Tensor<F> = Vec<(F, Monomial, Monomial)>;
+type HelperTensor<F> = Vec<(F, Monomial, Monomial)>;
 
 fn parse_name_exponent(el: &str) -> Result<(&str, usize), String> {
     let parts: Vec<&str> = el.split('^').collect();
@@ -690,10 +690,10 @@ fn multiply_tensor_terms<F: Field>(
 }
 
 fn multiply_coaction_elements<F: Field>(
-    a: &Tensor<F>,
-    b: &Tensor<F>,
+    a: &HelperTensor<F>,
+    b: &HelperTensor<F>,
     relations: &Vec<Monomial>,
-) -> Tensor<F> {
+) -> HelperTensor<F> {
     let mut result: Vec<(F, Monomial, Monomial)> = vec![];
 
     for x in a {
@@ -716,11 +716,11 @@ fn multiply_coaction_elements<F: Field>(
     result
 }
 
-impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
+impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
     pub fn parse(
         input: &str,
         coalgebra: Arc<kCoalgebra<G, F, M>>,
-        coalgebra_translate: &HashMap<String, BasisIndex<G>, RandomState>,
+        coalgebra_translate: &HashMap<String, BasisIndex<G>>,
         max_grading: G,
     ) -> Result<kComodule<G, F, M>, String> {
         if input.contains("- BASIS") {
@@ -733,7 +733,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
     fn parse_direct(
         input: &str,
         coalgebra: Arc<kCoalgebra<G, F, M>>,
-        coalgebra_translate: &HashMap<String, BasisIndex<G>, RandomState>,
+        coalgebra_translate: &HashMap<String, BasisIndex<G>>,
     ) -> Result<kComodule<G, F, M>, String> {
         #[derive(Debug, Clone, PartialEq)]
         enum State {
@@ -824,7 +824,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
         }
 
         // Create basis dictionary
-        let mut basis_dict: HashMap<String, (kBasisElement, G), RandomState> = HashMap::default();
+        let mut basis_dict: HashMap<String, (kBasisElement, G)> = HashMap::default();
         for (name, grade) in basis.iter() {
             if basis_dict.contains_key(name) {
                 return Err(format!("Basis element '{}' appears twice", name));
@@ -845,7 +845,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
 
         // Transform basis
         let mut transformed = HashMap::default();
-        let mut basis_translate: HashMap<String, BasisIndex<G>, RandomState> = HashMap::default();
+        let mut basis_translate: HashMap<String, BasisIndex<G>> = HashMap::default();
 
         for (name, (el, gr)) in basis_dict.iter().sorted_by_key(|(name, _)| *name) {
             transformed.entry(*gr).or_insert(vec![]).push(el.clone());
@@ -853,9 +853,9 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
         }
 
         let graded_space = GradedVectorSpace(transformed);
-        let tensor = kTensor::generate(&coalgebra.space, &graded_space);
+        let tensor = Tensor::generate(&coalgebra.space, &graded_space);
 
-        let mut coaction: HashMap<G, M, RandomState> = HashMap::default();
+        let mut coaction: HashMap<G, M> = HashMap::default();
         for (gr, elements) in &graded_space.0 {
             let domain = elements.len();
             let codomain = *tensor.dimensions.get(gr).unwrap_or(&0);
@@ -916,7 +916,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
     fn parse_polynomial(
         input: &str,
         coalgebra: Arc<kCoalgebra<G, F, M>>,
-        coalgebra_translate: &HashMap<String, BasisIndex<G>, RandomState>,
+        coalgebra_translate: &HashMap<String, BasisIndex<G>>,
         max_grading: G,
     ) -> Result<kComodule<G, F, M>, String> {
         #[derive(Debug, Clone, PartialEq)]
@@ -932,7 +932,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
         let mut generators: Vec<(String, G)> = vec![];
         let mut relations: Vec<Monomial> = vec![];
         let mut coactions: Vec<Vec<(F, HashMap<String, usize>, Vec<usize>)>> = vec![];
-        let mut generator_translate: HashMap<String, usize> = HashMap::new();
+        let mut generator_translate: HashMap<String, usize> = HashMap::default();
 
         for (line_num, line) in input.lines().enumerate() {
             let line_num = line_num + 1;
@@ -1054,7 +1054,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
         let n = generators.len();
         let one_monomial: Monomial = vec![0; n];
         let mut monomial_coaction: HashMap<Monomial, Vec<(F, HashMap<String, usize>, Monomial)>> =
-            HashMap::new();
+            HashMap::default();
         let mut queue: Vec<Monomial> = vec![one_monomial.clone()];
 
         // Initialize basis information for the unit monomial (1)
@@ -1101,8 +1101,8 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
         }
 
         // Construct the basis structure
-        let mut basis: HashMap<G, Vec<kBasisElement>, RandomState> = HashMap::default();
-        let mut monomial_to_grade_index: HashMap<Monomial, (G, usize), RandomState> =
+        let mut basis: HashMap<G, Vec<kBasisElement>> = HashMap::default();
+        let mut monomial_to_grade_index: HashMap<Monomial, (G, usize)> =
             HashMap::default();
 
         for monomial in monomial_coaction.keys().sorted() {
@@ -1125,10 +1125,10 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
         let comodule_vector_space = GradedVectorSpace::from(basis.clone());
 
         // create C ⊗ M (coalgebra tensor comodule)
-        let tensor = kTensor::generate(&coalgebra.space, &comodule_vector_space);
+        let tensor = Tensor::generate(&coalgebra.space, &comodule_vector_space);
 
         // Create the coaction map
-        let mut coaction: HashMap<G, M, RandomState> = HashMap::default();
+        let mut coaction: HashMap<G, M> = HashMap::default();
 
         for (grade, els) in basis.iter() {
             let tensor_rows = tensor.dimensions[grade];

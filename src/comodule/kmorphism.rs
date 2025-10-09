@@ -1,15 +1,15 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{sync::Arc};
 
-use ahash::RandomState;
+use ahash::HashMap;
 use itertools::Itertools;
 use rayon::prelude::*;
 
 use crate::{
-    comodule::{kcomodule::kBasisElement, ktensor::kTensor, traits::Tensor},
+    comodule::{kcomodule::kBasisElement, tensor::Tensor},
     linalg::{
         field::Field,
         graded::{BasisIndex, GradedLinearMap},
-        grading::Grading,
+        grading::{Grading, OrderedGrading},
         matrix::Matrix,
     },
 };
@@ -79,7 +79,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
         let coker_space = cokernel_map.codomain_space(kBasisElement::default());
 
         let coalg = self.codomain.coalgebra.as_ref();
-        let tensor = kTensor::generate(&coalg.space, &coker_space);
+        let tensor = Tensor::generate(&coalg.space, &coker_space);
 
         let pivots = cokernel_map.pivots();
 
@@ -109,7 +109,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
             })
             .collect();
 
-        let coaction: HashMap<G, M, RandomState> = coker_space
+        let coaction: HashMap<G, M> = coker_space
             .0
             .par_iter()
             .map(|(g, v)| {
@@ -152,7 +152,10 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
         Self::new(self.codomain.clone(), Arc::new(comodule), cokernel_map)
     }
 
-    fn inject_codomain_to_cofree(&self, limit: G) -> Self {
+    fn inject_codomain_to_cofree(&self, limit: G) -> Self 
+    where
+        G: OrderedGrading,
+    {
         let mut growing_map: GradedLinearMap<G, F, M> =
             GradedLinearMap::zero_codomain(&self.codomain.space);
         let mut growing_comodule = kComodule::zero_comodule(self.codomain.coalgebra.clone());
@@ -162,8 +165,10 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
             .maps
             .iter()
             .map(|(g, _)| *g)
-            .sorted()
-            .filter(|&g| g <= limit)
+            .sorted_by(|a,b| {
+                a.compare(b)
+            })  
+            .filter(|&g| g.compare(&limit).is_le())
             .collect();
         let mut prev_grade = 0;
 
@@ -206,7 +211,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
             let coalg_space = &self.codomain.coalgebra.space;
 
             // TODO: Verify is this parallel iterator is faster or not for big(ger) coalgebras
-            let cofree_map: HashMap<G,M, RandomState> = coalg_space.0.iter().filter_map(|(alg_gr, alg_gr_space)| {
+            let cofree_map: HashMap<G,M> = coalg_space.0.iter().filter_map(|(alg_gr, alg_gr_space)| {
                 let t_gr = *alg_gr + pivot_grade;
 
                 if t_gr > fixed_limit {
@@ -276,14 +281,14 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
         }
     }
 
-    fn compose(l: Self, r: Self) -> Self {
+    fn compose(l: &Self, r: &Self) -> Self {
         debug_assert!(
             l.domain == r.codomain,
             "l-domain and r-codomain should be equal when composing"
         );
 
-        let codomain = l.codomain;
-        let domain = r.domain;
+        let codomain = l.codomain.clone();
+        let domain = r.domain.clone();
 
         let map = l.map.compose(&r.map);
 

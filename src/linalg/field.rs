@@ -1,35 +1,6 @@
-use std::{
-    fmt::Debug,
-    ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign},
-};
+use std::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
-pub trait CRing:
-    Clone
-    + Copy
-    + Debug
-    + Sized
-    + PartialEq
-    + Add<Output = Self>
-    + Sub<Output = Self>
-    + Neg<Output = Self>
-    + Mul<Output = Self>
-    + AddAssign
-    + SubAssign
-    + MulAssign
-    + std::iter::Sum
-    + Sync
-    + Send
-{
-    fn is_zero(&self) -> bool;
-    fn one() -> Self;
-    fn zero() -> Self;
-
-    fn parse(input: &str) -> Result<Self, String>;
-
-    fn dot_product(l: &Vec<Self>, r: &Vec<Self>) -> Self {
-        l.iter().zip(r.iter()).map(|(x, y)| *x * *y).sum()
-    }
-}
+use crate::linalg::ring::CRing;
 
 pub trait Field: CRing {
     fn inv(self) -> Option<Self>;
@@ -55,6 +26,10 @@ impl CRing for f64 {
         input
             .parse()
             .map_err(|_| format!("Field: {} could not be parsed", input))
+    }
+    
+    fn is_unit(&self) -> bool {
+        !self.is_zero()
     }
 }
 
@@ -145,6 +120,12 @@ impl<const P: u8> std::iter::Sum for Fp<P> {
     }
 }
 
+impl<const P: u8> Default for Fp<P> {
+    fn default() -> Self {
+        Self(0)
+    }
+}
+
 impl<const P: u8> CRing for Fp<P> {
     fn is_zero(&self) -> bool {
         self.0 == 0
@@ -154,15 +135,15 @@ impl<const P: u8> CRing for Fp<P> {
         Fp(1)
     }
 
-    fn zero() -> Self {
-        Fp(0)
-    }
-
     fn parse(input: &str) -> Result<Self, String> {
         let chr: i32 = input
             .parse()
             .map_err(|_| format!("Field: {} could not be parsed", input))?;
         Ok(Self((chr % (P as i32)) as u8))
+    }
+    
+    fn is_unit(&self) -> bool {
+        !self.is_zero()
     }
 }
 
@@ -274,6 +255,12 @@ impl std::iter::Sum for F2 {
     }
 }
 
+impl Default for F2 {
+    fn default() -> Self {
+        Self(0)
+    }
+}
+
 impl CRing for F2 {
     fn is_zero(&self) -> bool {
         self.0 == 0
@@ -292,6 +279,10 @@ impl CRing for F2 {
             .parse()
             .map_err(|_| format!("Field: {} could not be parsed", input))?;
         Ok(Self((chr & 1) as u8))
+    }
+    
+    fn is_unit(&self) -> bool {
+        !self.is_zero()
     }
 }
 

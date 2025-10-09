@@ -1,20 +1,18 @@
 #[cfg(test)]
 mod tests {
-    use std::{collections::HashMap, i32, sync::Arc};
+    use std::{sync::Arc};
+
+    use ahash::HashMap;
 
     use crate::{
         comodule::{
             kcoalgebra::{kCoalgebra, A0_coalgebra},
             kcomodule::{kBasisElement, kComodule},
-            ktensor::kTensor,
+            tensor::Tensor,
             traits::Comodule,
         },
         linalg::{
-            field::{Fp, F2},
-            flat_matrix::FlatMatrix,
-            graded::{GradedLinearMap, GradedVectorSpace},
-            matrix::RModMorphism,
-            row_matrix::RowMatrix,
+            field::{Fp, F2}, flat_matrix::FlatMatrix, graded::{GradedLinearMap, GradedVectorSpace}, grading::{Grading, UniGrading}, matrix::RModMorphism, row_matrix::RowMatrix
         },
         resolution::Resolution,
     };
@@ -40,16 +38,16 @@ mod tests {
         let comodule = kComodule::fp_comodule(coalgebra.clone());
 
         assert_eq!(comodule.space.0.len(), 1);
-        assert!(comodule.space.0.contains_key(&0));
+        assert!(comodule.space.0.contains_key(&UniGrading(0)));
 
-        let elements = comodule.space.0.get(&0).unwrap();
+        let elements = comodule.space.0.get(&UniGrading(0)).unwrap();
         assert_eq!(elements.len(), 1);
         assert_eq!(elements[0].name, "fp");
         assert_eq!(elements[0].generator, false);
 
-        assert!(comodule.coaction.maps.contains_key(&0));
+        assert!(comodule.coaction.maps.contains_key(&UniGrading(0)));
         assert_eq!(comodule.coaction.maps.len(), 1);
-        assert_eq!(comodule.coaction.maps[&0], RowMatrix::<F2>::identity(1));
+        assert_eq!(comodule.coaction.maps[&UniGrading(0)], RowMatrix::<F2>::identity(1));
     }
 
     // Test for kComodule::direct_sum
@@ -57,27 +55,27 @@ mod tests {
     fn test_direct_sum() {
         let coalgebra = Arc::new(A0_coalgebra());
         let mut comodule1 = kComodule::fp_comodule(coalgebra.clone());
-        let mut comodule2 = kComodule::cofree_comodule(coalgebra.clone(), 0, 0, 4);
+        let mut comodule2 = kComodule::cofree_comodule(coalgebra.clone(), 0, UniGrading(0), UniGrading(4));
 
-        assert_eq!(comodule2.tensor.dimensions.get(&1).unwrap(), &2);
+        assert_eq!(comodule2.tensor.dimensions.get(&UniGrading(1)).unwrap(), &2);
 
         comodule1.direct_sum(&mut comodule2);
 
-        assert_eq!(comodule1.space.0.get(&0).unwrap().len(), 2);
-        assert_eq!(comodule1.space.0.get(&1).unwrap().len(), 1);
+        assert_eq!(comodule1.space.0.get(&UniGrading(0)).unwrap().len(), 2);
+        assert_eq!(comodule1.space.0.get(&UniGrading(1)).unwrap().len(), 1);
 
-        let elements = &comodule1.space.0[&0];
+        let elements = &comodule1.space.0[&UniGrading(0)];
         assert_eq!(elements[0].name, "fp");
         assert_eq!(elements[1].name, "1");
 
-        let elements = &comodule1.space.0[&1];
+        let elements = &comodule1.space.0[&UniGrading(1)];
         assert_eq!(elements[0].name, "xi1");
 
-        assert_eq!(comodule2.tensor.dimensions[&1], 2);
+        assert_eq!(comodule2.tensor.dimensions[&UniGrading(1)], 2);
 
         let dims = &comodule1.tensor.dimensions;
-        assert_eq!(dims.get(&0), Some(&2));
-        assert_eq!(dims.get(&1), Some(&2));
+        assert_eq!(dims.get(&UniGrading(0)), Some(&2));
+        assert_eq!(dims.get(&UniGrading(1)), Some(&2));
         comodule1.tensor.is_correct();
     }
 
@@ -86,7 +84,7 @@ mod tests {
     fn test_get_generators() {
         let mut space_map = HashMap::default();
         space_map.insert(
-            0,
+            UniGrading(0),
             vec![
                 kBasisElement {
                     name: "gen1".to_string(),
@@ -109,13 +107,13 @@ mod tests {
             coalgebra,
             space: GradedVectorSpace::from(space_map),
             coaction: GradedLinearMap::empty(),
-            tensor: kTensor::new(),
+            tensor: Tensor::default(),
         };
 
         let generators = comodule.get_generators();
 
         assert_eq!(generators.len(), 1);
-        assert_eq!(generators[0].1, 0);
+        assert_eq!(generators[0].1, UniGrading(0));
         assert_eq!(generators[0].2, None);
     }
 
@@ -125,17 +123,17 @@ mod tests {
         let input_comod = include_str!("../../../examples/comodule/F2_comod.txt");
 
         let (kcoalg, translator) =
-            kCoalgebra::<i32, F2, RowMatrix<F2>>::parse(input_coalg, i32::MAX).unwrap();
+            kCoalgebra::<UniGrading, F2, RowMatrix<F2>>::parse(input_coalg, UniGrading::infty()).unwrap();
 
-        match kComodule::<i32, F2, RowMatrix<F2>>::parse(
+        match kComodule::<UniGrading, F2, RowMatrix<F2>>::parse(
             input_comod,
             Arc::new(kcoalg),
             &translator,
-            i32::MAX,
+            UniGrading::infty(),
         ) {
             Ok(comod) => {
-                assert_eq!(comod.space.0[&0].len(), 1);
-                assert!(!comod.space.0.contains_key(&1));
+                assert_eq!(comod.space.0[&UniGrading(0)].len(), 1);
+                assert!(!comod.space.0.contains_key(&UniGrading(1)));
                 assert_eq!(comod.coaction.maps.len(), 1);
             }
             Err(e) => {
@@ -151,13 +149,13 @@ mod tests {
         let input_comod = include_str!("../../../examples/comodule/A(0)_comod.txt");
 
         let (kcoalg, translator) =
-            kCoalgebra::<i32, F2, RowMatrix<F2>>::parse(input_coalg, 32).unwrap();
+            kCoalgebra::<UniGrading, F2, RowMatrix<F2>>::parse(input_coalg, UniGrading(32)).unwrap();
 
-        match kComodule::<i32, F2, RowMatrix<F2>>::parse(
+        match kComodule::<UniGrading, F2, RowMatrix<F2>>::parse(
             input_comod,
             Arc::new(kcoalg),
             &translator,
-            i32::MAX,
+            UniGrading::infty(),
         ) {
             Ok(comod) => {
                 println!("{:?}", comod.coaction);
@@ -175,12 +173,12 @@ mod tests {
         let input_comod = include_str!("../../../examples/comodule/gen_comod.txt");
 
         let (kcoalg, translator) =
-            kCoalgebra::<i32, Fp<3>, RowMatrix<Fp<3>>>::parse(input_coalg, 128).unwrap();
-        match kComodule::<i32, Fp<3>, RowMatrix<Fp<3>>>::parse(
+            kCoalgebra::<UniGrading, Fp<3>, RowMatrix<Fp<3>>>::parse(input_coalg, UniGrading(128)).unwrap();
+        match kComodule::<UniGrading, Fp<3>, RowMatrix<Fp<3>>>::parse(
             input_comod,
             Arc::new(kcoalg),
             &translator,
-            6,
+            UniGrading(6),
         ) {
             Ok(comod) => {
                 println!("{:?}", comod.coaction);
@@ -195,17 +193,17 @@ mod tests {
     #[test]
     fn test_a0_comod() {
         let input = include_str!("../../../examples/polynomial/A(0).txt");
-        const MAX_GRADING: i32 = 60;
+        const MAX_GRADING: UniGrading = UniGrading(60);
         let (coalgebra, translate) =
-            kCoalgebra::<i32, F2, FlatMatrix<F2>>::parse(input, MAX_GRADING).unwrap();
+            kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input, MAX_GRADING).unwrap();
 
         let coalgebra = Arc::new(coalgebra);
         let input = include_str!("../../../examples/comodule/A(0).txt");
 
         let comod = kComodule::parse(input, coalgebra, &translate, MAX_GRADING).unwrap();
 
-        let mut res: Resolution<i32, kComodule<i32, F2, FlatMatrix<F2>>> = Resolution::new(comod);
-        res.resolve_to_s(10, 1234);
+        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> = Resolution::new(comod);
+        res.resolve_to_s(10, UniGrading(1234));
         let sseq = res.generate_sseq("A(1)-comod");
 
         assert_eq!(sseq.pages[0].generators.len(), 1);
@@ -214,9 +212,9 @@ mod tests {
     #[test]
     fn test_a1_comod() {
         let input = include_str!("../../../examples/polynomial/A(1).txt");
-        const MAX_GRADING: i32 = 60;
+        const MAX_GRADING: UniGrading = UniGrading(60);
         let (coalgebra, translate) =
-            kCoalgebra::<i32, F2, FlatMatrix<F2>>::parse(input, MAX_GRADING).unwrap();
+            kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input, MAX_GRADING).unwrap();
 
         let coalclcone = coalgebra.clone();
         let coalgebra = Arc::new(coalgebra);
@@ -224,13 +222,14 @@ mod tests {
 
         let comod = kComodule::parse(input, coalgebra, &translate, MAX_GRADING).unwrap();
         for n in 0..=6 {
+            let n = UniGrading(n);
             println!("{:?}", coalclcone.coaction.maps[&n]);
             println!("{:?}", comod.coaction.maps[&n]);
             println!("");
         }
 
-        let mut res: Resolution<i32, kComodule<i32, F2, FlatMatrix<F2>>> = Resolution::new(comod);
-        res.resolve_to_s(10, 1234);
+        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> = Resolution::new(comod);
+        res.resolve_to_s(10, UniGrading(1234));
         let sseq = res.generate_sseq("A(1)-comod");
 
         assert_eq!(sseq.pages[0].generators.len(), 1);

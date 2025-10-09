@@ -1,26 +1,31 @@
 use serde::{Deserialize, Serialize};
 
+
+use crate::linalg::ring::CRing;
+
 use super::{
     field::Field,
     matrix::{Matrix, RModMorphism},
 };
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
-pub struct FlatMatrix<F: Field> {
-    pub data: Vec<F>,
+pub struct FlatMatrix<R: CRing> {
+    pub data: Vec<R>,
     pub domain: usize,
     pub codomain: usize,
 }
 
-impl<F: Field> FlatMatrix<F> {
-    fn get_element(&self, row: usize, col: usize) -> F {
+impl<R: CRing> FlatMatrix<R> {
+    fn get_element(&self, row: usize, col: usize) -> R {
         self.data[row * self.domain + col].clone()
     }
 
-    fn set_element(&mut self, row: usize, col: usize, value: F) {
+    fn set_element(&mut self, row: usize, col: usize, value: R) {
         self.data[row * self.domain + col] = value;
     }
+}
 
+impl<F: Field> FlatMatrix<F> {
     fn rref_kernel(&self) -> Self {
         let mut free_vars = Vec::new();
         let pivot_cols: Vec<usize> = self.pivots().iter().map(|x| x.0).collect();
@@ -135,9 +140,9 @@ impl<F: Field> Matrix<F> for FlatMatrix<F> {
     }
 }
 
-impl<F: Field> RModMorphism<F> for FlatMatrix<F> {
+impl<R: CRing> RModMorphism<R> for FlatMatrix<R> {
     fn transpose(&self) -> Self {
-        let mut new_matrix = vec![F::zero(); self.data.len()];
+        let mut new_matrix = vec![R::zero(); self.data.len()];
         for i in 0..self.codomain {
             for j in 0..self.domain {
                 new_matrix[j * self.codomain + i] = self.get_element(i, j);
@@ -181,9 +186,9 @@ impl<F: Field> RModMorphism<F> for FlatMatrix<F> {
     }
 
     fn identity(d: usize) -> Self {
-        let mut data = vec![F::zero(); d * d];
+        let mut data = vec![R::zero(); d * d];
         for i in 0..d {
-            data[i * d + i] = F::one();
+            data[i * d + i] = R::one();
         }
         Self {
             data,
@@ -192,26 +197,26 @@ impl<F: Field> RModMorphism<F> for FlatMatrix<F> {
         }
     }
 
-    fn get(&self, domain: usize, codomain: usize) -> F {
+    fn get(&self, domain: usize, codomain: usize) -> R {
         self.get_element(codomain, domain)
     }
 
-    fn set(&mut self, domain: usize, codomain: usize, f: F) {
-        self.set_element(codomain, domain, f);
+    fn set(&mut self, domain: usize, codomain: usize, r: R) {
+        self.set_element(codomain, domain, r);
     }
 
-    fn add_at(&mut self, domain: usize, codomain: usize, f: F) {
+    fn add_at(&mut self, domain: usize, codomain: usize, r: R) {
         let idx = codomain * self.domain + domain;
-        self.data[idx] += f;
+        self.data[idx] += r;
     }
 
-    fn get_row(&self, codomain: usize) -> &[F] {
+    fn get_row(&self, codomain: usize) -> &[R] {
         let start = codomain * self.domain;
         let end = start + self.domain;
         &self.data[start..end]
     }
 
-    fn set_row(&mut self, codomain: usize, row: &[F]) {
+    fn set_row(&mut self, codomain: usize, row: &[R]) {
         let start = codomain * self.domain;
         let end = start + self.domain;
         self.data[start..end].copy_from_slice(row);
@@ -231,11 +236,11 @@ impl<F: Field> RModMorphism<F> for FlatMatrix<F> {
             "Matrix domain not equal to codomain"
         );
 
-        let mut compose = vec![F::zero(); self.codomain * rhs.domain];
+        let mut compose = vec![R::zero(); self.codomain * rhs.domain];
 
         for x in 0..self.codomain {
             for y in 0..rhs.domain {
-                let mut sum = F::zero();
+                let mut sum = R::zero();
                 for k in 0..self.domain {
                     sum += self.get_element(x, k) * rhs.get_element(k, y);
                 }
@@ -252,7 +257,7 @@ impl<F: Field> RModMorphism<F> for FlatMatrix<F> {
 
     fn zero(domain: usize, codomain: usize) -> Self {
         Self {
-            data: vec![F::zero(); domain * codomain],
+            data: vec![R::zero(); domain * codomain],
             domain,
             codomain,
         }

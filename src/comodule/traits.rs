@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use crate::linalg::{graded::BasisElement, grading::Grading};
+use crate::linalg::{graded::BasisElement, grading::{Grading, OrderedGrading}};
 
 pub trait Comodule<G: Grading>: Sized {
     type Element: BasisElement;
     type Coalgebra;
-    type Morphism: ComoduleMorphism<G, Self>;
+    type Morphism: ComoduleMorphism<G, Self> + Clone;
 
     fn zero_comodule(coalgebra: Arc<Self::Coalgebra>) -> Self;
 
@@ -21,12 +21,14 @@ pub trait Comodule<G: Grading>: Sized {
 
 pub trait ComoduleMorphism<G: Grading, M: Comodule<G>> {
     fn cokernel(&self) -> Self;
-    fn inject_codomain_to_cofree(&self, limit: G) -> Self; // Question: Shouldn't 'codomain' be 'cokernel'/'comodule'?
+    fn inject_codomain_to_cofree(&self, limit: G) -> Self 
+    where
+        G: OrderedGrading; // Question: Shouldn't 'codomain' be 'cokernel'/'comodule'?
 
     fn zero_morphism(comodule: Arc<M>) -> Self;
 
     // domain l == codomain r, l \circ r
-    fn compose(l: Self, r: Self) -> Self;
+    fn compose(l: &Self, r: &Self) -> Self;
 
     fn get_codomain(&self) -> Arc<M>;
 
@@ -37,9 +39,3 @@ pub trait ComoduleMorphism<G: Grading, M: Comodule<G>> {
     fn get_structure_lines(&self) -> Vec<(usize, usize, usize, String)>;
 }
 
-pub trait Tensor<G: Grading> {
-    fn tensor_to_base();
-    fn base_to_tensor();
-
-    fn get_dimension(&self, grading: &G) -> usize;
-}

@@ -1,18 +1,12 @@
-use std::collections::HashMap;
-
-use ahash::RandomState;
+use ahash::HashMap;
 use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
-use crate::linalg::{
-    field::{CRing, Field, F2},
-    graded::{GradedLinearMap, GradedVectorSpace},
-    grading::{Grading, UniGrading},
-    matrix::Matrix,
-    row_matrix::RowMatrix,
-};
+use crate::{comodule::tensor::Tensor, linalg::{
+    field::{Field, F2}, graded::{GradedLinearMap, GradedVectorSpace}, grading::{Grading, UniGrading}, matrix::Matrix, ring::CRing, row_matrix::RowMatrix
+}};
 
-use super::{kcomodule::kBasisElement, ktensor::kTensor, traits::Tensor};
+use super::{kcomodule::kBasisElement};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -20,7 +14,7 @@ use serde::{Deserialize, Serialize};
 pub struct kCoalgebra<G: Grading, F: Field, M: Matrix<F>> {
     pub space: GradedVectorSpace<G, kBasisElement>,
     pub coaction: GradedLinearMap<G, F, M>,
-    pub tensor: kTensor<G>,
+    pub tensor: Tensor<G>,
 }
 
 impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
@@ -73,7 +67,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
 pub fn A0_coalgebra() -> kCoalgebra<UniGrading, F2, RowMatrix<F2>> {
     let mut space = GradedVectorSpace::new();
     space.0.insert(
-        0,
+        UniGrading(0),
         vec![kBasisElement {
             name: "1".to_owned(),
             generator: true,
@@ -83,7 +77,7 @@ pub fn A0_coalgebra() -> kCoalgebra<UniGrading, F2, RowMatrix<F2>> {
     );
 
     space.0.insert(
-        1,
+        UniGrading(1),
         vec![kBasisElement {
             name: "xi1".to_owned(),
             generator: false,
@@ -93,26 +87,26 @@ pub fn A0_coalgebra() -> kCoalgebra<UniGrading, F2, RowMatrix<F2>> {
     );
 
     let mut dimensions = HashMap::default();
-    dimensions.insert(0, 1);
-    dimensions.insert(1, 2);
+    dimensions.insert(UniGrading(0), 1);
+    dimensions.insert(UniGrading(1), 2);
 
     let mut construct = HashMap::default();
     let mut first_entry = HashMap::default();
-    first_entry.insert((0, 0), (0, 0));
-    first_entry.insert((1, 0), (1, 1));
+    first_entry.insert((UniGrading(0), 0), (UniGrading(0), 0));
+    first_entry.insert((UniGrading(1), 0), (UniGrading(1), 1));
 
     let mut second_entry = HashMap::default();
-    second_entry.insert((0, 0), (1, 0));
+    second_entry.insert((UniGrading(0), 0), (UniGrading(1), 0));
 
-    construct.insert((0, 0), first_entry);
-    construct.insert((1, 0), second_entry);
+    construct.insert((UniGrading(0), 0), first_entry);
+    construct.insert((UniGrading(1), 0), second_entry);
 
     let mut deconstruct = HashMap::default();
-    deconstruct.insert((0, 0), ((0, 0), (0, 0)));
-    deconstruct.insert((1, 1), ((1, 0), (0, 0)));
-    deconstruct.insert((1, 0), ((0, 0), (1, 0)));
+    deconstruct.insert((UniGrading(0), 0), ((UniGrading(0), 0), (UniGrading(0), 0)));
+    deconstruct.insert((UniGrading(1), 1), ((UniGrading(1), 0), (UniGrading(0), 0)));
+    deconstruct.insert((UniGrading(1), 0), ((UniGrading(0), 0), (UniGrading(1), 0)));
 
-    let tensor = kTensor {
+    let tensor = Tensor {
         construct,
         deconstruct,
         dimensions,
@@ -120,7 +114,7 @@ pub fn A0_coalgebra() -> kCoalgebra<UniGrading, F2, RowMatrix<F2>> {
 
     let mut coaction = GradedLinearMap::empty();
     coaction.maps.insert(
-        0,
+        UniGrading(0),
         RowMatrix {
             data: vec![vec![F2::one()]],
             domain: 1,
@@ -128,7 +122,7 @@ pub fn A0_coalgebra() -> kCoalgebra<UniGrading, F2, RowMatrix<F2>> {
         },
     );
     coaction.maps.insert(
-        1,
+        UniGrading(1),
         RowMatrix {
             data: vec![vec![F2::one()], vec![F2::one()]],
             domain: 1,
@@ -145,10 +139,10 @@ pub fn A0_coalgebra() -> kCoalgebra<UniGrading, F2, RowMatrix<F2>> {
 
 pub fn reduce_helper<G: Grading, F: Field, M: Matrix<F>>(
     coaction: &mut GradedLinearMap<G, F, M>,
-    tensor: &mut kTensor<G>,
+    tensor: &mut Tensor<G>,
 ) {
     // Left vec goes from old t_id -> new t_id, usize is dimension
-    let mapping: HashMap<G, (Vec<Option<usize>>, usize), RandomState> = tensor
+    let mapping: HashMap<G, (Vec<Option<usize>>, usize)> = tensor
         .dimensions
         .par_iter()
         .map(|(grade, _)| {

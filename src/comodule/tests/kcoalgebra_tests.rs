@@ -1,14 +1,11 @@
 #[cfg(test)]
 mod tests {
-    use std::i32;
-
     use itertools::Itertools;
 
     use crate::{
         comodule::kcoalgebra::{kCoalgebra, A0_coalgebra},
         linalg::{
-            field::{CRing, Fp, F2},
-            row_matrix::RowMatrix,
+            field::{Fp, F2}, grading::{Grading, UniGrading}, ring::CRing, row_matrix::RowMatrix
         },
     };
 
@@ -16,7 +13,7 @@ mod tests {
     fn test_a0() {
         let input = include_str!("../../../examples/direct/A(0).txt");
 
-        let (kcoalg, _) = kCoalgebra::<i32, F2, RowMatrix<F2>>::parse(input, i32::MAX).unwrap();
+        let (kcoalg, _) = kCoalgebra::<UniGrading, F2, RowMatrix<F2>>::parse(input, UniGrading::infty()).unwrap();
 
         assert_eq!(kcoalg.coaction, A0_coalgebra().coaction);
 
@@ -32,7 +29,7 @@ mod tests {
         for _ in 0..10 {
             let input = include_str!("../../../examples/direct/A(2).txt");
 
-            let (kcoalg, _) = kCoalgebra::<i32, F2, RowMatrix<F2>>::parse(input, i32::MAX).unwrap();
+            let (kcoalg, _) = kCoalgebra::<UniGrading, F2, RowMatrix<F2>>::parse(input, UniGrading::infty()).unwrap();
             comps.push(kcoalg);
         }
         assert!(comps.iter().all_equal())
@@ -45,7 +42,7 @@ mod tests {
             let input = include_str!("../../../examples/polynomial/A(2).txt");
 
             let (kcoalg, _) =
-                kCoalgebra::<i32, F2, RowMatrix<F2>>::parse(input, i32::MAX - 10).unwrap();
+                kCoalgebra::<UniGrading, F2, RowMatrix<F2>>::parse(input, UniGrading::infty() - UniGrading(10)).unwrap();
             comps.push(kcoalg);
         }
         assert!(comps.iter().all_equal())
@@ -54,7 +51,7 @@ mod tests {
     #[test]
     fn test_p3_imports() {
         let input = include_str!("../../../examples/polynomial/P(3).txt");
-        let res = kCoalgebra::<i32, Fp<3>, RowMatrix<Fp<3>>>::parse(input, 129);
+        let res = kCoalgebra::<UniGrading, Fp<3>, RowMatrix<Fp<3>>>::parse(input, UniGrading(129));
 
         assert!(res.is_ok());
         let (_, trans) = res.unwrap();
@@ -67,9 +64,9 @@ mod tests {
         let input_poly = include_str!("../../../examples/polynomial/A(2).txt");
 
         let (kcoalg_direct, _) =
-            kCoalgebra::<i32, F2, RowMatrix<F2>>::parse(input_direct, i32::MAX).unwrap();
+            kCoalgebra::<UniGrading, F2, RowMatrix<F2>>::parse(input_direct, UniGrading::infty()).unwrap();
         let (kcoalg_poly, _) =
-            kCoalgebra::<i32, F2, RowMatrix<F2>>::parse(input_poly, i32::MAX - 10).unwrap();
+            kCoalgebra::<UniGrading, F2, RowMatrix<F2>>::parse(input_poly, UniGrading::infty() - UniGrading(10)).unwrap();
 
         for grade in kcoalg_direct.tensor.dimensions.keys() {
             assert_eq!(

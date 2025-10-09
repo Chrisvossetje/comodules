@@ -9,7 +9,7 @@ mod tests {
             traits::Comodule,
         },
         export::SSeq,
-        linalg::{field::F2, grading::UniGrading, row_matrix::RowMatrix},
+        linalg::{field::F2, grading::{Grading, UniGrading}, groups::{Group, Z2}, row_matrix::RowMatrix},
         resolution::Resolution,
     };
     use itertools::Itertools;
@@ -23,7 +23,7 @@ mod tests {
             let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
                 Resolution::new(fp);
 
-            res.resolve_to_s(20, 20);
+            res.resolve_to_s(20, UniGrading(20));
 
             let a0_sseq = res.generate_sseq("A0");
             a0_sseq.save_to_json("./A(0)sseq.json").unwrap();
@@ -31,14 +31,14 @@ mod tests {
 
         {
             let input = include_str!("../examples/direct/A(1).txt");
-            let coalgebra = Arc::new(kCoalgebra::parse(input, i32::MAX).unwrap().0);
+            let coalgebra = Arc::new(kCoalgebra::parse(input, UniGrading::infty()).unwrap().0);
 
             let fp = kComodule::fp_comodule(coalgebra);
 
             let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
                 Resolution::new(fp);
 
-            res.resolve_to_s(20, 20);
+            res.resolve_to_s(20, UniGrading(20));
 
             let p = res.generate_sseq("A(1)");
             p.save_to_json("./A(1)sseq.json").unwrap();
@@ -47,14 +47,14 @@ mod tests {
         {
             let input = include_str!("../examples/polynomial/A(2).txt");
 
-            let coalgebra = Arc::new(kCoalgebra::parse(input, i32::MAX - 10).unwrap().0);
+            let coalgebra = Arc::new(kCoalgebra::parse(input, UniGrading::infty() - UniGrading(10)).unwrap().0);
 
             let fp = kComodule::fp_comodule(coalgebra);
 
             let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
                 Resolution::new(fp);
 
-            res.resolve_to_s(20, 20);
+            res.resolve_to_s(20, UniGrading(20));
             dbg!(&res);
 
             let p = res.generate_sseq("A(2)");
@@ -71,7 +71,7 @@ mod tests {
         let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
             Resolution::new(fp);
 
-        res.resolve_to_s(4, 10);
+        res.resolve_to_s(4, UniGrading(10));
 
         let sseq = res.generate_sseq("A0");
         let page = sseq.pages[0].clone();
@@ -119,7 +119,7 @@ mod tests {
         let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
             Resolution::new(fp);
 
-        res.resolve_to_s(20, 20);
+        res.resolve_to_s(20, UniGrading(20));
 
         let sseq = res.generate_sseq("A0");
         let comp_sseq: SSeq = serde_json::from_str(include_str!("./A(0).json")).unwrap();
@@ -129,14 +129,14 @@ mod tests {
     #[test]
     fn test_a1_resolution() {
         let input = include_str!("../examples/direct/A(1).txt");
-        let coalgebra = Arc::new(kCoalgebra::parse(input, i32::MAX).unwrap().0);
+        let coalgebra = Arc::new(kCoalgebra::parse(input, UniGrading::infty()).unwrap().0);
 
         let fp = kComodule::fp_comodule(coalgebra);
 
         let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
             Resolution::new(fp);
 
-        res.resolve_to_s(20, 20);
+        res.resolve_to_s(20, UniGrading(20));
 
         let p = res.generate_sseq("A(1)");
         let comp_p: SSeq = serde_json::from_str(include_str!("./A(1).json")).unwrap();
@@ -146,14 +146,14 @@ mod tests {
     #[test]
     fn test_a2_resolution_direct() {
         let input = include_str!("../examples/direct/A(2).txt");
-        let coalgebra = Arc::new(kCoalgebra::parse(input, i32::MAX).unwrap().0);
+        let coalgebra = Arc::new(kCoalgebra::parse(input, UniGrading::infty()).unwrap().0);
 
         let fp = kComodule::fp_comodule(coalgebra);
 
         let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
             Resolution::new(fp);
 
-        res.resolve_to_s(20, 20);
+        res.resolve_to_s(20, UniGrading(20));
 
         let p = res.generate_sseq("A(2)");
         let comp_p: SSeq = serde_json::from_str(include_str!("./A(2).json")).unwrap();
@@ -164,18 +164,31 @@ mod tests {
     fn test_a2_resolution_poly() {
         let input = include_str!("../examples/polynomial/A(2).txt");
 
-        let coalgebra = Arc::new(kCoalgebra::parse(input, i32::MAX - 10).unwrap().0);
+        let coalgebra = Arc::new(kCoalgebra::parse(input, UniGrading::infty() - UniGrading(10)).unwrap().0);
 
         let fp = kComodule::fp_comodule(coalgebra);
 
         let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
             Resolution::new(fp);
 
-        res.resolve_to_s(20, 20);
+        res.resolve_to_s(20, UniGrading(20));
         dbg!(&res);
 
         let p = res.generate_sseq("A(2)");
         let comp_p: SSeq = serde_json::from_str(include_str!("./A(2).json")).unwrap();
         assert_eq!(p, comp_p);
+    }
+
+    #[test]
+    fn test_z2_coalgebra_generation() {
+        let coalg = Arc::new(Z2::generate_coalgebra::<F2>().unwrap());
+        
+        let fp = kComodule::fp_comodule(coalg);
+
+        let mut res = Resolution::new(fp);
+
+        res.resolve_to_s(20, Z2::infty());
+
+        let _p = res.generate_sseq("Z2");
     }
 }

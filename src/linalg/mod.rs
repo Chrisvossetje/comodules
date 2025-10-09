@@ -5,5 +5,9 @@ pub mod grading;
 pub mod matrix;
 pub mod row_matrix;
 
+pub mod ring;
+pub mod module;
+pub mod groups;
+
 #[cfg(test)]
 mod tests;

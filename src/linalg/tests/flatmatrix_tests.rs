@@ -1,9 +1,9 @@
 #[cfg(test)]
 mod tests {
     use crate::linalg::{
-        field::{CRing, Fp, F2},
+        field::{Fp, F2},
         flat_matrix::FlatMatrix, // Update the import to use FlatMatrix
-        matrix::{Matrix, RModMorphism},
+        matrix::{Matrix, RModMorphism}, ring::CRing,
     };
 
     type TestField = Fp<23>;

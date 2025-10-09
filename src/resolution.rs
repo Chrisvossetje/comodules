@@ -1,7 +1,5 @@
 use std::{
-    io::{self, Write},
-    marker::PhantomData,
-    sync::Arc,
+    io::{self, Write}, marker::PhantomData, sync::Arc
 };
 
 use itertools::Itertools;
@@ -9,17 +7,17 @@ use itertools::Itertools;
 use crate::{
     comodule::traits::{Comodule, ComoduleMorphism},
     export::{Page, SSeq},
-    linalg::grading::Grading,
+    linalg::grading::OrderedGrading,
 };
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Resolution<G: Grading, M: Comodule<G>> {
+pub struct Resolution<G: OrderedGrading, M: Comodule<G>> {
     comodule: Arc<M>,
     resolution: Vec<M::Morphism>,
     _grading: PhantomData<G>,
 }
 
-impl<G: Grading, M: Comodule<G>> Resolution<G, M> {
+impl<G: OrderedGrading, M: Comodule<G>> Resolution<G, M> {
     pub fn new(comodule: M) -> Self {
         Resolution {
             comodule: Arc::new(comodule),
@@ -36,14 +34,17 @@ impl<G: Grading, M: Comodule<G>> Resolution<G, M> {
             self.resolution.push(initial_inject);
         }
 
+        let mut last_morph: M::Morphism = self.resolution.last().unwrap().clone();
+
         for _ in self.resolution.len()..=s {
             // Increment limit and get last morphism
             limit = limit.incr();
-            let last_morph = self.resolution.last().unwrap();
-
-            let coker = last_morph.cokernel();
+            
+            let coker = &last_morph.cokernel();
             let inject = coker.inject_codomain_to_cofree(limit);
-            let combine = M::Morphism::compose(inject, coker);
+            let combine = M::Morphism::compose(&inject, &coker);
+            
+            last_morph = inject;
 
             self.resolution.push(combine);
         }
@@ -67,37 +68,41 @@ impl<G: Grading, M: Comodule<G>> Resolution<G, M> {
             self.resolution.push(initial_inject);
         }
 
+        let mut last_morph: M::Morphism = self.resolution.last().unwrap().clone();
+
+
         for i in self.resolution.len()..=s {
             // Increment limit and get last morphism
             limit = limit.incr();
-            let last_morph = self.resolution.last().unwrap();
 
             println!("Resolving for {}", i);
             let coker_time = std::time::Instant::now();
             print!("Finding cokernel            ");
             // Cokernel
             io::stdout().flush().unwrap();
-            let coker = last_morph.cokernel();
+            let coker = &last_morph.cokernel();
             println!("took: {:.2?}", coker_time.elapsed());
 
             let inject_time = std::time::Instant::now();
-            print!("Injecting cokernel          ");
+            print!("Injecting to cofree         ");
             io::stdout().flush().unwrap();
             // Inject to cofree
             let inject = coker.inject_codomain_to_cofree(limit);
             println!("took: {:.2?}", inject_time.elapsed());
 
             let compose_time = std::time::Instant::now();
-            print!("Composing both morphisms    ");
+            print!("Composing morphisms         ");
             // Compose
             io::stdout().flush().unwrap();
-            let combine = M::Morphism::compose(inject, coker);
+            let combine = M::Morphism::compose(&inject, &coker);
             println!("took: {:.2?}", compose_time.elapsed());
 
             println!(
                 "Total time:                 took: {:.2?}\n",
                 coker_time.elapsed()
             );
+
+            last_morph = inject;
             self.resolution.push(combine);
         }
     }

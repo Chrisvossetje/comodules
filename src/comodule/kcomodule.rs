@@ -1,17 +1,17 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
-use ahash::RandomState;
+use ahash::HashMap;
 use serde::{Deserialize, Serialize};
 
-use crate::linalg::{
+use crate::{helper::hashmap_add_restrict, linalg::{
     field::Field,
     graded::{BasisElement, GradedLinearMap, GradedVectorSpace},
     grading::Grading,
     matrix::Matrix,
-};
+}};
 
 use super::{
-    kcoalgebra::kCoalgebra, kmorphism::kComoduleMorphism, ktensor::kTensor, traits::Comodule,
+    kcoalgebra::kCoalgebra, kmorphism::kComoduleMorphism, tensor::Tensor, traits::Comodule,
 };
 
 #[derive(Debug, Clone, PartialEq, Default, Deserialize, Serialize)]
@@ -31,7 +31,7 @@ pub struct kComodule<G: Grading, F: Field, M: Matrix<F>> {
     pub coalgebra: Arc<kCoalgebra<G, F, M>>,
     pub space: GradedVectorSpace<G, kBasisElement>,
     pub coaction: GradedLinearMap<G, F, M>,
-    pub tensor: kTensor<G>,
+    pub tensor: Tensor<G>,
 }
 
 impl<G: Grading, F: Field, M: Matrix<F>> std::fmt::Debug for kComodule<G, F, M> {
@@ -60,7 +60,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
         coalgebra: Arc<kCoalgebra<G, F, M>>,
         space: GradedVectorSpace<G, kBasisElement>,
         coaction: GradedLinearMap<G, F, M>,
-        tensor: kTensor<G>,
+        tensor: Tensor<G>,
     ) -> Self {
         let com = Self {
             coalgebra,
@@ -124,7 +124,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
             coalgebra: coalgebra,
             space: GradedVectorSpace::new(),
             coaction: GradedLinearMap::empty(),
-            tensor: kTensor::new(),
+            tensor: Tensor::default(),
         }
     }
 
@@ -139,13 +139,13 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
             generated_index: 0,
         };
 
-        let space_map: HashMap<G, Vec<kBasisElement>, RandomState> =
-            [(zero, vec![el])].into_iter().collect();
+        let space_map: HashMap<G, Vec<kBasisElement>> = [(zero, vec![el])].into_iter().collect();
         let space = GradedVectorSpace::from(space_map);
 
-        let coact_map: HashMap<G, M, RandomState> = [(zero, M::identity(1))].into_iter().collect();
+        let coact_map: HashMap<G, M> = [(zero, M::identity(1))].into_iter().collect();
         let coaction = GradedLinearMap::from(coact_map);
 
+        // CONNECTED ASSUMPTION
         debug_assert_eq!(
             coalgebra
                 .space
@@ -168,7 +168,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
         let mut deconstruct = HashMap::default();
         deconstruct.insert((zero, 0), ((zero, 0), (zero, 0)));
 
-        let tensor = kTensor {
+        let tensor = Tensor {
             construct,
             deconstruct,
             dimensions,
@@ -203,19 +203,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
     }
 
     fn cofree_comodule(coalgebra: Arc<Self::Coalgebra>, index: usize, grade: G, limit: G) -> Self {
-        let coaction: HashMap<G, M, RandomState> = coalgebra
-            .coaction
-            .maps
-            .iter()
-            .filter_map(|(g, v)| {
-                let sum = *g + grade;
-                if sum <= limit {
-                    Some((*g + grade, v.clone()))
-                } else {
-                    None
-                }
-            })
-            .collect();
+        let coaction: HashMap<G, M> = hashmap_add_restrict(&coalgebra.coaction.maps, grade, limit);
         let space = coalgebra
             .space
             .0

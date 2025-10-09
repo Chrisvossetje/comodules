@@ -1,15 +1,13 @@
-use crate::linalg::field::Field;
+use crate::linalg::{field::Field, ring::CRing};
 use std::fmt::Debug;
-
-use super::field::CRing;
 
 pub trait RModMorphism<R: CRing> {
     fn zero(domain: usize, codomain: usize) -> Self;
     fn identity(d: usize) -> Self;
 
     fn get(&self, domain: usize, codomain: usize) -> R;
-    fn set(&mut self, domain: usize, codomain: usize, f: R);
-    fn add_at(&mut self, domain: usize, codomain: usize, f: R);
+    fn set(&mut self, domain: usize, codomain: usize, r: R);
+    fn add_at(&mut self, domain: usize, codomain: usize, r: R);
 
     fn get_row(&self, codomain: usize) -> &[R];
     fn set_row(&mut self, codomain: usize, row: &[R]);
@@ -28,6 +26,65 @@ pub trait RModMorphism<R: CRing> {
 
     fn vstack(&mut self, other: &mut Self);
     fn block_sum(&mut self, other: &Self);
+
+    /// Swap two rows
+    fn swap_rows(&mut self, row1: usize, row2: usize) {
+        if row1 == row2 {
+            return;
+        }
+        for j in 0..self.domain() {
+            let temp = self.get(j, row1);
+            self.set(j, row1, self.get(j, row2));
+            self.set(j, row2, temp);
+        }
+    }
+
+    /// Swap two columns  
+    fn swap_cols(&mut self, col1: usize, col2: usize) {
+        if col1 == col2 {
+            return;
+        }
+        for i in 0..self.codomain() {
+            let temp = self.get(col1, i);
+            self.set(col1, i, self.get(col2, i));
+            self.set(col2, i, temp);
+        }
+    }
+
+    /// Add a multiple of one row to another: row[target] += factor * row[source]
+    fn add_row_multiple(&mut self, target: usize, source: usize, factor: R) {
+        if factor.is_zero() {
+            return;
+        }
+        for j in 0..self.domain() {
+            let addition = factor.clone() * self.get(j, source);
+            self.add_at(j, target, addition);
+        }
+    }
+
+    /// Add a multiple of one column to another: col[target] += factor * col[source]
+    fn add_col_multiple(&mut self, target: usize, source: usize, factor: R) {
+        if factor.is_zero() {
+            return;
+        }
+        for i in 0..self.codomain() {
+            let addition = factor.clone() * self.get(source, i);
+            self.add_at(target, i, addition);
+        }
+    }
+}
+
+pub trait SmithNormalForm<R:CRing>: RModMorphism<R> + Clone {
+    /// snf(A) -> (U,S,V) 
+    /// U A V = S
+    fn snf(&self) -> (Self, Self, Self) {
+        let (u,s,v, _, _) = self.full_snf();
+        (u,s,v)
+    }
+
+    /// full_snf(A) -> (U,S,V,U^-1, V^-1) 
+    /// U A V = S
+    fn full_snf(&self) -> (Self, Self, Self, Self, Self);
 }
 
 pub trait Matrix<F: Field>: RModMorphism<F> + Clone + Send + Sync + PartialEq + Debug {

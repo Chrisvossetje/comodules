@@ -1,10 +1,11 @@
 use std::{
-    fmt::{Debug, Display, Formatter},
-    hash::Hash,
-    iter::Sum,
-    ops::{Add, AddAssign, Sub, SubAssign},
-    str::FromStr,
+    cmp::Ordering, fmt::{Debug, Display, Formatter}, hash::Hash, iter::Sum, ops::{Add, AddAssign, Sub, SubAssign}, str::FromStr
 };
+
+pub trait Parse: Sized {
+    fn parse(s: &str) -> Result<Self, String>;
+}
+
 
 pub trait Grading:
     'static
@@ -14,33 +15,118 @@ pub trait Grading:
     + Debug
     + Display
     + Sized
-    + Add<Output = Self>
-    + Sub<Output = Self>
     + PartialEq
     + Eq
+    + Default
+    + Add<Output = Self>
+    + Sub<Output = Self>
     + AddAssign
     + SubAssign
-    + PartialOrd
-    + Ord
     + Sync
     + Send
-    + FromStr
+    + Parse
     + Sum
+    + PartialOrd 
+    + Ord 
 {
     fn degree_names() -> Vec<char>;
     fn default_formulas() -> (String, String);
     fn export_grade(self) -> Vec<i32>;
 
-    fn incr(self) -> Self;
     fn zero() -> Self;
-    fn infty() -> Self;
 
     fn integer_multiplication(self, other: i32) -> Self;
 
-    fn parse(parse: &str) -> Result<Self, String>;
+    fn infty() -> Self;
 }
 
-impl Grading for i32 {
+pub trait OrderedGrading:
+    'static + Grading
+{
+    fn incr(self) -> Self;
+    fn compare(self, rhs: &Self) -> Ordering;
+}
+
+
+
+
+
+
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default)]
+pub struct UniGrading(pub i32);
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default)]
+pub struct BiGrading(pub i32, pub i32);
+
+
+
+
+
+
+
+
+
+
+
+impl Add for UniGrading {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self::Output {
+        UniGrading(self.0 + other.0)
+    }
+}
+
+impl AddAssign for UniGrading {
+    fn add_assign(&mut self, other: Self) {
+        self.0 += other.0;
+    }
+}
+
+impl Sub for UniGrading {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self::Output {
+        UniGrading(self.0 - other.0)
+    }
+}
+
+impl SubAssign for UniGrading {
+    fn sub_assign(&mut self, other: Self) {
+        self.0 -= other.0;
+    }
+}
+
+impl Sum for UniGrading {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(UniGrading::zero(), |a, b| a + b)
+    }
+}
+
+impl Display for UniGrading {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl OrderedGrading for UniGrading {
+    fn incr(self) -> Self {
+        UniGrading(self.0 + 1)
+    }
+    
+    fn compare(self, rhs: &Self) -> Ordering {
+        self.0.cmp(&rhs.0)
+    }
+}
+
+impl Parse for UniGrading {
+    fn parse(s: &str) -> Result<Self, String> {
+        Ok(UniGrading(i32::from_str(s).map_err(|_| format!("Grade: {} could not be parsed", s))?))
+    }
+
+}
+
+impl Grading for UniGrading {
     fn degree_names() -> Vec<char> {
         vec!['t']
     }
@@ -50,34 +136,33 @@ impl Grading for i32 {
     }
 
     fn export_grade(self) -> Vec<i32> {
-        vec![self]
+        vec![self.0]
     }
 
     fn zero() -> Self {
-        0
-    }
-
-    fn infty() -> Self {
-        i32::MAX
-    }
-
-    fn incr(self) -> Self {
-        self + 1
-    }
-
-    fn parse(parse: &str) -> Result<Self, String> {
-        i32::from_str(parse).map_err(|_| format!("Grade: {} could not be parsed", parse))
+        UniGrading(0)
     }
 
     fn integer_multiplication(self, other: i32) -> Self {
-        self * other
+        UniGrading(self.0 * other)
+    }
+    
+    fn infty() -> Self {
+        UniGrading(i32::MAX)
     }
 }
 
-pub type UniGrading = i32;
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct BiGrading(pub i32, pub i32);
+
+
+
+
+
+
+
+
+
+
 
 impl Add for BiGrading {
     type Output = Self;
@@ -115,26 +200,41 @@ impl Display for BiGrading {
     }
 }
 
-impl FromStr for BiGrading {
-    type Err = ();
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let parts: Vec<&str> = s
-            .trim_matches(|p| p == '(' || p == ')')
-            .split(',')
-            .collect();
+impl Parse for BiGrading {
+    fn parse(s: &str) -> Result<Self, String> {
+        let s = s.trim();
+        // Remove parentheses if present
+        let s = if s.starts_with('(') && s.ends_with(')') {
+            &s[1..s.len()-1]
+        } else {
+            s
+        };
+        
+        let parts: Vec<&str> = s.split(',').collect();
         if parts.len() != 2 {
-            return Err(());
+            return Err(format!("Grade: {} could not be parsed", s));
         }
-        let x = parts[0].trim().parse::<i32>().map_err(|_| ())?;
-        let y = parts[1].trim().parse::<i32>().map_err(|_| ())?;
-        Ok(BiGrading(x, y))
+        let t = i32::from_str(parts[0].trim())
+            .map_err(|_| format!("Grade: {} could not be parsed", s))?;
+        let s_val = i32::from_str(parts[1].trim())
+            .map_err(|_| format!("Grade: {} could not be parsed", s))?;
+        Ok(BiGrading(t, s_val))
     }
 }
 
 impl Sum for BiGrading {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(BiGrading::zero(), |a, b| a + b)
+    }
+}
+
+impl OrderedGrading for BiGrading {
+    fn incr(self) -> Self {
+        BiGrading(self.0 + 1, self.1 + 1)
+    }
+
+    fn compare(self, rhs: &Self) -> Ordering {
+        self.cmp(rhs)
     }
 }
 
@@ -155,27 +255,11 @@ impl Grading for BiGrading {
         BiGrading(0, 0)
     }
 
-    fn infty() -> Self {
-        BiGrading(i32::MAX, i32::MAX)
-    }
-
-    fn incr(self) -> Self {
-        BiGrading(self.0 + 1, self.1 + 1)
-    }
-
-    fn parse(parse: &str) -> Result<Self, String> {
-        let parts: Vec<&str> = parse.split(',').collect();
-        if parts.len() != 2 {
-            return Err(format!("Grade: {} could not be parsed", parse));
-        }
-        let t = i32::from_str(parts[0].trim())
-            .map_err(|_| format!("Grade: {} could not be parsed", parse))?;
-        let s = i32::from_str(parts[1].trim())
-            .map_err(|_| format!("Grade: {} could not be parsed", parse))?;
-        Ok(BiGrading(t, s))
-    }
-
     fn integer_multiplication(self, other: i32) -> Self {
         BiGrading(self.0 * other, self.1 * other)
+    }
+    
+    fn infty() -> Self {
+        BiGrading(i32::MAX, i32::MAX)
     }
 }

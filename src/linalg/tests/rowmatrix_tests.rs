@@ -1,9 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::linalg::{
-        field::{CRing, Fp, F2},
-        matrix::{Matrix, RModMorphism},
-        row_matrix::RowMatrix,
+        field::{Fp, F2}, matrix::{Matrix, RModMorphism}, ring::CRing, row_matrix::RowMatrix
     };
 
     type TestField = Fp<23>;
