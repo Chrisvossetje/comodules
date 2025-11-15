@@ -1,22 +1,27 @@
 use std::sync::Arc;
 
-use crate::linalg::{graded::BasisElement, grading::{Grading, OrderedGrading}};
+use crate::{
+    basiselement::BasisElement,
+    grading::{Grading, OrderedGrading}
+};
 
 pub trait Comodule<G: Grading>: Sized {
     type Element: BasisElement;
     type Coalgebra;
     type Morphism: ComoduleMorphism<G, Self> + Clone;
 
+    type Generator;
+
     fn zero_comodule(coalgebra: Arc<Self::Coalgebra>) -> Self;
 
     // This is not the correct type yet
     fn get_generators(&self) -> Vec<(usize, G, Option<String>)>;
 
-    fn fp_comodule(coalgebra: Arc<Self::Coalgebra>) -> Self;
+    fn fp_comodule(coalgebra: Arc<Self::Coalgebra>, degree: G) -> Self;
 
     fn direct_sum(&mut self, other: &mut Self);
 
-    fn cofree_comodule(coalgebra: Arc<Self::Coalgebra>, index: usize, grade: G, limit: G) -> Self;
+    fn cofree_comodule(coalgebra: Arc<Self::Coalgebra>, index: usize, grade: G, limit: G, generator: Self::Generator) -> Self;
 }
 
 pub trait ComoduleMorphism<G: Grading, M: Comodule<G>> {

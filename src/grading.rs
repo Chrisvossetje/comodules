@@ -2,6 +2,8 @@ use std::{
     cmp::Ordering, fmt::{Debug, Display, Formatter}, hash::Hash, iter::Sum, ops::{Add, AddAssign, Sub, SubAssign}, str::FromStr
 };
 
+use serde::{Deserialize, Serialize};
+
 pub trait Parse: Sized {
     fn parse(s: &str) -> Result<Self, String>;
 }
@@ -27,7 +29,7 @@ pub trait Grading:
     + Parse
     + Sum
     + PartialOrd 
-    + Ord 
+    + Ord
 {
     fn degree_names() -> Vec<char>;
     fn default_formulas() -> (String, String);
@@ -47,24 +49,39 @@ pub trait OrderedGrading:
     fn compare(self, rhs: &Self) -> Ordering;
 }
 
+pub trait PolyGrading: Grading {
+    const TAU_GRADE: Self;
+    fn gen_diff_power(source: Self, target: Self) -> Option<usize>;
+}
+
+impl PolyGrading for BiGrading {
+    const TAU_GRADE: BiGrading = BiGrading(0,-1);
+
+
+    fn gen_diff_power(source: Self, target: Self) -> Option<usize> {
+        let diff = target-source;
+        if diff.0 == 0 {
+            if diff.1 > 0 {
+                None
+            } else {
+                Some(diff.1.unsigned_abs() as usize) 
+            }
+        } else {
+            None
+        }
+        
+    }
+}
 
 
 
 
 
-
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize)]
 pub struct UniGrading(pub i32);
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize)]
 pub struct BiGrading(pub i32, pub i32);
-
-
-
-
-
-
-
 
 
 
@@ -108,6 +125,13 @@ impl Display for UniGrading {
         write!(f, "{}", self.0)
     }
 }
+
+impl Debug for UniGrading {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 
 impl OrderedGrading for UniGrading {
     fn incr(self) -> Self {
@@ -195,6 +219,12 @@ impl SubAssign for BiGrading {
 }
 
 impl Display for BiGrading {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {})", self.0, self.1)
+    }
+}
+
+impl Debug for BiGrading {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "({}, {})", self.0, self.1)
     }

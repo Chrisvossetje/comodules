@@ -1,18 +1,33 @@
+use core::panic;
 use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 
-
-use crate::linalg::ring::CRing;
-
+use crate::{linalg::ring::CRing};
 use super::{
     field::Field,
     matrix::{Matrix, RModMorphism},
 };
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Deserialize, Serialize)]
 pub struct FlatMatrix<R: CRing> {
     pub data: Vec<R>,
     pub domain: usize,
     pub codomain: usize,
+}
+
+
+impl<R: CRing> Debug for FlatMatrix<R> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for m in 0..self.codomain {
+            for n in 0..self.domain {
+                let el = self.get(n, m);
+                let s = format!("{:?}", el);
+                write!(f, "{:<4}", s)?;
+            }
+            writeln!(f)?;
+        }
+        writeln!(f)
+    }
 }
 
 impl<R: CRing> FlatMatrix<R> {
@@ -22,6 +37,41 @@ impl<R: CRing> FlatMatrix<R> {
 
     fn set_element(&mut self, row: usize, col: usize, value: R) {
         self.data[row * self.domain + col] = value;
+    }
+
+    pub fn extensive_pivots(&self) -> Vec<usize> {
+        let mut v = vec![None; self.codomain];
+        for codom_id in 0..self.domain {
+            let column = self.get_column(codom_id);
+            let mut units = 0;
+            let mut final_id = usize::MAX;
+            for (id,a) in column.iter().enumerate() {
+                if !a.is_zero() {
+                    if a.is_unit() {
+                        units += 1;
+                        final_id = id;
+                    } else {
+                        units += 2;
+                    }
+                }
+            }
+            if units == 1 {
+                v[final_id] = Some(codom_id);
+            }
+        }
+
+        if cfg!(debug_assertions) {
+            for a in &v {
+                if a.is_none() {
+                    println!("{:?}", self);
+                    panic!("Matrix does not contain all pivots");
+                }
+            }
+        }
+
+        v.iter().map(|f|
+            f.unwrap()
+        ).collect()
     }
 }
 
@@ -217,8 +267,9 @@ impl<R: CRing> RModMorphism<R> for FlatMatrix<R> {
     }
 
     fn set_row(&mut self, codomain: usize, row: &[R]) {
+        debug_assert!(row.len() <= self.domain);
         let start = codomain * self.domain;
-        let end = start + self.domain;
+        let end = start + row.len();
         self.data[start..end].copy_from_slice(row);
     }
 
@@ -261,6 +312,11 @@ impl<R: CRing> RModMorphism<R> for FlatMatrix<R> {
             domain,
             codomain,
         }
+    }
+    
+    fn extend_one_row(&mut self) {
+        self.codomain += 1;
+        self.data.extend(vec![R::zero(); self.domain]);
     }
 }
 

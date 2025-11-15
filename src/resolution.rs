@@ -6,8 +6,7 @@ use itertools::Itertools;
 
 use crate::{
     comodule::traits::{Comodule, ComoduleMorphism},
-    export::{Page, SSeq},
-    linalg::grading::OrderedGrading,
+    export::{Page, SSeq}, grading::OrderedGrading,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -27,14 +26,17 @@ impl<G: OrderedGrading, M: Comodule<G>> Resolution<G, M> {
     }
 
     pub fn resolve_to_s(&mut self, s: usize, mut limit: G) {
+        let mut last_morph: M::Morphism = M::Morphism::zero_morphism(self.comodule.clone());
+        
         if self.resolution.len() == 0 {
             let zero_morph = M::Morphism::zero_morphism(self.comodule.clone());
-
+            
             let initial_inject = zero_morph.inject_codomain_to_cofree(limit);
-            self.resolution.push(initial_inject);
+            
+            self.resolution.push(M::Morphism::compose(&zero_morph, &initial_inject));
+            last_morph = initial_inject;
         }
-
-        let mut last_morph: M::Morphism = self.resolution.last().unwrap().clone();
+        
 
         for _ in self.resolution.len()..=s {
             // Increment limit and get last morphism
@@ -42,6 +44,7 @@ impl<G: OrderedGrading, M: Comodule<G>> Resolution<G, M> {
             
             let coker = &last_morph.cokernel();
             let inject = coker.inject_codomain_to_cofree(limit);
+            
             let combine = M::Morphism::compose(&inject, &coker);
             
             last_morph = inject;
@@ -52,7 +55,11 @@ impl<G: OrderedGrading, M: Comodule<G>> Resolution<G, M> {
 
     /// This crashes on WASM
     pub fn resolve_to_s_with_print(&mut self, s: usize, mut limit: G) {
+        let mut last_morph: M::Morphism = M::Morphism::zero_morphism(self.comodule.clone());
+
+        
         println!("Resolving to filtration index: {} \n", s);
+
 
         if self.resolution.len() == 0 {
             println!("Resolving for 0",);
@@ -65,10 +72,10 @@ impl<G: OrderedGrading, M: Comodule<G>> Resolution<G, M> {
             println!("took: {:.2?}\n", inject_time.elapsed());
 
             let initial_inject = zero_morph.inject_codomain_to_cofree(limit);
-            self.resolution.push(initial_inject);
+        
+            self.resolution.push(M::Morphism::compose(&zero_morph, &initial_inject));
+            last_morph = initial_inject;
         }
-
-        let mut last_morph: M::Morphism = self.resolution.last().unwrap().clone();
 
 
         for i in self.resolution.len()..=s {

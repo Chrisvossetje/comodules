@@ -1,9 +1,9 @@
-use std::{convert::identity, fmt::Debug, marker::PhantomData};
+use std::{fmt::Debug, marker::PhantomData};
 
 use ahash::HashMap;
 use rayon::prelude::*;
 
-use crate::linalg::grading::Grading;
+use crate::{basiselement::BasisElement, grading::Grading};
 
 use super::{
     field::Field,
@@ -12,11 +12,6 @@ use super::{
 use serde::{Deserialize, Serialize};
 
 
-
-
-
-
-pub trait BasisElement: 'static + Debug + Clone + Default {}
 
 pub type BasisIndex<G> = (G, usize);
 

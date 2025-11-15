@@ -3,17 +3,19 @@ use std::{ops::AddAssign, sync::Arc};
 use ahash::HashMap;
 use itertools::Itertools;
 
-use crate::linalg::{
-    field::Field,
-    graded::{BasisIndex, GradedLinearMap, GradedVectorSpace},
+use crate::{
+    basiselement::kBasisElement,
     grading::{Grading, OrderedGrading},
-    matrix::Matrix,
+    linalg::{
+        field::Field,
+        graded::{BasisIndex, GradedLinearMap, GradedVectorSpace},
+        matrix::Matrix,
+    }, tensor::Tensor,
 };
 
 use super::{
     kcoalgebra::kCoalgebra,
-    kcomodule::{kBasisElement, kComodule},
-    tensor::Tensor,
+    kcomodule::kComodule,
 };
 
 impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {

@@ -3,9 +3,10 @@ mod tests {
     use itertools::Itertools;
 
     use crate::{
-        comodule::kcoalgebra::{kCoalgebra, A0_coalgebra},
+        comodule::kcoalgebra::{A0_coalgebra, kCoalgebra},
+        grading::{Grading, UniGrading},
         linalg::{
-            field::{Fp, F2}, grading::{Grading, UniGrading}, ring::CRing, row_matrix::RowMatrix
+            field::{F2, Fp}, flat_matrix::FlatMatrix, ring::CRing
         },
     };
 
@@ -13,7 +14,7 @@ mod tests {
     fn test_a0() {
         let input = include_str!("../../../examples/direct/A(0).txt");
 
-        let (kcoalg, _) = kCoalgebra::<UniGrading, F2, RowMatrix<F2>>::parse(input, UniGrading::infty()).unwrap();
+        let (kcoalg, _) = kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input, UniGrading::infty()).unwrap();
 
         assert_eq!(kcoalg.coaction, A0_coalgebra().coaction);
 
@@ -29,7 +30,7 @@ mod tests {
         for _ in 0..10 {
             let input = include_str!("../../../examples/direct/A(2).txt");
 
-            let (kcoalg, _) = kCoalgebra::<UniGrading, F2, RowMatrix<F2>>::parse(input, UniGrading::infty()).unwrap();
+            let (kcoalg, _) = kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input, UniGrading::infty()).unwrap();
             comps.push(kcoalg);
         }
         assert!(comps.iter().all_equal())
@@ -42,7 +43,7 @@ mod tests {
             let input = include_str!("../../../examples/polynomial/A(2).txt");
 
             let (kcoalg, _) =
-                kCoalgebra::<UniGrading, F2, RowMatrix<F2>>::parse(input, UniGrading::infty() - UniGrading(10)).unwrap();
+                kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input, UniGrading::infty() - UniGrading(10)).unwrap();
             comps.push(kcoalg);
         }
         assert!(comps.iter().all_equal())
@@ -51,7 +52,7 @@ mod tests {
     #[test]
     fn test_p3_imports() {
         let input = include_str!("../../../examples/polynomial/P(3).txt");
-        let res = kCoalgebra::<UniGrading, Fp<3>, RowMatrix<Fp<3>>>::parse(input, UniGrading(129));
+        let res = kCoalgebra::<UniGrading, Fp<3>, FlatMatrix<Fp<3>>>::parse(input, UniGrading(129));
 
         assert!(res.is_ok());
         let (_, trans) = res.unwrap();
@@ -64,9 +65,9 @@ mod tests {
         let input_poly = include_str!("../../../examples/polynomial/A(2).txt");
 
         let (kcoalg_direct, _) =
-            kCoalgebra::<UniGrading, F2, RowMatrix<F2>>::parse(input_direct, UniGrading::infty()).unwrap();
+            kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input_direct, UniGrading::infty()).unwrap();
         let (kcoalg_poly, _) =
-            kCoalgebra::<UniGrading, F2, RowMatrix<F2>>::parse(input_poly, UniGrading::infty() - UniGrading(10)).unwrap();
+            kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input_poly, UniGrading::infty() - UniGrading(10)).unwrap();
 
         for grade in kcoalg_direct.tensor.dimensions.keys() {
             assert_eq!(
@@ -85,13 +86,11 @@ mod tests {
             let num_non_zeros_direct = kcoalg_direct.coaction.maps[grade]
                 .data
                 .iter()
-                .map(|v| v.iter().filter(|x| !(*x != &F2::zero())).count())
-                .sum::<usize>();
+                .filter(|x| !(*x != &F2::zero())).count();
             let num_non_zeros_poly = kcoalg_poly.coaction.maps[grade]
                 .data
                 .iter()
-                .map(|v| v.iter().filter(|x| !(*x != &F2::zero())).count())
-                .sum::<usize>();
+                .filter(|x| !(*x != &F2::zero())).count();
             assert_eq!(
                 num_non_zeros_direct, num_non_zeros_poly,
                 "Mismatched number of non-zero entries, grade: {}",

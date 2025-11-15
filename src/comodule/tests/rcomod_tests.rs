@@ -5,24 +5,23 @@ mod tests {
     use ahash::HashMap;
 
     use crate::{
+        basiselement::kBasisElement,
         comodule::{
-            kcomodule::kBasisElement,
-            rcomodule::{RCoalgebra, RComodule},
-            tensor::Tensor,
-            traits::Comodule,
+            kcoalgebra::kCoalgebra, rcoalgebra::{A0_C, A1_C, tensor_k_coalgebra}, rcomodule::{RCoalgebra, RComodule}, traits::Comodule
         },
+        grading::{BiGrading, Grading, UniGrading},
         linalg::{
-            field::{Field, F2, Fp},
+            field::{F2, Field, Fp},
             flat_matrix::FlatMatrix,
-            grading::{Grading, BiGrading},
             matrix::RModMorphism,
-            module::{GradedModule, GradedModuleMap, PolyGrading},
             ring::UniPolRing,
         },
+        module::{module::GradedModule, morphism::GradedModuleMap},
+        tensor::Tensor,
     };
 
     /// Helper function to create a simple test RCoalgebra
-    fn create_test_coalgebra<G: PolyGrading, F: Field>() -> RCoalgebra<G, F> {
+    fn create_test_coalgebra<G: Grading, F: Field>() -> RCoalgebra<G, F> {
         let zero = G::zero();
         
         // Create basis element
@@ -33,8 +32,7 @@ mod tests {
             generated_index: 0,
         };
 
-        let space_map: HashMap<G, Vec<(kBasisElement, Option<usize>)>> =
-            [(zero, vec![(el, None)])].into_iter().collect();
+        let space_map = [(zero, vec![(el, UniGrading(0), None)])].into_iter().collect();
         let space = GradedModule(space_map);
 
         // Create coaction map
@@ -42,11 +40,7 @@ mod tests {
             [(zero, FlatMatrix::identity(1))].into_iter().collect();
         let mut domain_explain = HashMap::default();
         domain_explain.insert(zero, vec![((zero, 0), 0)]);
-        let mut codomain_explain = HashMap::default();
-        codomain_explain.insert(zero, vec![((zero, 0), 0)]);
         let coaction = GradedModuleMap {
-            maps_domain: domain_explain,
-            maps_codomain: codomain_explain,
             maps: coact_map,
         };
 
@@ -73,7 +67,7 @@ mod tests {
         }
     }
 
-    type BiG = crate::linalg::grading::BiGrading;
+    type BiG = crate::grading::BiGrading;
 
     // Test for RComodule::zero_comodule
     #[test]
@@ -94,7 +88,7 @@ mod tests {
     #[test]
     fn test_fp_comodule() {
         let coalgebra = Arc::new(create_test_coalgebra::<BiG, F2>());
-        let comodule = RComodule::fp_comodule(coalgebra.clone());
+        let comodule = RComodule::fp_comodule(coalgebra.clone(), BiGrading::zero());
 
         let zero = BiG::zero();
         
@@ -122,7 +116,7 @@ mod tests {
     // Test for RComodule::get_generators
     #[test]
     fn test_get_generators_empty() {
-        let coalgebra = Arc::new(create_test_coalgebra::<BiG, F2>());
+        let coalgebra = Arc::new(create_test_coalgebra::<UniGrading, F2>());
         let comodule = RComodule::zero_comodule(coalgebra);
         
         let generators = comodule.get_generators();
@@ -131,10 +125,10 @@ mod tests {
 
     #[test]
     fn test_get_generators_with_generators() {
-        let coalgebra = Arc::new(create_test_coalgebra::<BiG, F2>());
-        let zero = BiG::zero();
-        let one = BiGrading(1, 0);
-
+        let coalgebra = Arc::new(create_test_coalgebra::<UniGrading, F2>());
+        let zero = UniGrading(0);
+        let one = UniGrading(1);
+        
         let mut space_map = HashMap::default();
         space_map.insert(
             zero,
@@ -144,13 +138,13 @@ mod tests {
                     generator: true,
                     primitive: None,
                     generated_index: 0,
-                }, None),
+                }, UniGrading(0), None),
                 (kBasisElement {
                     name: "non_gen".to_string(),
                     generator: false,
                     primitive: None,
                     generated_index: 1,
-                }, None),
+                }, UniGrading(0), None),
             ],
         );
         space_map.insert(
@@ -161,7 +155,7 @@ mod tests {
                     generator: true,
                     primitive: None,
                     generated_index: 2,
-                }, None),
+                }, UniGrading(0), None),
             ],
         );
 
@@ -191,7 +185,7 @@ mod tests {
     #[test]
     fn test_direct_sum_with_zero() {
         let coalgebra = Arc::new(create_test_coalgebra::<BiG, F2>());
-        let mut comodule1 = RComodule::fp_comodule(coalgebra.clone());
+        let mut comodule1 = RComodule::fp_comodule(coalgebra.clone(), BiGrading::zero());
         let mut comodule2 = RComodule::zero_comodule(coalgebra);
 
         let original_dims = comodule1.space.0.len();
@@ -206,8 +200,8 @@ mod tests {
     #[test]
     fn test_direct_sum_two_fp_comodules() {
         let coalgebra = Arc::new(create_test_coalgebra::<BiG, F2>());
-        let mut comodule1 = RComodule::fp_comodule(coalgebra.clone());
-        let mut comodule2 = RComodule::fp_comodule(coalgebra);
+        let mut comodule1 = RComodule::fp_comodule(coalgebra.clone(), BiGrading::zero());
+        let mut comodule2 = RComodule::fp_comodule(coalgebra, BiGrading::zero());
 
         let zero = BiG::zero();
         
@@ -238,7 +232,7 @@ mod tests {
         let zero = BiG::zero();
         let one = BiGrading(1, 0);
         
-        let cofree = RComodule::cofree_comodule(coalgebra.clone(), 5, zero, one);
+        let cofree = RComodule::cofree_comodule(coalgebra.clone(), 5, zero, one, (UniGrading(0), None));
 
         // Should have elements at grade 0
         assert!(cofree.space.0.contains_key(&zero));
@@ -247,7 +241,7 @@ mod tests {
         assert!(!elements.is_empty());
         
         // All elements should have the specified generated_index
-        for (element, _) in elements {
+        for (element, _, _) in elements {
             assert_eq!(element.generated_index, 5);
         }
 
@@ -256,12 +250,29 @@ mod tests {
     }
 
     #[test]
+    fn test_cofree_shifted_is_correct() {
+        let coalgebra = Arc::new(A0_C());
+        let shift = RComodule::cofree_comodule(coalgebra, 0, UniGrading(2), UniGrading(50), (UniGrading(0), None));
+        shift.verify().unwrap();
+    }
+
+    #[test]
+    fn test_cofree_shifted_is_correct_difficult() {
+        let input = include_str!("../../../examples/direct/A(1).txt");
+        let coalgebra = kCoalgebra::parse(input, UniGrading::infty()).unwrap().0;
+        let tensor_coalgebra = Arc::new(tensor_k_coalgebra(coalgebra));
+
+        let shift = RComodule::cofree_comodule(tensor_coalgebra, 0, UniGrading(0), UniGrading(50), (UniGrading(0), None));
+        shift.verify().unwrap();
+    }
+
+    #[test]
     fn test_cofree_comodule_with_limit() {
         let coalgebra = Arc::new(create_test_coalgebra::<BiG, F2>());
         let zero = BiG::zero();
         let two = BiGrading(2, 0);
         
-        let cofree = RComodule::cofree_comodule(coalgebra.clone(), 10, zero, two);
+        let cofree = RComodule::cofree_comodule(coalgebra.clone(), 10, zero, two, (UniGrading(0), None));
 
         // Check that we respect the grading limit
         for (grade, _) in &cofree.space.0 {
@@ -279,15 +290,15 @@ mod tests {
     fn test_different_fields() {
         // Test with F2
         let coalgebra_f2 = Arc::new(create_test_coalgebra::<BiG, F2>());
-        let _comodule_f2 = RComodule::fp_comodule(coalgebra_f2);
+        let _comodule_f2 = RComodule::fp_comodule(coalgebra_f2, BiGrading::zero());
 
         // Test with F3
         let coalgebra_f3 = Arc::new(create_test_coalgebra::<BiG, Fp<3>>());
-        let _comodule_f3 = RComodule::fp_comodule(coalgebra_f3);
+        let _comodule_f3 = RComodule::fp_comodule(coalgebra_f3, BiGrading::zero());
 
         // Test with F5  
         let coalgebra_f5 = Arc::new(create_test_coalgebra::<BiG, Fp<5>>());
-        let _comodule_f5 = RComodule::fp_comodule(coalgebra_f5);
+        let _comodule_f5 = RComodule::fp_comodule(coalgebra_f5, BiGrading::zero());
     }
 
     // Test that RCoalgebra can be cloned
@@ -303,7 +314,7 @@ mod tests {
     #[test]
     fn test_comodule_clone_and_equality() {
         let coalgebra = Arc::new(create_test_coalgebra::<BiG, F2>());
-        let comodule1 = RComodule::fp_comodule(coalgebra.clone());
+        let comodule1 = RComodule::fp_comodule(coalgebra.clone(), BiGrading::zero());
         let comodule2 = comodule1.clone();
 
         assert_eq!(comodule1, comodule2);
@@ -321,7 +332,7 @@ mod tests {
         let coalgebra = Arc::new(create_test_coalgebra::<BiG, F2>());
         let zero = BiG::zero();
         
-        let cofree = RComodule::cofree_comodule(coalgebra, 0, zero, zero);
+        let cofree = RComodule::cofree_comodule(coalgebra, 0, zero, zero, (UniGrading(0), None));
         
         // Should have elements only at zero grade
         assert_eq!(cofree.space.0.len(), 1);
@@ -335,12 +346,42 @@ mod tests {
         
         // Add multiple fp_comodules via direct sum
         for _ in 0..5 {
-            let mut fp = RComodule::fp_comodule(coalgebra.clone());
+            let mut fp = RComodule::fp_comodule(coalgebra.clone(), BiGrading::zero());
             base.direct_sum(&mut fp);
         }
         
         let zero = BiG::zero();
         assert_eq!(base.space.0.get(&zero).unwrap().len(), 5);
         assert_eq!(base.tensor.dimensions.get(&zero), Some(&5));
+    }
+
+
+    #[test] 
+    fn test_multiple_direct_sums_in_different_grade_1() {
+        let coalgebra = Arc::new(A1_C());
+        let mut base = RComodule::zero_comodule(coalgebra.clone());
+        
+        
+        let mut s = RComodule::cofree_comodule(coalgebra.clone(), 0, UniGrading(0), UniGrading(70), (UniGrading(0), None));
+        base.direct_sum(&mut s);
+        
+        
+        let mut s = RComodule::cofree_comodule(coalgebra.clone(), 1, UniGrading(20), UniGrading(70), (UniGrading(0), None));
+        base.direct_sum(&mut s);
+    }
+
+    #[test] 
+    fn test_multiple_direct_sums_in_different_grade_2() {
+        let coalgebra = Arc::new(A1_C());
+        let mut base = RComodule::zero_comodule(coalgebra.clone());
+        
+        
+        let mut s = RComodule::cofree_comodule(coalgebra.clone(), 0, UniGrading(0), UniGrading(70), (UniGrading(0), None));
+        base.direct_sum(&mut s);
+        
+        let mut s = RComodule::cofree_comodule(coalgebra.clone(), 1, UniGrading(1), UniGrading(70), (UniGrading(0), None));
+        base.direct_sum(&mut s);
+        
+        
     }
 }

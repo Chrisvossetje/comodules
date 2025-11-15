@@ -11,6 +11,27 @@ pub trait RModMorphism<R: CRing> {
 
     fn get_row(&self, codomain: usize) -> &[R];
     fn set_row(&mut self, codomain: usize, row: &[R]);
+    
+    fn get_column(&self, domain: usize) -> Vec<R> {
+        let mut r = vec![];
+        for i in 0..self.codomain() {
+            let el = self.get(domain, i);
+            r.push(el);
+        }
+        r
+    }
+
+    fn set_column(&mut self, domain: usize, row: &[R]) {
+        for i in 0..self.codomain() {
+            self.set(domain, i, row[i]);
+        }
+    }
+
+    fn set_row_zero(&mut self, codomain: usize) {
+        for d in 0..self.domain() {
+            self.set(d, codomain, R::zero());
+        }
+    }
 
     fn is_row_non_zero(&self, codomain: usize) -> bool {
         (0..self.domain()).any(|domain| !self.get(domain, codomain).is_zero())
@@ -27,6 +48,8 @@ pub trait RModMorphism<R: CRing> {
     fn vstack(&mut self, other: &mut Self);
     fn block_sum(&mut self, other: &Self);
 
+    fn extend_one_row(&mut self); 
+
     /// Swap two rows
     fn swap_rows(&mut self, row1: usize, row2: usize) {
         if row1 == row2 {
@@ -37,6 +60,24 @@ pub trait RModMorphism<R: CRing> {
             self.set(j, row1, self.get(j, row2));
             self.set(j, row2, temp);
         }
+    }
+
+    fn is_unit(&self) -> Result<(),()> {
+        for i in 0..self.domain() {
+            for j in 0..self.codomain() {
+                if i == j {
+                    if self.get(i, j) != R::one(){
+                        return Err(())
+                    }
+                } else {
+                    if !self.get(i, j).is_zero(){
+                        return Err(())
+                    }
+
+                }
+            }
+        }
+        Ok(())
     }
 
     /// Swap two columns  

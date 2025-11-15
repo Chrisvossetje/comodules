@@ -1,7 +1,6 @@
-
 #[cfg(test)]
 mod tests {
-    use crate::linalg::{field::F2, flat_matrix::FlatMatrix, matrix::{RModMorphism, SmithNormalForm}, ring::{CRing, UniPolRing}};
+    use crate::{linalg::{field::F2, flat_matrix::FlatMatrix, matrix::{RModMorphism, SmithNormalForm}, ring::{CRing, UniPolRing}}};
 
     #[test]
     fn test_smith_normal_form_helper_methods() {
@@ -173,12 +172,9 @@ mod tests {
             domain: 2,
             codomain: 2,
         };
-        println!("{:?}",matrix);
 
         // Test that Smith Normal Form can be called (even with simplified implementation)
         let (u, s, v) = matrix.snf();
-
-        // TODO: nothing of importance gets checked here
 
         // Verify dimensions are correct
         assert_eq!(u.domain(), 2);
@@ -259,5 +255,25 @@ mod tests {
                 }
             }
         }
+    }
+
+    // TODO : REMOVE
+    #[test]
+    fn test_specific_snf() {
+        let mut mat = FlatMatrix::zero(7, 5);
+        mat.set(0, 0, UniPolRing::<F2>::one());
+        mat.set(0, 2, UniPolRing::<F2>::one());
+        mat.set(1, 1, UniPolRing::<F2>::one());
+        mat.set(1, 4, UniPolRing::<F2>::one());
+
+        mat.set(0, 3, UniPolRing(F2::one(), 1));
+        mat.set(0, 4, UniPolRing(F2::one(), 1));
+
+        mat.set(2, 0, UniPolRing(F2::one(), 1));
+        mat.set(3, 1, UniPolRing(F2::one(), 1));
+        
+        println!("{:?}", mat);
+
+        let (u,s,_) = mat.snf();
     }
 }

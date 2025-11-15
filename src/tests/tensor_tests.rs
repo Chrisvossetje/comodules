@@ -1,5 +1,6 @@
-use crate::linalg::graded::{BasisElement, GradedVectorSpace};
-use crate::linalg::grading::OrderedGrading;
+use crate::basiselement::BasisElement;
+use crate::linalg::graded::GradedVectorSpace;
+use crate::grading::OrderedGrading;
 
 #[derive(Debug, Clone, Default)]
 struct MockBasisElement;
@@ -10,7 +11,7 @@ impl BasisElement for MockBasisElement {}
 mod tests {
     use ahash::HashMap;
 
-    use crate::{comodule::{kcoalgebra::A0_coalgebra, tensor::Tensor}, linalg::grading::UniGrading};
+    use crate::{comodule::kcoalgebra::A0_coalgebra, grading::UniGrading, tensor::Tensor};
 
     use super::*;
 

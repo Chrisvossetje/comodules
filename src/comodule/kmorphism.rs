@@ -5,13 +5,13 @@ use itertools::Itertools;
 use rayon::prelude::*;
 
 use crate::{
-    comodule::{kcomodule::kBasisElement, tensor::Tensor},
+    basiselement::kBasisElement,
+    grading::{Grading, OrderedGrading},
     linalg::{
         field::Field,
         graded::{BasisIndex, GradedLinearMap},
-        grading::{Grading, OrderedGrading},
         matrix::Matrix,
-    },
+    }, tensor::Tensor,
 };
 
 use super::{
@@ -217,6 +217,10 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                 if t_gr > fixed_limit {
                     return None;
                 }
+                // TODO ! UNSTABLE STUFF, THIS IS PROB WRONG
+                // if alg_gr > &pivot_grade {
+                //     return None;
+                // }
 
                 let codomain_len = self.codomain.space.dimension_in_grade(&t_gr);
                 let coalg_len = alg_gr_space.len();
@@ -237,6 +241,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                         .get(t_gr)
                         .expect("This grade should exist on the coaction of the injecting comodule")
                         .get_row(*t_id);
+
                     map.set_row(a_id, slice);
                 }
 
@@ -248,6 +253,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                 iteration,
                 pivot_grade,
                 fixed_limit,
+                ()
             );
 
             growing_comodule.direct_sum(&mut f);

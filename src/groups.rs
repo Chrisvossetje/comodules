@@ -4,8 +4,15 @@ use std::{
 
 use ahash::HashMap;
 
-use crate::{comodule::{kcoalgebra::kCoalgebra, kcomodule::kBasisElement}, linalg::{field::Field, flat_matrix::FlatMatrix, graded::{GradedLinearMap, GradedVectorSpace}, grading::{Grading, OrderedGrading, Parse}, matrix::RModMorphism}};
-use crate::comodule::tensor::Tensor;
+use crate::{
+    basiselement::kBasisElement,
+    comodule::kcoalgebra::kCoalgebra,
+    grading::{Grading, OrderedGrading, Parse},
+    linalg::{
+        field::Field, flat_matrix::FlatMatrix, graded::{GradedLinearMap, GradedVectorSpace}, matrix::RModMorphism
+    },
+    tensor::Tensor
+};
 
 pub trait Group:
     'static

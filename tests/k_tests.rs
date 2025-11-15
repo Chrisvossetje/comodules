@@ -4,13 +4,8 @@ mod tests {
 
     use comodules::{
         comodule::{
-            kcoalgebra::{kCoalgebra, A0_coalgebra},
-            kcomodule::kComodule,
-            traits::Comodule,
-        },
-        export::SSeq,
-        linalg::{field::F2, grading::{Grading, UniGrading}, groups::{Group, Z2}, row_matrix::RowMatrix},
-        resolution::Resolution,
+            kcoalgebra::{A0_coalgebra, kCoalgebra}, kcomodule::kComodule, traits::Comodule
+        }, export::SSeq, grading::{Grading, UniGrading}, groups::{Group, Z2}, linalg::{field::F2, flat_matrix::FlatMatrix}, resolution::Resolution
     };
     use itertools::Itertools;
 
@@ -19,8 +14,8 @@ mod tests {
     fn generate_sseq_jsons() {
         {
             let coalgebra = Arc::new(A0_coalgebra());
-            let fp = kComodule::fp_comodule(coalgebra);
-            let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
+            let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
+            let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
                 Resolution::new(fp);
 
             res.resolve_to_s(20, UniGrading(20));
@@ -33,9 +28,9 @@ mod tests {
             let input = include_str!("../examples/direct/A(1).txt");
             let coalgebra = Arc::new(kCoalgebra::parse(input, UniGrading::infty()).unwrap().0);
 
-            let fp = kComodule::fp_comodule(coalgebra);
+            let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 
-            let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
+            let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
                 Resolution::new(fp);
 
             res.resolve_to_s(20, UniGrading(20));
@@ -49,9 +44,9 @@ mod tests {
 
             let coalgebra = Arc::new(kCoalgebra::parse(input, UniGrading::infty() - UniGrading(10)).unwrap().0);
 
-            let fp = kComodule::fp_comodule(coalgebra);
+            let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 
-            let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
+            let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
                 Resolution::new(fp);
 
             res.resolve_to_s(20, UniGrading(20));
@@ -66,9 +61,9 @@ mod tests {
     fn test_a0_resolution() {
         let coalgebra = Arc::new(A0_coalgebra());
 
-        let fp = kComodule::fp_comodule(coalgebra);
+        let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 
-        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
+        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
             Resolution::new(fp);
 
         res.resolve_to_s(4, UniGrading(10));
@@ -96,7 +91,7 @@ mod tests {
         let sorted_lines: Vec<((usize, usize), (usize, usize), usize, String)> = page
             .structure_lines
             .iter()
-            .map(|x| (x.clone()))
+            .map(|x| x.clone())
             .sorted_by_key(|x| x.0 .0 * 1000 + x.0 .1)
             .collect();
         assert_eq!(
@@ -114,9 +109,9 @@ mod tests {
     fn test_a0_consistent_page() {
         let coalgebra = Arc::new(A0_coalgebra());
 
-        let fp = kComodule::fp_comodule(coalgebra);
+        let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 
-        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
+        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
             Resolution::new(fp);
 
         res.resolve_to_s(20, UniGrading(20));
@@ -131,9 +126,9 @@ mod tests {
         let input = include_str!("../examples/direct/A(1).txt");
         let coalgebra = Arc::new(kCoalgebra::parse(input, UniGrading::infty()).unwrap().0);
 
-        let fp = kComodule::fp_comodule(coalgebra);
+        let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 
-        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
+        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
             Resolution::new(fp);
 
         res.resolve_to_s(20, UniGrading(20));
@@ -148,9 +143,9 @@ mod tests {
         let input = include_str!("../examples/direct/A(2).txt");
         let coalgebra = Arc::new(kCoalgebra::parse(input, UniGrading::infty()).unwrap().0);
 
-        let fp = kComodule::fp_comodule(coalgebra);
+        let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 
-        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
+        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
             Resolution::new(fp);
 
         res.resolve_to_s(20, UniGrading(20));
@@ -166,9 +161,9 @@ mod tests {
 
         let coalgebra = Arc::new(kCoalgebra::parse(input, UniGrading::infty() - UniGrading(10)).unwrap().0);
 
-        let fp = kComodule::fp_comodule(coalgebra);
+        let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 
-        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, RowMatrix<F2>>> =
+        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
             Resolution::new(fp);
 
         res.resolve_to_s(20, UniGrading(20));
@@ -183,7 +178,7 @@ mod tests {
     fn test_z2_coalgebra_generation() {
         let coalg = Arc::new(Z2::generate_coalgebra::<F2>().unwrap());
         
-        let fp = kComodule::fp_comodule(coalg);
+        let fp = kComodule::fp_comodule(coalg, Z2::zero());
 
         let mut res = Resolution::new(fp);
 

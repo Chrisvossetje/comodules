@@ -2,9 +2,13 @@ use ahash::HashMap;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::linalg::{
-    graded::{BasisElement, BasisIndex, GradedVectorSpace},
-    grading::Grading, module::GradedModule,
+use crate::{
+    basiselement::BasisElement,
+    grading::Grading,
+    linalg::{
+        graded::{BasisIndex, GradedVectorSpace},
+    },
+    module::module::GradedModule,
 };
 
 pub type TensorConstruct<G> =
@@ -25,7 +29,7 @@ pub struct Tensor<G: Grading> {
     // # Module Grade + Index -> Algebra Grading + index -> Tensor Grading + index
     pub construct: TensorConstruct<G>,
 
-    // # Module Grade + Index -> Algebra Grading + index -> Tensor Grading + index
+    // # Tensor Grade + Index -> (Algebra Grading + index, Module Grading + index)
     pub deconstruct: TensorDeconstruct<G>,
 
     pub dimensions: TensorDimension<G>,

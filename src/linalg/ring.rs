@@ -1,5 +1,5 @@
 use std::ops::{Add, Sub, Neg, Mul, AddAssign, SubAssign, MulAssign};
-use std::fmt::Debug;
+use std::fmt::{Debug, Formatter};
 
 use serde::{Deserialize, Serialize};
 
@@ -53,7 +53,7 @@ pub trait ValuationRing: CRing {
 
 
 
-#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
+#[derive(Clone, Copy, Deserialize, Serialize)]
 pub struct UniPolRing<F: Field>(pub F, pub usize);
 
 
@@ -77,13 +77,34 @@ impl<F: Field> CRing for UniPolRing<F> {
     }
 
     fn parse(input: &str) -> Result<Self, String> {
-        if input.trim().is_empty() {
+        let input = input.trim();
+        if input.is_empty() {
             return Ok(Self::zero());
         }
-        
-        // For now, parse as field element with degree 0
-        let field_val = F::parse(input)?;
-        Ok(Self(field_val, 0))
+        let (field_val, power) =  match input.split_once('t') {
+            Some((lhs,p)) => {
+
+                let field_el = if lhs.is_empty() {
+                    F::one()
+                } else {
+                    F::parse(lhs)?
+                };
+                
+                match p.split_once('^') {
+                    Some((_,a)) => (field_el, str::parse(a).map_err(|_| {
+                        format!("{a}, was not able to parse as i32")
+                    })?),
+                    None => {
+                        (field_el,1)
+                    },
+                }
+            }
+            ,
+            None => {
+                (F::parse(input)?, 0)
+            },
+        };
+        Ok(Self(field_val, power))
     }
     
     fn is_unit(&self) -> bool {
@@ -103,11 +124,26 @@ impl<F: Field> Default for UniPolRing<F> {
     }
 }
 
+impl<F: Field> Debug for UniPolRing<F> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        if self.is_zero() {
+            write!(f, "0")
+        } else {
+            if self.1 == 0 {
+                write!(f, "1")
+            } else {
+                write!(f, "t^{:?}", self.1)
+            }
+        }
+    }
+}
+
+
 impl<F: Field> ValuationRing for UniPolRing<F> {
     /// For true, self | other
     /// For false, other | self
     fn divides(self, other: &Self) -> bool {
-        if self.1 <= other.1 || other.0.is_zero() {
+        if !self.is_zero() && (self.1 <= other.1 || other.is_zero()) {
             true
         } else {
             false

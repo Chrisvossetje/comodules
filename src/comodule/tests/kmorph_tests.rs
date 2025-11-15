@@ -11,21 +11,22 @@ mod tests {
             kmorphism::kComoduleMorphism,
             traits::{Comodule, ComoduleMorphism},
         },
+        grading::{Grading, UniGrading},
         linalg::{
-            field::F2, graded::{GradedLinearMap, GradedVectorSpace}, grading::UniGrading, matrix::RModMorphism, ring::CRing, row_matrix::RowMatrix
+            field::F2, flat_matrix::FlatMatrix, graded::{GradedLinearMap, GradedVectorSpace}, matrix::RModMorphism, ring::CRing
         },
     };
 
     #[test]
     fn test_inject_codomain_to_cofree() {
         let coalgebra = Arc::new(A0_coalgebra());
-        let comodule = Arc::new(kComodule::fp_comodule(coalgebra.clone()));
+        let comodule = Arc::new(kComodule::fp_comodule(coalgebra.clone(), UniGrading::zero()));
 
         let morphism = kComoduleMorphism::zero_morphism(comodule);
 
         let cofree_morphism = morphism.inject_codomain_to_cofree(UniGrading(5));
 
-        let comp = kComodule::cofree_comodule(coalgebra, 0, UniGrading(0), UniGrading(5));
+        let comp = kComodule::cofree_comodule(coalgebra, 0, UniGrading(0), UniGrading(5), ());
 
         // Assertions
         assert_eq!(cofree_morphism.codomain.space, comp.space);
@@ -40,13 +41,13 @@ mod tests {
     fn test_cokernel() {
         let coalgebra = Arc::new(A0_coalgebra());
 
-        let domain = Arc::new(kComodule::fp_comodule(coalgebra.clone()));
+        let domain = Arc::new(kComodule::fp_comodule(coalgebra.clone(), UniGrading::zero()));
 
-        let codomain = Arc::new(kComodule::cofree_comodule(coalgebra, 0, UniGrading(0), UniGrading(5)));
+        let codomain = Arc::new(kComodule::cofree_comodule(coalgebra, 0, UniGrading(0), UniGrading(5), ()));
 
-        let mut map: GradedLinearMap<UniGrading, F2, RowMatrix<F2>> =
+        let mut map: GradedLinearMap<UniGrading, F2, FlatMatrix<F2>> =
             GradedLinearMap::zero(&domain.space, &codomain.space);
-        map.maps.get_mut(&UniGrading(0)).unwrap().data[0][0] = F2::one();
+        map.maps.get_mut(&UniGrading(0)).unwrap().data[0] = F2::one();
 
         let morphism = kComoduleMorphism {
             domain: domain.clone(),
@@ -60,9 +61,9 @@ mod tests {
         assert_eq!(cokernel_morphism.domain, morphism.codomain);
 
         let mut map = HashMap::default();
-        map.insert(UniGrading(0), RowMatrix::zero(1, 0));
-        map.insert(UniGrading(1), RowMatrix::identity(1));
-        let expected_map: GradedLinearMap<UniGrading, F2, RowMatrix<F2>> = GradedLinearMap::from(map);
+        map.insert(UniGrading(0), FlatMatrix::zero(1, 0));
+        map.insert(UniGrading(1), FlatMatrix::identity(1));
+        let expected_map: GradedLinearMap<UniGrading, F2, FlatMatrix<F2>> = GradedLinearMap::from(map);
         assert_eq!(cokernel_morphism.map, expected_map);
     }
 
@@ -70,13 +71,13 @@ mod tests {
     fn test_structure_lines() {
         let coalgebra = Arc::new(A0_coalgebra());
 
-        let domain = Arc::new(kComodule::cofree_comodule(coalgebra.clone(), 0, UniGrading(0), UniGrading(5)));
+        let domain = Arc::new(kComodule::cofree_comodule(coalgebra.clone(), 0, UniGrading(0), UniGrading(5), ()));
 
-        let codomain = Arc::new(kComodule::cofree_comodule(coalgebra, 0, UniGrading(1), UniGrading(5)));
+        let codomain = Arc::new(kComodule::cofree_comodule(coalgebra, 0, UniGrading(1), UniGrading(5), ()));
 
-        let mut map: GradedLinearMap<UniGrading, F2, RowMatrix<F2>> =
+        let mut map: GradedLinearMap<UniGrading, F2, FlatMatrix<F2>> =
             GradedLinearMap::zero(&domain.space, &codomain.space);
-        map.maps.get_mut(&UniGrading(1)).unwrap().data[0][0] = F2::one();
+        map.maps.get_mut(&UniGrading(1)).unwrap().data[0] = F2::one();
 
         let morphism = kComoduleMorphism {
             domain: domain.clone(),
@@ -93,7 +94,7 @@ mod tests {
     #[test]
     fn test_zero_morphism() {
         let coalgebra = Arc::new(A0_coalgebra());
-        let comodule = Arc::new(kComodule::fp_comodule(coalgebra));
+        let comodule = Arc::new(kComodule::fp_comodule(coalgebra, UniGrading::zero()));
 
         let zero_morphism = kComoduleMorphism::zero_morphism(comodule.clone());
 

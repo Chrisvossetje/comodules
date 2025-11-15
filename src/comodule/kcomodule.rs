@@ -1,29 +1,23 @@
 use std::sync::Arc;
 
 use ahash::HashMap;
-use serde::{Deserialize, Serialize};
 
-use crate::{helper::hashmap_add_restrict, linalg::{
-    field::Field,
-    graded::{BasisElement, GradedLinearMap, GradedVectorSpace},
+use crate::{
+    basiselement::kBasisElement,
     grading::Grading,
-    matrix::Matrix,
-}};
-
-use super::{
-    kcoalgebra::kCoalgebra, kmorphism::kComoduleMorphism, tensor::Tensor, traits::Comodule,
+    helper::hashmap_add_restrict, 
+    linalg::{
+        field::Field,
+        graded::{GradedLinearMap, GradedVectorSpace},
+        matrix::Matrix,
+    }, tensor::Tensor
 };
 
-#[derive(Debug, Clone, PartialEq, Default, Deserialize, Serialize)]
-#[allow(non_camel_case_types)]
-pub struct kBasisElement {
-    pub name: String,
-    pub generator: bool,
-    pub primitive: Option<usize>,
-    pub generated_index: usize,
-}
+use super::{
+    kcoalgebra::kCoalgebra, kmorphism::kComoduleMorphism, traits::Comodule,
+};
 
-impl BasisElement for kBasisElement {}
+
 
 #[derive(Clone, PartialEq)]
 #[allow(non_camel_case_types)]
@@ -102,6 +96,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
     type Element = kBasisElement;
     type Coalgebra = kCoalgebra<G, F, M>;
     type Morphism = kComoduleMorphism<G, F, M>;
+    type Generator = ();
 
     fn get_generators(&self) -> Vec<(usize, G, Option<String>)> {
         self.space
@@ -128,10 +123,9 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
         }
     }
 
-    fn fp_comodule(coalgebra: Arc<Self::Coalgebra>) -> Self {
+    fn fp_comodule(coalgebra: Arc<Self::Coalgebra>, degree: G) -> Self {
         let zero = G::zero();
 
-        // (zero,
         let el = kBasisElement {
             name: "fp".to_string(),
             generator: false,
@@ -139,10 +133,10 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
             generated_index: 0,
         };
 
-        let space_map: HashMap<G, Vec<kBasisElement>> = [(zero, vec![el])].into_iter().collect();
+        let space_map: HashMap<G, Vec<kBasisElement>> = [(degree, vec![el])].into_iter().collect();
         let space = GradedVectorSpace::from(space_map);
 
-        let coact_map: HashMap<G, M> = [(zero, M::identity(1))].into_iter().collect();
+        let coact_map: HashMap<G, M> = [(degree, M::identity(1))].into_iter().collect();
         let coaction = GradedLinearMap::from(coact_map);
 
         // CONNECTED ASSUMPTION
@@ -158,15 +152,15 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
         );
 
         let mut dimensions = HashMap::default();
-        dimensions.insert(zero, 1);
+        dimensions.insert(degree, 1);
 
         let mut construct = HashMap::default();
         let mut first_entry = HashMap::default();
-        first_entry.insert((zero, 0), (zero, 0));
-        construct.insert((zero, 0), first_entry);
+        first_entry.insert((zero, 0), (degree, 0));
+        construct.insert((degree, 0), first_entry);
 
         let mut deconstruct = HashMap::default();
-        deconstruct.insert((zero, 0), ((zero, 0), (zero, 0)));
+        deconstruct.insert((degree, 0), ((zero, 0), (degree, 0)));
 
         let tensor = Tensor {
             construct,
@@ -202,9 +196,9 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
         debug_assert!(self.verify());
     }
 
-    fn cofree_comodule(coalgebra: Arc<Self::Coalgebra>, index: usize, grade: G, limit: G) -> Self {
+    fn cofree_comodule(coalgebra: Arc<Self::Coalgebra>, index: usize, grade: G, limit: G, _generator: Self::Generator) -> Self {
         let coaction: HashMap<G, M> = hashmap_add_restrict(&coalgebra.coaction.maps, grade, limit);
-        let space = coalgebra
+        let space: HashMap<G, Vec<kBasisElement>> = coalgebra
             .space
             .0
             .iter()
@@ -226,6 +220,37 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
             })
             .collect();
         let tensor = coalgebra.tensor.add_and_restrict(grade, limit);
+        
+        
+        // // TODO! SOME UNSTABLE STUFF        
+        // for ((t_gr, _), (a, m)) in &tensor.deconstruct {
+        //     if *t_gr > grade + grade {
+        //         tensor.construct.get_mut(m).unwrap().remove(a);
+        //     }
+        // }
+        // tensor.construct.retain(|_, y| {
+        //     y.len() > 0
+        // });
+
+        // let keys: Vec<G> = space.keys().map(|g| *g).collect();
+        // for g in keys {
+        //     if g > grade + grade {
+        //         space.remove(&g);
+        //         coaction.remove(&g);
+        //         for t_id in 0..tensor.get_dimension(&g) {
+        //             tensor.deconstruct.remove(&(g, t_id));
+        //         }
+        //         tensor.dimensions.remove(&g);
+        //     }
+        // }
+
+        // for ((t_gr,t_id), ((a_gr, _), (m_gr, _))) in &tensor.deconstruct { 
+        //     if a_gr > m_gr {
+        //         coaction.get_mut(t_gr).unwrap().set_row_zero(*t_id);
+        //     }
+        // }
+        
+
 
         kComodule::new(
             coalgebra,
@@ -234,4 +259,5 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
             tensor,
         )
     }
+    
 }
