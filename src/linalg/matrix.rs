@@ -12,6 +12,31 @@ pub trait RModMorphism<R: CRing> {
     fn get_row(&self, codomain: usize) -> &[R];
     fn set_row(&mut self, codomain: usize, row: &[R]);
     
+    fn multiply_row(&mut self, codomain: usize, r: R) {
+        for domain in 0..self.domain() {
+            let el = self.get(domain, codomain);
+            self.set(domain, codomain, r * el);
+        }
+    }
+
+    fn eval_vector(&self, vector: &[R]) -> Vec<R> {
+        debug_assert_eq!(self.domain(), vector.len());
+        (0..self.codomain()).map(|y| {
+            let r_1 = self.get_row(y);
+            let el: R = r_1.iter().zip(vector).map(|(x, y)| {
+                *x * *y
+            }).sum();
+            el
+        }).collect()
+    }
+
+    fn multiply_column(&mut self, domain: usize, r: R) {
+        for codomain in 0..self.codomain() {
+            let el = self.get(domain, codomain);
+            self.set(domain, codomain, r * el);
+        }
+    }
+    
     fn get_column(&self, domain: usize) -> Vec<R> {
         let mut r = vec![];
         for i in 0..self.codomain() {
@@ -20,6 +45,7 @@ pub trait RModMorphism<R: CRing> {
         }
         r
     }
+
 
     fn set_column(&mut self, domain: usize, row: &[R]) {
         for i in 0..self.codomain() {

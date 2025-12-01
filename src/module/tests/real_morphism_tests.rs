@@ -134,11 +134,11 @@ mod tests {
             maps: graded_map,
         };
 
-        let mut hashmap: HashMap<UniGrading, Vec<(TestBasis, UniGrading, Option<usize>)>> = HashMap::default();
+        let mut hashmap: HashMap<UniGrading, Vec<(TestBasis, UniGrading, Option<u16>)>> = HashMap::default();
         hashmap.insert(UniGrading(7), vec![(TestBasis, UniGrading(1), None), (TestBasis, UniGrading(3), Some(1)), (TestBasis, UniGrading(3), None)]);
         let codomain = GradedModule(hashmap);
         
-        let mut hashmap: HashMap<UniGrading, Vec<(TestBasis, UniGrading, Option<usize>)>> = HashMap::default();
+        let mut hashmap: HashMap<UniGrading, Vec<(TestBasis, UniGrading, Option<u16>)>> = HashMap::default();
         hashmap.insert(UniGrading(7), vec![(TestBasis, UniGrading(3), None)]);
         let domain = GradedModule(hashmap);
         
@@ -169,11 +169,11 @@ mod tests {
             maps: graded_map,
         };
 
-        let mut hashmap: HashMap<UniGrading, Vec<(TestBasis, UniGrading, Option<usize>)>> = HashMap::default();
+        let mut hashmap: HashMap<UniGrading, Vec<(TestBasis, UniGrading, Option<u16>)>> = HashMap::default();
         hashmap.insert(UniGrading(5), vec![(TestBasis, UniGrading(0), None), (TestBasis, UniGrading(1), None)]);
         let codomain = GradedModule(hashmap);
         
-        let mut hashmap: HashMap<UniGrading, Vec<(TestBasis, UniGrading, Option<usize>)>> = HashMap::default();
+        let mut hashmap: HashMap<UniGrading, Vec<(TestBasis, UniGrading, Option<u16>)>> = HashMap::default();
         hashmap.insert(UniGrading(5), vec![(TestBasis, UniGrading(0), None)]);
         let domain = GradedModule(hashmap);
         
@@ -201,11 +201,11 @@ mod tests {
             maps: graded_map,
         };
 
-        let mut hashmap: HashMap<UniGrading, Vec<(TestBasis, UniGrading, Option<usize>)>> = HashMap::default();
+        let mut hashmap: HashMap<UniGrading, Vec<(TestBasis, UniGrading, Option<u16>)>> = HashMap::default();
         hashmap.insert(UniGrading(0), vec![(TestBasis, UniGrading(1), Some(7))]);
         let domain = GradedModule(hashmap);
         
-        let mut hashmap: HashMap<UniGrading, Vec<(TestBasis, UniGrading, Option<usize>)>> = HashMap::default();
+        let mut hashmap: HashMap<UniGrading, Vec<(TestBasis, UniGrading, Option<u16>)>> = HashMap::default();
         hashmap.insert(UniGrading(0), vec![(TestBasis, UniGrading(3), Some(4))]);
         let codomain = GradedModule(hashmap);
         
@@ -233,11 +233,11 @@ mod tests {
             maps: graded_map,
         };
 
-        let mut hashmap: HashMap<UniGrading, Vec<(TestBasis, UniGrading, Option<usize>)>> = HashMap::default();
+        let mut hashmap: HashMap<UniGrading, Vec<(TestBasis, UniGrading, Option<u16>)>> = HashMap::default();
         hashmap.insert(UniGrading(0), vec![(TestBasis, UniGrading(0), Some(1))]);
         let domain = GradedModule(hashmap);
         
-        let mut hashmap: HashMap<UniGrading, Vec<(TestBasis, UniGrading, Option<usize>)>> = HashMap::default();
+        let mut hashmap: HashMap<UniGrading, Vec<(TestBasis, UniGrading, Option<u16>)>> = HashMap::default();
         hashmap.insert(UniGrading(0), vec![(TestBasis, UniGrading(0), Some(1))]);
         let codomain = GradedModule(hashmap);
         
@@ -247,4 +247,37 @@ mod tests {
 
         assert!(pivot.is_none())
     }      
+
+    #[test]
+    fn test_coker_module_structure() {
+        let z = UniPolRing::<F2>::zero();
+        let o = UniPolRing::<F2>::one();
+        let t = UniPolRing(F2::one(), 1);
+
+        let mut mat = FlatMatrix::zero(1, 2);
+        mat.set(0, 0, t);
+        mat.set(0, 1, o);
+
+
+        let codom = vec![
+            (TestBasis, UniGrading(1), Some(3)),
+            (TestBasis, UniGrading(0), Some(1)),
+        ];
+
+
+        let mut a = HashMap::default();
+        a.insert(UniGrading(0), codom);
+        let codomain = GradedModule(a);
+        
+        let mut a = HashMap::default();
+        a.insert(UniGrading(0), mat);        
+        let maps = GradedModuleMap {
+            maps: a,
+        };
+
+        let (_,_,coker) = maps.cokernel(&codomain);
+        
+
+        assert_eq!(coker.0.get(&UniGrading(0)).unwrap()[0].2, Some(2));
+    }
 }

@@ -80,8 +80,9 @@ impl<G: Grading, F: Field> Comodule<G> for RComodule<G, F> {
     type Element = kBasisElement;
     type Coalgebra = RCoalgebra<G, F>;
     type Morphism = RComoduleMorphism<G, F>;
+    type BaseRing = UniPolRing<F>;
     
-    type Generator = (UniGrading, Option<usize>);
+    type Generator = (UniGrading, Option<u16>);
 
     fn zero_comodule(coalgebra: Arc<Self::Coalgebra>) -> Self {
         Self {

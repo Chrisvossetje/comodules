@@ -121,7 +121,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                 // THIS COMMENTS WAS WRITTERN BEFORE M_lUT()
 
                 // (domain, codomain)
-                for (codom_id, coker_id) in &pivots[g] {
+                for (codom_id, coker_id) in &pivots[g] { // TODO : THiS COULD BE PARALLEL
                     let coact_size = self.codomain.tensor.dimensions[g];
                     for codom_coact_id in 0..coact_size {
                         let coact_val =
@@ -301,7 +301,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
         Self::new(domain, codomain, map)
     }
 
-    fn get_structure_lines(&self) -> Vec<(usize, usize, usize, String)> {
+    fn get_structure_lines(&self) -> Vec<(usize, usize, F, String)> {
         let mut lines = vec![];
 
         for (gr, gr_map) in self.map.maps.iter() {
@@ -316,7 +316,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                                     lines.push((
                                         els[el_id].generated_index,
                                         t_el.generated_index,
-                                        gr_map.get(el_id, t_id).as_usize(),
+                                        gr_map.get(el_id, t_id),
                                         "h_".to_string() + &prim_id.to_string(),
                                     ));
                                 }

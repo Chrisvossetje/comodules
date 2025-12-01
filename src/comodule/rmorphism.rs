@@ -67,7 +67,7 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, RComodule<G,F>>
         
         let coaction = coker
             .0
-            .iter() // TODO PAR ITER
+            .par_iter()
             .map(|(g, v)| {
                 let g_tensor_dimen = tensor.get_dimension(g);
                 let mut g_coaction = FlatMatrix::zero(v.len(), g_tensor_dimen);
@@ -81,12 +81,6 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, RComodule<G,F>>
                         if inv_val.is_zero() {
                             continue;
                         }
-                        if !inv_val.is_unit() {
-
-                            // print_matrix(&coker_to.maps.get(&g).unwrap());
-                            // print_matrix(&inv_map);
-                            
-                        }
 
                         for codom_coact_id in 0..coact_size {
                             let coact_val = self.codomain.coaction.maps[g].get(codom_id, codom_coact_id);
@@ -95,16 +89,13 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, RComodule<G,F>>
                                 let ((alg_gr, alg_id), (mod_gr, mod_id)) =
                                     self.codomain.tensor.deconstruct[&(*g, codom_coact_id)];
 
-                                // TODO
-                                // SOME POWER STUFF IS GOING WRONG ?
-                                // I SHOULD USE INV_VAL SOMEHOW ?
                                 for (target_id, val) in codom_lut.get(&(mod_gr, mod_id)).unwrap() {
                                     let (final_gr, final_id) =
                                         tensor.construct[&(mod_gr, *target_id)][&(alg_gr, alg_id)];
                                     
                                     let tensor_el = &coker_tensor_module.0.get(&final_gr).unwrap()[final_id];
                                     
-                                    let final_val = coact_val * *val;
+                                    let final_val = inv_val * coact_val * *val;
                                     
                                     if let Some(tens_el_power) = tensor_el.2 {
                                         if final_val.1 >= tens_el_power {
@@ -282,8 +273,33 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, RComodule<G,F>>
         self.codomain.clone()
     }
 
-    fn get_structure_lines(&self) -> Vec<(usize, usize, usize, String)> {
-        // TODO!
-        vec![]
+    fn get_structure_lines(&self) -> Vec<(usize, usize, UniPolRing<F>, String)> {
+        let mut lines = vec![];
+
+        for (gr, gr_map) in self.map.maps.iter() {
+            for el_id in 0..self.domain.space.dimension_in_grade(gr) {
+                let els = self.domain.space.0.get(gr).unwrap();
+                match els[el_id].0.primitive {
+                    Some(prim_id) => {
+                        for t_id in 0..gr_map.codomain() {
+                            let t_el = &self.codomain.space.0.get(gr).expect("As codomain of the map is non-zero this vector space should contain an element in this grade.")[t_id];
+                            if t_el.0.generator {
+                                if !gr_map.get(el_id, t_id).is_zero() {
+                                    lines.push((
+                                        els[el_id].0.generated_index,
+                                        t_el.0.generated_index,
+                                        gr_map.get(el_id, t_id),
+                                        "h_".to_string() + &prim_id.to_string(),
+                                    ));
+                                }
+                            }
+                        }
+                    }
+                    None => {}
+                }
+            }
+        }
+
+        lines
     }
 }

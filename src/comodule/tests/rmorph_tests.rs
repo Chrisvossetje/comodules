@@ -50,7 +50,7 @@ mod tests {
         let result = std::panic::catch_unwind(|| {
             RComoduleMorphism::compose(&morph2, &morph1)
         });
-        
+
         // Should panic due to assertion failure
         assert!(result.is_err());
     }

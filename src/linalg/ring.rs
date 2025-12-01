@@ -38,6 +38,10 @@ pub trait CRing:
     }
 
     fn is_unit(&self) -> bool;
+
+    fn try_inverse(&self) -> Option<Self> {
+        None
+    }
 }
 
 pub trait FieldAlgebra<F: Field>: CRing {
@@ -48,13 +52,14 @@ pub trait ValuationRing: CRing {
     /// true iff self | other
     /// if false then other | self
     fn divides(self, other: &Self) -> bool;
+    fn divide(self, div: Self) -> Option<Self>;
     fn unsafe_divide(self, div: Self) -> Self;
 }
 
 
 
 #[derive(Clone, Copy, Deserialize, Serialize)]
-pub struct UniPolRing<F: Field>(pub F, pub usize);
+pub struct UniPolRing<F: Field>(pub F, pub u16);
 
 
 impl<F: Field> PartialEq for UniPolRing<F> {
@@ -66,6 +71,17 @@ impl<F: Field> PartialEq for UniPolRing<F> {
 impl<F: Field> CRing for UniPolRing<F> {
     fn is_zero(&self) -> bool {
         self.0.is_zero()
+    }
+
+    fn try_inverse(&self) -> Option<Self> {
+        if self.1 > 0 {
+            None
+        } else {
+            match self.0.inv() {
+                Some(inv) => Some(Self(inv, 0)),
+                None => None,
+            }
+        }
     }
 
     fn one() -> Self {
@@ -147,6 +163,21 @@ impl<F: Field> ValuationRing for UniPolRing<F> {
             true
         } else {
             false
+        }
+    }
+
+    /// Self / div
+    fn divide(self, div: Self) -> Option<Self> {
+        let inv = div.0.inv();
+        let sub =  self.1.checked_sub(div.1);
+        match inv {
+            Some(inv) => {
+                match sub {
+                    Some(sub) => Some(UniPolRing(self.0 * inv, sub)),
+                    None => None,
+                }
+            },
+            None => None,
         }
     }
     

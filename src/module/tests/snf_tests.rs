@@ -215,12 +215,12 @@ mod tests {
     #[test]
     fn test_smith_normal_form_large_matrix() {
         // Test SNF performance with larger matrix
-        let size = 4;
+        let size: usize = 4;
         let mut data = Vec::new();
         
         // Create a 4x4 matrix with polynomial entries
-        for i in 0..size {
-            for j in 0..size {
+        for i in 0..(size as u16) {
+            for j in 0..(size as u16) {
                 if i == j {
                     data.push(UniPolRing(F2(1), i % 3)); // Diagonal entries with varying degrees
                 } else if i + 1 == j {
@@ -257,6 +257,8 @@ mod tests {
         }
     }
 
+
+
     // TODO : REMOVE
     #[test]
     fn test_specific_snf() {
@@ -276,4 +278,6 @@ mod tests {
 
         let (u,s,_) = mat.snf();
     }
+
+
 }

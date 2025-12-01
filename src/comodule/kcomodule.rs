@@ -97,6 +97,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
     type Coalgebra = kCoalgebra<G, F, M>;
     type Morphism = kComoduleMorphism<G, F, M>;
     type Generator = ();
+    type BaseRing = F;
 
     fn get_generators(&self) -> Vec<(usize, G, Option<String>)> {
         self.space
@@ -258,6 +259,5 @@ impl<G: Grading, F: Field, M: Matrix<F>> Comodule<G> for kComodule<G, F, M> {
             GradedLinearMap::from(coaction),
             tensor,
         )
-    }
-    
+    }    
 }

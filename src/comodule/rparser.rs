@@ -3,13 +3,13 @@ use ahash::HashMap;
 use itertools::Itertools;
 
 use crate::{
-    basiselement::kBasisElement, comodule::rcomodule::RCoalgebra, grading::{Grading, Parse, UniGrading}, linalg::{
+    basiselement::kBasisElement, comodule::rcomodule::RCoalgebra, grading::{Grading, OrderedGrading, Parse, UniGrading}, linalg::{
         field::Field, flat_matrix::FlatMatrix, graded::BasisIndex, matrix::RModMorphism, ring::{CRing, UniPolRing}
     }, module::{module::GradedModule, morphism::GradedModuleMap}, tensor::Tensor
 };
 
 
-impl<G: Grading, F: Field> RCoalgebra<G, F> {
+impl<G: Grading + OrderedGrading, F: Field> RCoalgebra<G, F> {
     fn check_translator(&self, translate: &HashMap<String, BasisIndex<G>>) -> bool {
         for (gr, space) in &self.space.0 {
             for (index, el) in space.iter().enumerate() {
@@ -28,7 +28,7 @@ impl<G: Grading, F: Field> RCoalgebra<G, F> {
 
     pub fn parse(
         input: &str,
-        _: G,
+        max_grading: G,
     ) -> Result<
         (
             RCoalgebra<G, F>,
@@ -39,7 +39,7 @@ impl<G: Grading, F: Field> RCoalgebra<G, F> {
         if input.contains("- BASIS") {
             Self::parse_direct(input)
         } else {
-            Err("L".to_owned())
+            Self::parse_polynomial_hopf_algebra(input, max_grading)
         }
     }
 
@@ -259,7 +259,7 @@ impl<G: Grading, F: Field> RCoalgebra<G, F> {
             },
         };
 
-        // coalg.set_primitives();
+        coalg.set_primitives();
         coalg.set_generator()?;
         // coalg.reduce();
 
@@ -268,458 +268,515 @@ impl<G: Grading, F: Field> RCoalgebra<G, F> {
         Ok((coalg, basis_translate))
     }
 
-    // fn parse_polynomial_hopf_algebra(
-    //     input: &str,
-    //     max_grading: G,
-    // ) -> Result<
-    //     (
-    //         kCoalgebra<G, F, M>,
-    //         HashMap<String, BasisIndex<G>>,
-    //     ),
-    //     String,
-    // > {
-    //     #[derive(Debug, Clone, PartialEq)]
-    //     enum State {
-    //         None,
-    //         Field,
-    //         Generator,
-    //         Relations,
-    //         Coaction,
-    //     }
+    fn parse_polynomial_hopf_algebra(
+        input: &str,
+        max_grading: G,
+    ) -> Result<
+        (
+            RCoalgebra<G, F>,
+            HashMap<String, BasisIndex<G>>,
+        ),
+        String,
+    > {
+        #[derive(Debug, Clone, PartialEq)]
+        enum State {
+            None,
+            Field,
+            Generator,
+            Relations,
+            Coaction,
+        }
 
-    //     let max_grading = max_grading.incr().incr();
-    //     let mut state = State::None;
-    //     let mut field: Option<usize> = None;
-    //     let mut generators: Vec<(String, G)> = vec![];
-    //     let mut relations: Vec<Monomial> = vec![];
-    //     let mut coactions: Vec<HelperTensor<F>> = vec![];
-    //     let mut generator_translate: HashMap<String, usize> = HashMap::default();
-    //     let mut basis_translate: HashMap<String, BasisIndex<G>> = HashMap::default();
+    
+        let max_grading = max_grading.incr().incr();
+        let mut state = State::None;
+        let mut field: Option<usize> = None;
+        let mut generators: Vec<(String, G, UniGrading)> = vec![];
+        let mut relations: Vec<(Monomial, RelationType<F>)> = vec![];
+        let mut coactions: Vec<HelperTensor<F>> = vec![];
+        let mut generator_translate: HashMap<String, usize> = HashMap::default();
+        let mut basis_translate: HashMap<String, BasisIndex<G>> = HashMap::default();
 
-    //     for (line_num, line) in input.lines().enumerate() {
-    //         let line_num = line_num + 1;
-    //         let line = line.trim();
-    //         if line.is_empty() || line.starts_with('#') {
-    //             continue;
-    //         }
+        for (line_num, line) in input.lines().enumerate() {
+            let line_num = line_num + 1;
+            let line = line.trim();
+            if line.is_empty() || line.starts_with('#') {
+                continue;
+            }
 
-    //         match line {
-    //             _ if line.starts_with("- FIELD") => {
-    //                 if state != State::None {
-    //                     return Err(format!(
-    //                         "Line {}: Field should be the first to parse",
-    //                         line_num
-    //                     ));
-    //                 }
-    //                 state = State::Field;
-    //             }
-    //             _ if line.starts_with("- GENERATOR") => {
-    //                 if state != State::Field {
-    //                     return Err(format!(
-    //                         "Line {}: Expected FIELD to be parsed first",
-    //                         line_num
-    //                     ));
-    //                 }
-    //                 state = State::Generator;
-    //             }
-    //             _ if line.starts_with("- RELATION") => {
-    //                 if state != State::Generator {
-    //                     return Err(format!(
-    //                         "Line {}: Expected GENERATOR to be parsed first",
-    //                         line_num
-    //                     ));
-    //                 }
-    //                 state = State::Relations;
-    //             }
-    //             _ if line.starts_with("- COACTION") => {
-    //                 if state != State::Relations {
-    //                     return Err(format!(
-    //                         "Line {}: Expected RELATIONS to be parsed first",
-    //                         line_num
-    //                     ));
-    //                 }
-    //                 state = State::Coaction;
-    //             }
-    //             _ => match state {
-    //                 State::Field => {
-    //                     if field.is_some() {
-    //                         return Err(format!("Line {}: Field already parsed", line_num));
-    //                     }
-    //                     field = Some(line.parse::<usize>().map_err(|_| {
-    //                         format!("Line {}: Invalid field value '{}'", line_num, line)
-    //                     })?);
-    //                     if field.unwrap() as usize != F::get_characteristic() {
-    //                         return Err(format!(
-    //                             "Line {}: Field does not have the expected characteristic",
-    //                             line_num
-    //                         ));
-    //                     }
-    //                 }
-    //                 State::Generator => {
-    //                     let (name, grade) = line.split_once(':').ok_or(format!(
-    //                         "Line {}: Invalid GENERATOR format '{}' - expected 'name:grade'",
-    //                         line_num, line
-    //                     ))?;
-    //                     let grade = G::parse(grade.trim()).map_err(|e| {
-    //                         format!(
-    //                             "Line {}: Invalid grade '{}' - {}",
-    //                             line_num,
-    //                             grade.trim(),
-    //                             e
-    //                         )
-    //                     })?;
-    //                     if grade == G::zero() {
-    //                         return Err(format!(
-    //                             "Line {}: Grade of generator cannot be zero",
-    //                             line_num
-    //                         ));
-    //                     }
-    //                     generator_translate.insert(name.trim().to_string(), generators.len());
-    //                     generators.push((name.trim().to_string(), grade));
-    //                 }
-    //                 State::Relations => {
-    //                     let monomial = parse_monomial(line, &generator_translate, generators.len())
-    //                         .map_err(|e| {
-    //                             format!("Line {}: Invalid relation '{}' - {}", line_num, line, e)
-    //                         })?;
-    //                     relations.push(monomial);
-    //                 }
-    //                 State::Coaction => {
-    //                     let (name, tensors) = line.split_once(':').ok_or(format!(
-    //                         "Line {}: Invalid COACTION format '{}' - expected 'name:tensors'",
-    //                         line_num, line
-    //                     ))?;
-    //                     let tensors: Vec<(F, Vec<usize>, Vec<usize>)> = tensors
-    //                         .split('+')
-    //                         .map::<Result<(F, Vec<usize>, Vec<usize>), String>, _>(|t| {
-    //                             let (s,t) = match t.split_once('.') {
-    //                                 Some((s, t)) => {
-    //                                     (F::parse(s.trim()).map_err(|e| {
-    //                                         format!("Line {}: Scalar {s} with tensor {t} could not be parsed. {e}", line_num)
-    //                                     })?, t)
-    //                                 },
-    //                                 None => {
-    //                                     (F::one(), t)
-    //                                 }
-    //                             };
-    //                             let (l, r) = t
-    //                                 .split_once('|')
-    //                                 .ok_or(format!("Line {}: Invalid tensor format '{}' - expected 'left|right'", line_num, t))?;
+            match line {
+                _ if line.starts_with("- FIELD") => {
+                    if state != State::None {
+                        return Err(format!(
+                            "Line {}: Field should be the first to parse",
+                            line_num
+                        ));
+                    }
+                    state = State::Field;
+                }
+                _ if line.starts_with("- GENERATOR") => {
+                    if state != State::Field {
+                        return Err(format!(
+                            "Line {}: Expected FIELD to be parsed first",
+                            line_num
+                        ));
+                    }
+                    state = State::Generator;
+                }
+                _ if line.starts_with("- RELATION") => {
+                    if state != State::Generator {
+                        return Err(format!(
+                            "Line {}: Expected GENERATOR to be parsed first",
+                            line_num
+                        ));
+                    }
+                    state = State::Relations;
+                }
+                _ if line.starts_with("- COACTION") => {
+                    if state != State::Relations {
+                        return Err(format!(
+                            "Line {}: Expected RELATIONS to be parsed first",
+                            line_num
+                        ));
+                    }
+                    state = State::Coaction;
+                }
+                _ => match state {
+                    State::Field => {
+                        if field.is_some() {
+                            return Err(format!("Line {}: Field already parsed", line_num));
+                        }
+                        field = Some(line.parse::<usize>().map_err(|_| {
+                            format!("Line {}: Invalid field value '{}'", line_num, line)
+                        })?);
+                        if field.unwrap() as usize != F::get_characteristic() {
+                            return Err(format!(
+                                "Line {}: Field does not have the expected characteristic",
+                                line_num
+                            ));
+                        }
+                    }
+                    State::Generator => {
+                        let (name, both_grades) = line.split_once(":").ok_or(format!(
+                            "Line {}: Invalid BASIS format '{}' - expected 'name:grade'",
+                            line_num, line
+                        ))?;
+                        let (grade, uni_grade) = both_grades.split_once(",").ok_or(format!(
+                            "Line {}: Invalid BASIS format '{}' - expected 'name: grade,unigrade'",
+                            line_num, line
+                        ))?;
+                        generator_translate.insert(name.trim().to_string(), generators.len());
+                        generators.push((name.trim().to_string(),
+                            G::parse(grade.trim()).map_err(|e| {
+                                format!(
+                                    "Line {}: Invalid grade '{}' - {}",
+                                    line_num,
+                                    grade.trim(),
+                                    e
+                                )
+                            })?,
+                            UniGrading::parse(uni_grade.trim()).map_err(|e| {
+                                format!(
+                                    "Line {}: Invalid unigrade '{}' - {}",
+                                    line_num,
+                                    grade.trim(),
+                                    e
+                                )
+                            })?,));
+                    }
+                    State::Relations => {
+                        let (lhs, rhs) = match line.split_once('=') {
+                            Some((lhs, rhs)) => {
+                                // (lhs, RelationType::Zero)
 
-    //                             let left = parse_monomial(
-    //                                 l.trim(),
-    //                                 &generator_translate,
-    //                                 generators.len(),
-    //                             ).map_err(|e| format!("Line {}: Invalid left monomial '{}' - {}", line_num, l.trim(), e))?;
-    //                             // TODO: RHS can only be monomial ?
-    //                             let right = parse_monomial(
-    //                                 r.trim(),
-    //                                 &generator_translate,
-    //                                 generators.len(),
-    //                             ).map_err(|e| format!("Line {}: Invalid right monomial '{}' - {}", line_num, r.trim(), e))?;
-    //                             Ok((s, left, right))
-    //                         })
-    //                         .try_collect()?;
-    //                     if name.trim() != generators[coactions.len()].0 {
-    //                         return Err(format!("Line {}: Coaction for '{}' must match generator order, expected '{}'", line_num, name.trim(), generators[coactions.len()].0));
-    //                     }
+                                let (s, t) = match rhs.split_once('.') {
+                                    Some((s, t)) => (s.trim(), t.trim()),
+                                    None => ("1", rhs.trim()),
+                                }; 
+                                let monomial = parse_monomial(t, &generator_translate, generators.len())
+                                    .map_err(|e| {
+                                        format!("Line {}: Invalid rhs of relation '{}' - {}", line_num, t, e)
+                                    })?;
+                                let value = UniPolRing::parse(s).map_err(|e| {
+                                        format!("Line {}: Invalid value of relation '{}' - {}", line_num, s, e)
+                                    })?;
+                                (lhs.trim(), RelationType::Equal(value, monomial))
+                            },
+                            None => {
+                                (line.trim(), RelationType::Zero)
+                            },
+                        };
+                        let monomial = parse_monomial(lhs, &generator_translate, generators.len())
+                            .map_err(|e| {
+                                format!("Line {}: Invalid relation '{}' - {}", line_num, line, e)
+                            })?;
+                        relations.push((monomial, rhs));
+                    }
+                    State::Coaction => {
+                        let (name, tensors) = line.split_once(':').ok_or(format!(
+                            "Line {}: Invalid COACTION format '{}' - expected 'name:tensors'",
+                            line_num, line
+                        ))?;
+                        let tensors: Vec<(UniPolRing<F>, Vec<usize>, Vec<usize>)> = tensors
+                            .split('+')
+                            .map::<Result<(UniPolRing<F>, Vec<usize>, Vec<usize>), String>, _>(|t| {
+                                let (s,t) = match t.split_once('.') {
+                                    Some((s, t)) => {
+                                        (UniPolRing::parse(s.trim()).map_err(|e| {
+                                            format!("Line {}: Scalar {s} with tensor {t} could not be parsed. {e}", line_num)
+                                        })?, t)
+                                    },
+                                    None => {
+                                        (UniPolRing::one(), t)
+                                    }
+                                };
+                                let (l, r) = t
+                                    .split_once('|')
+                                    .ok_or(format!("Line {}: Invalid tensor format '{}' - expected 'left|right'", line_num, t))?;
 
-    //                     coactions.push(tensors);
-    //                 }
-    //                 _ => return Err(format!("Line {}: Unexpected state", line_num)),
-    //             },
-    //         }
-    //     }
+                                let left = parse_monomial(
+                                    l.trim(),
+                                    &generator_translate,
+                                    generators.len(),
+                                ).map_err(|e| format!("Line {}: Invalid left monomial '{}' - {}", line_num, l.trim(), e))?;
+                                // TODO: RHS can only be monomial ?
+                                let right = parse_monomial(
+                                    r.trim(),
+                                    &generator_translate,
+                                    generators.len(),
+                                ).map_err(|e| format!("Line {}: Invalid right monomial '{}' - {}", line_num, r.trim(), e))?;
+                                Ok((s, left, right))
+                            })
+                            .try_collect()?;
+                        if name.trim() != generators[coactions.len()].0 {
+                            return Err(format!("Line {}: Coaction for '{}' must match generator order, expected '{}'", line_num, name.trim(), generators[coactions.len()].0));
+                        }
 
-    //     if state != State::Coaction {
-    //         return Err("Coalgebra definition is not complete - missing sections".to_owned());
-    //     }
+                        coactions.push(tensors);
+                    }
+                    _ => return Err(format!("Line {}: Unexpected state", line_num)),
+                },
+            }
+        }
 
-    //     let n = generators.len();
-    //     let one_monomial: Monomial = vec![0; n]; // All exponents zero => 1
-    //     let mut monomial_coaction: HashMap<Monomial, HelperTensor<F>> = HashMap::default();
-    //     let mut queue: Vec<Monomial> = vec![one_monomial.clone()];
+        if state != State::Coaction {
+            return Err("Coalgebra definition is not complete - missing sections".to_owned());
+        }
 
-    //     // Initialize basis information for the unit monomial (1)
-    //     monomial_coaction.insert(
-    //         one_monomial.clone(),
-    //         vec![(F::one(), one_monomial.clone(), one_monomial.clone())],
-    //     );
+        let n = generators.len();
+        let one_monomial: Monomial = vec![0; n]; // All exponents zero => 1
+        let mut monomial_coaction: HashMap<Monomial, HelperTensor<F>> = HashMap::default();
+        let mut queue: Vec<Monomial> = vec![one_monomial.clone()];
 
-    //     basis_translate.insert("1".to_owned(), (G::zero(), 0));
+        // Initialize basis information for the unit monomial (1)
+        monomial_coaction.insert(
+            one_monomial.clone(),
+            vec![(UniPolRing::one(), one_monomial.clone(), one_monomial.clone())],
+        );
 
-    //     println!("Entering BFS");
-    //     let mut i = 0;
-    //     // BFS loop
-    //     while let Some(current_monomial) = queue.pop() {
-    //         for generator_index in 0..n {
-    //             if let Some(next_monomial) =
-    //                 multiply_monomial_by_generator(&current_monomial, generator_index, &relations)
-    //             {
-    //                 i += 1;
-    //                 if i % 100 == 0 {
-    //                     println!(
-    //                         "Processed {} elements, current basis_information length: {}",
-    //                         i,
-    //                         monomial_coaction.len()
-    //                     );
-    //                 }
-    //                 // Check if `next_monomial` is already processed
-    //                 if !monomial_coaction.contains_key(&next_monomial) {
-    //                     // Check if the grade of the monomial is valid
-    //                     let next_grade = monomial_to_grade(&next_monomial, &generators);
-    //                     if next_grade <= max_grading {
-    //                         // Calculate the coaction for the new monomial
-    //                         let coaction_result = multiply_coaction_elements(
-    //                             monomial_coaction.get(&current_monomial).ok_or(format!(
-    //                                 "Basis monomial '{}' could not be found in queue",
-    //                                 monomial_to_string(&current_monomial, &generators)
-    //                             ))?,
-    //                             &coactions[generator_index],
-    //                             &relations,
-    //                         );
+        basis_translate.insert("1".to_owned(), (G::zero(), 0));
 
-    //                         // Store the result and push new state to the queue
-    //                         monomial_coaction.insert(next_monomial.clone(), coaction_result);
+        println!("Entering BFS");
+        let mut i = 0;
+        // BFS loop
+        while let Some(current_monomial) = queue.pop() {
+            for generator_index in 0..n {
+                if let Some(next_monomial) =
+                    multiply_monomial_by_generator(&current_monomial, generator_index, &relations)
+                {
+                    i += 1;
+                    if i % 100 == 0 {
+                        println!(
+                            "Processed {} elements, current basis_information length: {}",
+                            i,
+                            monomial_coaction.len()
+                        );
+                    }
+                    // Check if `next_monomial` is already processed
+                    if !monomial_coaction.contains_key(&next_monomial) {
+                        // Check if the grade of the monomial is valid
+                        let (next_grade, _) = monomial_to_grade(&next_monomial, &generators);
+                        if next_grade <= max_grading {
+                            // Calculate the coaction for the new monomial
+                            let coaction_result = multiply_coaction_elements(
+                                monomial_coaction.get(&current_monomial).ok_or(format!(
+                                    "Basis monomial '{}' could not be found in queue",
+                                    monomial_to_string(&current_monomial, &generators)
+                                ))?,
+                                &coactions[generator_index],
+                                &relations,
+                            );
 
-    //                         queue.push(next_monomial.clone());
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    //     // Construct the basis structure
-    //     let mut basis: HashMap<G, Vec<kBasisElement>> = HashMap::default();
-    //     let mut monomial_to_grade_index: HashMap<Monomial, (G, usize)> =
-    //         HashMap::default();
+                            // Store the result and push new state to the queue
+                            monomial_coaction.insert(next_monomial.clone(), coaction_result);
 
-    //     for monomial in monomial_coaction.keys().sorted() {
-    //         let grade = monomial_to_grade(monomial, &generators);
-    //         let label = monomial_to_string(monomial, &generators);
+                            queue.push(next_monomial.clone());
+                        }
+                    }
+                }
+            }
+        }
+        // Construct the basis structure
+        let mut basis: HashMap<G, Vec<(kBasisElement, UniGrading, Option<u16>)>> = HashMap::default();
+        let mut monomial_to_grade_index: HashMap<Monomial, (G, usize)> =
+            HashMap::default();
 
-    //         let element = kBasisElement {
-    //             name: label.clone(),
-    //             generator: false,
-    //             primitive: None,
-    //             generated_index: 0,
-    //         };
+        for monomial in monomial_coaction.keys().sorted() {
+            let (grade, uni_grade) = monomial_to_grade(monomial, &generators);
+            let label = monomial_to_string(monomial, &generators);
 
-    //         let index = basis.entry(grade).or_insert_with(Vec::new).len();
-    //         monomial_to_grade_index.insert(monomial.clone(), (grade, index));
+            let element = kBasisElement {
+                name: label.clone(),
+                generator: false,
+                primitive: None,
+                generated_index: 0,
+            };
 
-    //         let index = basis.get(&grade).map_or(0, |el| el.len());
-    //         basis_translate.insert(label, (grade, index));
-    //         basis.entry(grade).or_insert_with(Vec::new).push(element);
-    //     }
+            let index = basis.entry(grade).or_insert_with(Vec::new).len();
+            monomial_to_grade_index.insert(monomial.clone(), (grade, index));
 
-    //     // Create the graded vector space A
-    //     let coalg_vector_space = GradedVectorSpace::from(basis.clone());
+            let index = basis.get(&grade).map_or(0, |el| el.len());
+            basis_translate.insert(label, (grade, index));
+            basis.entry(grade).or_insert_with(Vec::new).push((element, uni_grade, None));
+        }
 
-    //     // create A \otimes A
-    //     let tensor = Tensor::generate(&coalg_vector_space, &coalg_vector_space);
+        // Create the graded vector space A
+        let coalg_module = GradedModule(basis.clone());
 
-    //     // Create the coaction map
-    //     let mut coaction: HashMap<G, M> = HashMap::default();
+        // create A \otimes A
+        let tensor = Tensor::generate(&coalg_module, &coalg_module);
 
-    //     for (grade, els) in basis.iter() {
-    //         let tensor_rows = tensor.dimensions[grade];
-    //         let basis_cols = els.len();
-    //         let map = M::zero(basis_cols, tensor_rows);
-    //         coaction.insert(*grade, map);
-    //     }
+        // Create the coaction map
+        let mut coaction: HashMap<G, _> = HashMap::default();
 
-    //     for (monomial, coaction_elements) in &monomial_coaction {
-    //         let (basis_grade, basis_index) =
-    //             monomial_to_grade_index.get(monomial).ok_or(format!(
-    //                 "Expected monomial '{}' to exist in lookup",
-    //                 monomial_to_string(monomial, &generators)
-    //             ))?;
+        for (grade, els) in basis.iter() {
+            let tensor_rows = tensor.dimensions[grade];
+            let basis_cols = els.len();
+            let map = FlatMatrix::zero(basis_cols, tensor_rows);
+            coaction.insert(*grade, map);
+        }
 
-    //         let map = coaction.get_mut(basis_grade).ok_or(format!("Expected a coaction to exist in dimension {basis_grade}. For the element {:?}, {:?}", monomial, coaction_elements))?;
-    //         for (coeff, a, b) in coaction_elements {
-    //             let a_grade_index = monomial_to_grade_index.get(a).ok_or(format!(
-    //                 "Expected left monomial '{}' to exist when constructing coaction",
-    //                 monomial_to_string(a, &generators)
-    //             ))?;
-    //             let b_grade_index = monomial_to_grade_index.get(b).ok_or(format!(
-    //                 "Expected right monomial '{}' to exist when constructing coaction",
-    //                 monomial_to_string(b, &generators)
-    //             ))?;
-    //             let (_, tensor_index) = tensor.construct[&b_grade_index][&a_grade_index];
+        for (monomial, coaction_elements) in &monomial_coaction {
+            let (basis_grade, basis_index) =
+                monomial_to_grade_index.get(monomial).ok_or(format!(
+                    "Expected monomial '{}' to exist in lookup",
+                    monomial_to_string(monomial, &generators)
+                ))?;
 
-    //             map.set(*basis_index, tensor_index, *coeff);
-    //         }
-    //     }
+            let map = coaction.get_mut(basis_grade).ok_or(format!("Expected a coaction to exist in dimension {basis_grade}. For the element {:?}, {:?}", monomial, coaction_elements))?;
+            for (coeff, a, b) in coaction_elements {
+                let a_grade_index = monomial_to_grade_index.get(a).ok_or(format!(
+                    "Expected left monomial '{}' to exist when constructing coaction",
+                    monomial_to_string(a, &generators)
+                ))?;
+                let b_grade_index = monomial_to_grade_index.get(b).ok_or(format!(
+                    "Expected right monomial '{}' to exist when constructing coaction",
+                    monomial_to_string(b, &generators)
+                ))?;
+                let (_, tensor_index) = tensor.construct[&b_grade_index][&a_grade_index];
 
-    //     let mut coalg = kCoalgebra {
-    //         space: coalg_vector_space,
-    //         tensor: tensor,
-    //         coaction: GradedLinearMap::from(coaction),
-    //     };
+                map.set(*basis_index, tensor_index, *coeff);
+            }
+        }
 
-    //     coalg.set_primitives();
-    //     coalg.set_generator()?;
-    //     coalg.reduce();
+        let mut coalg = RCoalgebra {
+            space: coalg_module,
+            tensor: tensor,
+            coaction: GradedModuleMap {
+                maps: coaction
+            },
+        };
 
-    //     debug_assert!(Self::check_translator(&coalg, &basis_translate));
+        coalg.set_primitives();
+        coalg.set_generator()?;
+        // coalg.reduce();
 
-    //     Ok((coalg, basis_translate))
-    // }
+        debug_assert!(Self::check_translator(&coalg, &basis_translate));
+
+        Ok((coalg, basis_translate))
+    }
 }
 
 // Helper functions
 
-// type Monomial = Vec<usize>;
-// type HelperTensor<F> = Vec<(F, Monomial, Monomial)>;
+type Monomial = Vec<usize>;
+type HelperTensor<F> = Vec<(UniPolRing<F>, Monomial, Monomial)>;
+enum RelationType<FF : Field> {
+    Zero,
+    Equal(UniPolRing<FF>, Monomial)
+}
 
-// fn parse_name_exponent(el: &str) -> Result<(&str, usize), String> {
-//     let parts: Vec<&str> = el.split('^').collect();
-//     Ok(match parts.len() {
-//         1 => (parts[0].trim(), 1),
-//         2 => (
-//             parts[0].trim(),
-//             parts[1].parse::<usize>().map_err(|_| {
-//                 format!(
-//                     "Invalid exponent '{}' in monomial element '{}'",
-//                     parts[1], el
-//                 )
-//             })?,
-//         ),
-//         _ => {
-//             return Err(format!(
-//                 "Invalid monomial format '{}' - expected 'name' or 'name^exponent'",
-//                 el
-//             ))
-//         }
-//     })
-// }
 
-// fn parse_monomial(
-//     name: &str,
-//     generator_translate: &HashMap<String, usize>,
-//     size: usize,
-// ) -> Result<Monomial, String> {
-//     let mut mon = vec![0; size];
-//     for el in name.split(',') {
-//         let (name, expo) = parse_name_exponent(el)?;
-//         if name == "1" {
-//             continue;
-//         }
-//         let index = *generator_translate.get(name).ok_or(format!(
-//             "Generator '{}' not found in monomial '{}'",
-//             name, name
-//         ))?;
-//         mon[index] = expo;
-//     }
-//     Ok(mon)
-// }
+fn parse_name_exponent(el: &str) -> Result<(&str, usize), String> {
+    let parts: Vec<&str> = el.split('^').collect();
+    Ok(match parts.len() {
+        1 => (parts[0].trim(), 1),
+        2 => (
+            parts[0].trim(),
+            parts[1].parse::<usize>().map_err(|_| {
+                format!(
+                    "Invalid exponent '{}' in monomial element '{}'",
+                    parts[1], el
+                )
+            })?,
+        ),
+        _ => {
+            return Err(format!(
+                "Invalid monomial format '{}' - expected 'name' or 'name^exponent'",
+                el
+            ))
+        }
+    })
+}
 
-// // monomial opertations
-// fn increment_monomial(m: &Monomial, index: usize) -> Monomial {
-//     let mut new_monomial = m.clone();
-//     new_monomial[index] += 1;
-//     new_monomial
-// }
+fn parse_monomial(
+    name: &str,
+    generator_translate: &HashMap<String, usize>,
+    size: usize,
+) -> Result<Monomial, String> {
+    let mut mon = vec![0; size];
+    for el in name.split(',') {
+        let (name, expo) = parse_name_exponent(el)?;
+        if name == "1" {
+            continue;
+        }
+        let index = *generator_translate.get(name).ok_or(format!(
+            "Generator '{}' not found in monomial '{}'",
+            name, name
+        ))?;
+        mon[index] = expo;
+    }
+    Ok(mon)
+}
 
-// fn multiply_monomial_by_generator(
-//     m: &Monomial,
-//     index: usize,
-//     relations: &Vec<Monomial>,
-// ) -> Option<Monomial> {
-//     let new_monomial = increment_monomial(m, index);
-//     reduce_monomial(&new_monomial, relations)
-// }
+// monomial opertations
+fn increment_monomial(m: &Monomial, index: usize) -> Monomial {
+    let mut new_monomial = m.clone();
+    new_monomial[index] += 1;
+    new_monomial
+}
 
-// fn add_monomials(a: &Monomial, b: &Monomial) -> Monomial {
-//     a.iter().zip(b.iter()).map(|(x, y)| x + y).collect()
-// }
+fn multiply_monomial_by_generator<F: Field>(
+    m: &Monomial,
+    index: usize,
+    relations: &Vec<(Monomial, RelationType<F>)>,
+) -> Option<Monomial> {
+    let new_monomial = increment_monomial(m, index);
+    reduce_monomial(&new_monomial, relations)
+}
 
-// fn monomial_is_divisible(a: &Monomial, b: &Monomial) -> bool {
-//     a.iter().zip(b.iter()).all(|(x, y)| x >= y)
-// }
+fn add_monomials(a: &Monomial, b: &Monomial) -> Monomial {
+    a.iter().zip(b.iter()).map(|(x, y)| x + y).collect()
+}
 
-// fn reduce_monomial(m: &Monomial, relations: &Vec<Monomial>) -> Option<Monomial> {
-//     for relation in relations {
-//         if monomial_is_divisible(m, relation) {
-//             return None;
-//         }
-//     }
-//     Some(m.clone())
-// }
+fn monomial_is_divisible(a: &Monomial, b: &Monomial) -> bool {
+    a.iter().zip(b.iter()).all(|(x, y)| x >= y)
+}
 
-// fn monomial_to_grade<G: Grading>(m: &Monomial, generators: &Vec<(String, G)>) -> G {
-//     m.iter()
-//         .zip(generators.iter())
-//         .map(|(x, (_, g))| g.integer_multiplication(*x as i32))
-//         .sum::<G>()
-// }
+fn monomial_divide(a: &Monomial, b: &Monomial) -> Option<Monomial> {
+    let possible = a.iter().zip(b.iter()).all(|(x, y)| x >= y);
+    if possible {
+        Some(a.iter().zip(b.iter()).map(|(x, y)| x - y).collect())
+    } else {
+        None
+    }
+}
 
-// fn monomial_to_string<G: Grading>(m: &Monomial, generators: &Vec<(String, G)>) -> String {
-//     let generators = m
-//         .iter()
-//         .zip(generators.iter())
-//         .filter(|(x, _)| **x > 0)
-//         .map(|(x, (name, _))| {
-//             if *x == 1 {
-//                 name.clone()
-//             } else {
-//                 format!("{}^{}", name, x)
-//             }
-//         })
-//         .collect::<Vec<String>>();
-//     if generators.len() == 0 {
-//         "1".to_owned()
-//     } else {
-//         generators.join(",")
-//     }
-// }
+fn reduce_monomial<F: Field>(m: &Monomial, relations: &Vec<(Monomial, RelationType<F>)>) -> Option<Monomial> {
+    for (relation, _) in relations {
+        if monomial_is_divisible(m, relation) {
+            return None;
+        }
+    }
+    Some(m.clone())
+}
 
-// fn multiply_monomials(a: &Monomial, b: &Monomial, relations: &Vec<Monomial>) -> Option<Monomial> {
-//     let product = add_monomials(a, b);
-//     reduce_monomial(&product, relations)
-// }
+fn monomial_to_grade<G: Grading>(m: &Monomial, generators: &Vec<(String, G, UniGrading)>) -> (G, UniGrading) {
+    m.iter()
+        .zip(generators.iter())
+        .map(|(x, (_, g, e))| (g.integer_multiplication(*x as i32), e.integer_multiplication(*x as i32)))
+        .fold((G::zero(), UniGrading::zero()), |(i_g, i_e), (g,e)| (i_g + g, i_e + e))
+}
 
-// fn multiply_tensor_terms<F: Field>(
-//     a: &(F, Monomial, Monomial),
-//     b: &(F, Monomial, Monomial),
-//     relations: &Vec<Monomial>,
-// ) -> Option<(F, Monomial, Monomial)> {
-//     let (a_coeff, a_left, a_right) = a;
-//     let (b_coeff, b_left, b_right) = b;
+fn monomial_to_string<G: Grading>(m: &Monomial, generators: &Vec<(String, G, UniGrading)>) -> String {
+    let generators = m
+        .iter()
+        .zip(generators.iter())
+        .filter(|(x, _)| **x > 0)
+        .map(|(x, (name, _, _))| {
+            if *x == 1 {
+                name.clone()
+            } else {
+                format!("{}^{}", name, x)
+            }
+        })
+        .collect::<Vec<String>>();
+    if generators.len() == 0 {
+        "1".to_owned()
+    } else {
+        generators.join(",")
+    }
+}
 
-//     let left_product = multiply_monomials(a_left, b_left, relations)?;
-//     let right_product = multiply_monomials(a_right, b_right, relations)?;
+fn multiply_monomials<F: Field>(a: &Monomial, b: &Monomial, relations: &Vec<(Monomial, RelationType<F>)>) -> Option<(UniPolRing<F>, Monomial)> {
+    let product = add_monomials(a, b);
+    for (relation, el) in relations {
+        if let Some(new_mon) = monomial_divide(&product, relation) {
+            match el {
+                RelationType::Zero => return None,
+                RelationType::Equal(uni_pol_ring, items) => {
+                    return match multiply_monomials(&new_mon, items, relations) {
+                        Some((a,b)) => Some((a * *uni_pol_ring, b)),
+                        None => { None },
+                    };
+                },
+            }
+        }
+    }
+    Some((UniPolRing::one(), product.clone()))
+}
 
-//     let result_coeff = *a_coeff * *b_coeff;
-//     Some((result_coeff, left_product, right_product))
-// }
+fn multiply_tensor_terms<F: Field>(
+    a: &(UniPolRing<F>, Monomial, Monomial),
+    b: &(UniPolRing<F>, Monomial, Monomial),
+    relations: &Vec<(Monomial, RelationType<F>)>,
+) -> Option<(UniPolRing<F>, Monomial, Monomial)> {
+    let (a_coeff, a_left, a_right) = a;
+    let (b_coeff, b_left, b_right) = b;
 
-// fn multiply_coaction_elements<F: Field>(
-//     a: &HelperTensor<F>,
-//     b: &HelperTensor<F>,
-//     relations: &Vec<Monomial>,
-// ) -> HelperTensor<F> {
-//     let mut result: Vec<(F, Monomial, Monomial)> = vec![];
+    let (left_coeff, left_product) = multiply_monomials(a_left, b_left, relations)?;
+    let (right_coeff, right_product) = multiply_monomials(a_right, b_right, relations)?;
 
-//     for x in a {
-//         for y in b {
-//             if let Some(term) = multiply_tensor_terms(x, y, relations) {
-//                 let (coeff, left, right) = term;
-//                 if let Some(existing) = result
-//                     .iter_mut()
-//                     .find(|(_, l, r)| l == &left && r == &right)
-//                 {
-//                     existing.0 += coeff;
-//                 } else {
-//                     result.push((coeff, left, right));
-//                 }
-//             }
-//         }
-//     }
+    let result_coeff = *a_coeff * *b_coeff * left_coeff * right_coeff;
+    Some((result_coeff, left_product, right_product))
+}
 
-//     result.retain(|(coeff, _, _)| *coeff != F::zero());
-//     result
-// }
+fn multiply_coaction_elements<F: Field>(
+    a: &HelperTensor<F>,
+    b: &HelperTensor<F>,
+    relations: &Vec<(Monomial, RelationType<F>)>,
+) -> HelperTensor<F> {
+    let mut result: Vec<(UniPolRing<F>, Monomial, Monomial)> = vec![];
+
+    for x in a {
+        for y in b {
+            if let Some(term) = multiply_tensor_terms(x, y, relations) {
+                let (coeff, left, right) = term;
+                if let Some(existing) = result
+                    .iter_mut()
+                    .find(|(_, l, r)| l == &left && r == &right)
+                {
+                    existing.0 += coeff;
+                } else {
+                    result.push((coeff, left, right));
+                }
+            }
+        }
+    }
+
+    result.retain(|(coeff, _, _)| *coeff != UniPolRing::zero());
+    result
+}
 
 // // impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
 // //     pub fn parse(

@@ -1,5 +1,8 @@
 
+use std::{cmp::Ordering, ops::Neg};
+
 use ahash::HashMap;
+use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 
@@ -171,6 +174,8 @@ impl<G: Grading, F: Field> GradedModuleMap<G, F> {
             }
         }
 
+        // TODO ! check if powers are now too high
+        
         Self { 
             maps: compose 
         }
@@ -221,31 +226,75 @@ impl<G: Grading, F: Field> GradedModuleMap<G, F> {
                 },
             };
 
-        
-            let mut mat_relations = FlatMatrix::zero(mat.domain + codom_g.len(), mat.codomain);
-            for (y, (_, _, e)) in codom_g.iter().enumerate() {
-                match e {
-                    Some(power) => {
-                        mat_relations.set(mat.domain + y, y, UniPolRing(F::one().neg(), *power));
+            let sorted: Vec<_> = codom_g.iter().enumerate().sorted_by(|a, b|{
+                match a.1.2 {
+                    Some(pow) => {
+                        match b.1.2 {
+                            Some(b_pow) => {
+                                if pow < b_pow {
+                                    Ordering::Greater
+                                } else if pow == b_pow {
+                                    Ordering::Equal
+                                } else {
+                                    Ordering::Less
+                                }
+                            },
+                            None => {
+                                Ordering::Greater
+                            },
+                        } 
                     },
-                    None => {},
+                    None => {
+                        match b.1.2 {
+                            Some(_) => {
+                                Ordering::Less
+                            },
+                            None => {
+                                Ordering::Equal
+                            },
+                        }
+                    },
                 }
+            }).map(|x| (x.0, {
+                match x.1.2 {
+                    Some(pow) => {
+                        UniPolRing(F::one().neg(), pow)
+                    },
+                    None => {
+                        UniPolRing::zero()
+                    },
+                }})).collect();
+
+
+            let mut trans_map = FlatMatrix::zero(mat.codomain, mat.codomain);    
+            let mut trans_map_inv = FlatMatrix::zero(mat.codomain, mat.codomain);    
+            
+            for (target, (origin, _)) in sorted.iter().enumerate() {
+                trans_map.set(*origin, target, UniPolRing::one());
+                trans_map_inv.set(target, *origin, UniPolRing::one());
             }
 
-            for y in 0..mat.codomain {
-                let row = mat.get_row(y);
-                mat_relations.set_row(y, row);
+            let mut mat_relations = FlatMatrix::zero(mat.domain + codom_g.len(), mat.codomain);
+
+            // println!("{:?}", sorted);
+
+            // TODO : Optimize by considering less relations ? (i.e. the free k[t] modules)
+            for (target, (origin, el)) in sorted.clone().into_iter().enumerate() {
+                
+                mat_relations.set(mat.domain + target, target, el);
+                
+                let row = mat.get_row(origin);
+                mat_relations.set_row(target, row);
             }
+
              
             let (u, s, _, uinv, _) = mat_relations.full_snf();
 
 
-            println!("{:?}", g);
-            println!("{:?}{:?}{:?}{:?}", mat, mat_relations, u, s);
-
-            let mut module: Vec<(B, UniGrading, Option<usize>)> = (0..s.codomain).filter_map(|r| {
+            
+            let mut module: Vec<_> = (0..s.codomain).filter_map(|r| {
                 let el = s.get(r, r);
-
+                
                 if el.is_unit() { None }
                 else if !el.is_zero() {
                     // The grading is set correctly later !
@@ -255,7 +304,16 @@ impl<G: Grading, F: Field> GradedModuleMap<G, F> {
                     Some((B::default(), UniGrading(0), None))
                 }
             }).collect();
+
+            // println!("{:?}", g);
+            // println!("{:?}", trans_map);
+            // let v: Vec<_> = codom_g.iter().enumerate().map(|(id,x)| (id, x.2)).collect();
+            // println!("{:?}", sorted);
+            // let v_alt: Vec<_> = module.iter().enumerate().map(|(id,x)| (id, x.2)).collect();
+            // println!("{:?}", v_alt);
+            // println!("{:?}{:?}{:?}{:?}", mat, mat_relations, u, s);
         
+
             let mut g_map = FlatMatrix::zero(s.codomain, module.len());
             let mut g_inv_map = FlatMatrix::zero(module.len(), s.codomain);
 
@@ -268,10 +326,10 @@ impl<G: Grading, F: Field> GradedModuleMap<G, F> {
                 
                 for (id,el) in row.iter().enumerate() {
                     if el.is_unit() {
+                        // This is incorrect ??
                         module[coker_id].1 = codomain.0.get(&g).unwrap()[id].1; 
                     }
                 }
-
 
                 // This is correct!
                 // Note that our SNF is ordered, thus all units appear in the topleft
@@ -281,37 +339,165 @@ impl<G: Grading, F: Field> GradedModuleMap<G, F> {
             }
 
 
-            // TODO: MAKE SURE THE PIVOTS ARE ACTUALLY 1 INSTEAD OF JUST A UNIT
-            let pivots = g_map.extensive_pivots();
-            let mut g_inv_map = FlatMatrix::zero(g_map.codomain, g_map.domain);
+            let mut g_map = g_map.compose(&trans_map);
+            let mut g_inv_map = trans_map_inv.compose(&g_inv_map);
 
-
-            for (coker_id, &codom_id) in pivots.iter().enumerate() {
-                g_inv_map.set(coker_id, codom_id, UniPolRing::one());
-            }
-
+            // Reduce g_map, (if something maps to t^k which is zero in some thing, set it to zero)
             for coker_id in 0..g_map.codomain {
                 if let Some(power) = module[coker_id].2 {
-                    for codom_id in 0..g_map.codomain {
+                    for codom_id in 0..g_map.domain {
                         let el = g_map.get(codom_id, coker_id);
                         if el.1 >= power && !el.is_zero() {
                             g_map.set(codom_id, coker_id, UniPolRing::zero());
                         }
-                    
                     }
                 }
             }
 
-            println!("{:?}{:?}", g_map, g_inv_map);
+            // Reduce g_map, (if something maps to t^k which is zero in some thing, set it to zero)
+            for codom_id in 0..g_inv_map.codomain {
+                if let Some(power) = codom_g[codom_id].2 {
+                    for coker_id in 0..g_inv_map.domain {
+                        let el = g_inv_map.get(coker_id, codom_id);
+                        if el.1 >= power && !el.is_zero() {
+                            g_inv_map.set(coker_id, codom_id, UniPolRing::zero());
+                        }
+                    }
+                }
+            }
+
+
+            for coker_id in 0..module.len() {
+                for y in 0..g_map.domain {
+                    if g_map.get(y, coker_id).is_unit() {
+                        module[coker_id].1 = codomain.0.get(&g).unwrap()[y].1; 
+                    }
+                }
+            }
+
+            // println!("{:?}", codom_g);
+            // println!("{:?}", module);
+
+            // let mut divide_in_chunks = vec![];
+            // let mut count = 0;
+            // let mut latest = Some(0);
+            // for el in &module {
+            //     if el.2 == latest {
+            //         count += 1;
+            //     } else {
+            //         divide_in_chunks.push(count);
+            //         count = 1;
+            //         latest = el.2
+            //     }
+            // }
+            // divide_in_chunks.push(count);
+
+
+            // println!("{:?}", divide_in_chunks);
+            // println!("{:?}", g_map);
+
+            // let mut total = 0;
+            // for a in divide_in_chunks {
+            //     if a > 1 {
+            //         let mut possible = vec![true; g_map.domain];
+            //         'outer : for codom in 0..g_map.domain {
+            //             for coker_id in 0..total {
+            //                 if !g_map.get(codom, coker_id).is_zero() {
+            //                     possible[codom] = false;
+            //                     continue 'outer; 
+            //                 }
+            //             }
+                        
+            //             for coker_id in total+a..g_map.codomain {
+            //                 if !g_map.get(codom, coker_id).is_zero() {
+            //                     possible[codom] = false;
+            //                     continue 'outer; 
+            //                 }
+            //             }
+            //         }
+            //         let count = possible.iter().fold(0, |x, y| if *y { x + 1} else { x });
+            //         println!("{:?}", possible);
+            //         println!("{count}");
+            //         let k: Vec<_> = module.iter().map(|x| x.2).enumerate().collect();
+            //         println!("{:?}", k);
+            //         println!("{:?}", g_map);
+                    
+            //         let mut fixed_pivots = vec![];
+            //         if count < a { 
+            //             println!("OH NO, NO POSSIBLE PIVOTS HERE :("); 
+            //         };
+
+            //         for (codom_id, a) in possible.iter().enumerate() {
+            //             if *a {
+            //                 for coker_id in 0..g_map.codomain {
+            //                     if !fixed_pivots.contains(&coker_id) {
+            //                         let el = g_map.get(codom_id, coker_id);
+            //                         if let Some(inv) = el.try_inverse() {
+            //                             g_map.multiply_row(coker_id, inv);
+            //                             // This iterator can be with less items ?
+            //                             for alt_coker_id in (0..coker_id).chain((coker_id+1)..g_map.codomain) {
+            //                                 // Should check if ot_el is invertible ?
+            //                                 let ot_el = g_map.get(codom_id, alt_coker_id);
+            //                                 if !ot_el.is_zero() {
+            //                                     g_map.add_row_multiple(alt_coker_id, coker_id, ot_el.neg());
+            //                                 }
+            //                             }
+            //                             fixed_pivots.push(coker_id);
+            //                             break;
+            //                         }
+            //                     }
+            //                 }
+                            
+            //                 // println!("{:?}", g_map);
+            //             }
+            //         }
+            //         if count < a { 
+            //             println!("{:?}", g_map);
+
+            //             panic!("OH NO, NO POSSIBLE PIVOTS HERE :(") };
+
+            //     }
+            //     total += a;
+            // }
+
+
+            // println!("{:?}", g);
             
+
+            // TODO: MAKE SURE THE PIVOTS ARE ACTUALLY 1 INSTEAD OF JUST A UNIT
+            // let g_inv_map = g_map.extensive_pivots();
+            // let mut g_inv_map = FlatMatrix::zero(g_map.codomain, g_map.domain);
+
+
+            // for (coker_id, &codom_id) in pivots.iter().enumerate() {
+            //     g_inv_map.set(coker_id, codom_id, UniPolRing::one());
+            // }
+
+
+            // println!("{:?}{:?}", g_map, g_inv_map);
+            
+            if cfg!(debug_assertions) {
+                let mut comp = g_map.compose(&g_inv_map);
+                for (y, (_,_,power)) in module.iter().enumerate() {
+                    match power {
+                        Some(power) => {
+                            for x in 0..comp.domain() {
+                                let el = comp.get(x, y);
+                                if !el.is_zero() {
+                                    if el.1 >= *power {
+                                        comp.set(x,y,UniPolRing::zero());
+                                    }
+                                } 
+                            }
+                        },
+                        None => {},
+                    }
+                }
+                comp.is_unit().unwrap();
+            }
 
             if module.len() > 0 {
                 coker.insert(g, module);
-            }
-
-            if cfg!(debug_assertions) {
-                let comp = g_map.compose(&g_inv_map);
-                comp.is_unit().unwrap();
             }
 
             coker_map.insert(g, g_map);
@@ -360,7 +546,7 @@ impl<G: Grading, F: Field> GradedModuleMap<G, F> {
         let (_, s, v, _, _) = new_map.full_snf();
 
         let mut possible_id = None;
-        let mut possible_pow = usize::MAX;
+        let mut possible_pow = u16::MAX;
 
         // first verify if the i'th vector in s is in the kernel.
         // And if it is check that vector is non zero
@@ -416,5 +602,4 @@ impl<G: Grading, F: Field> GradedModuleMap<G, F> {
             None => None,
         }
     }
-
 }

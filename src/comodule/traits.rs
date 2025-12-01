@@ -9,7 +9,7 @@ pub trait Comodule<G: Grading>: Sized {
     type Element: BasisElement;
     type Coalgebra;
     type Morphism: ComoduleMorphism<G, Self> + Clone;
-
+    type BaseRing: std::fmt::Debug + Clone;
     type Generator;
 
     fn zero_comodule(coalgebra: Arc<Self::Coalgebra>) -> Self;
@@ -29,7 +29,6 @@ pub trait ComoduleMorphism<G: Grading, M: Comodule<G>> {
     fn inject_codomain_to_cofree(&self, limit: G) -> Self 
     where
         G: OrderedGrading; // Question: Shouldn't 'codomain' be 'cokernel'/'comodule'?
-
     fn zero_morphism(comodule: Arc<M>) -> Self;
 
     // domain l == codomain r, l \circ r
@@ -41,6 +40,6 @@ pub trait ComoduleMorphism<G: Grading, M: Comodule<G>> {
     /// in a specific morphism we only need to know its gen_index
     /// in the resolution we add the s
     /// (from_dot, to_dot, value, line_type)
-    fn get_structure_lines(&self) -> Vec<(usize, usize, usize, String)>;
+    fn get_structure_lines(&self) -> Vec<(usize, usize, M::BaseRing, String)>;
 }
 

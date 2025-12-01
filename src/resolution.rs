@@ -11,8 +11,8 @@ use crate::{
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Resolution<G: OrderedGrading, M: Comodule<G>> {
-    comodule: Arc<M>,
-    resolution: Vec<M::Morphism>,
+    pub comodule: Arc<M>,
+    pub resolution: Vec<M::Morphism>,
     _grading: PhantomData<G>,
 }
 
@@ -33,7 +33,7 @@ impl<G: OrderedGrading, M: Comodule<G>> Resolution<G, M> {
             
             let initial_inject = zero_morph.inject_codomain_to_cofree(limit);
             
-            self.resolution.push(M::Morphism::compose(&zero_morph, &initial_inject));
+            self.resolution.push(M::Morphism::compose(&initial_inject, &zero_morph));
             last_morph = initial_inject;
         }
         
@@ -73,7 +73,7 @@ impl<G: OrderedGrading, M: Comodule<G>> Resolution<G, M> {
 
             let initial_inject = zero_morph.inject_codomain_to_cofree(limit);
         
-            self.resolution.push(M::Morphism::compose(&zero_morph, &initial_inject));
+            self.resolution.push(M::Morphism::compose(&initial_inject, &zero_morph));
             last_morph = initial_inject;
         }
 
@@ -137,7 +137,7 @@ impl<G: OrderedGrading, M: Comodule<G>> Resolution<G, M> {
                 let g = x.get_structure_lines();
                 g.into_iter()
                     .map(move |(from_gen, to_gen, value, prim_type)| {
-                        ((s - 1, from_gen), (s, to_gen), value, prim_type)
+                        ((s - 1, from_gen), (s, to_gen), format!("{:?}", value), prim_type)
                     })
             })
             .sorted_by_key(|f| (f.0, f.1))

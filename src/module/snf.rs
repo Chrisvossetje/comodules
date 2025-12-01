@@ -19,7 +19,7 @@ impl<R: ValuationRing> SmithNormalForm<R> for FlatMatrix<R> {
         let mut u = Self::identity(self.codomain());
         let mut v = Self::identity(self.domain());
 
-        let mut u_inv_actions = vec![];
+        let mut u_inv_actions: Vec<Action<R>> = vec![];
         let mut v_inv_actions = vec![];
         
         let m = s.codomain();
@@ -32,8 +32,8 @@ impl<R: ValuationRing> SmithNormalForm<R> for FlatMatrix<R> {
             // Find element in (sub)matrix which divides all others
             let mut candidate = (r,r);
             let mut candidate_val = s.get(r, r); 
-            for x in r..n {
-                for y in r..m {
+            for y in r..m {
+                for x in r..n {
                     let el = s.get(x, y);
                     if !candidate_val.divides(&el) {
                         candidate_val = el;
@@ -56,7 +56,6 @@ impl<R: ValuationRing> SmithNormalForm<R> for FlatMatrix<R> {
             v_inv_actions.push(Action::Swap(r, candidate.0));
 
 
-            println!("{:?}", u);
             
             let pivot = candidate_val;
 
@@ -69,13 +68,11 @@ impl<R: ValuationRing> SmithNormalForm<R> for FlatMatrix<R> {
                     u.add_row_multiple(k, r, factor);
                     u_inv_actions.push(Action::Add(k,r,factor));
                     s.add_row_multiple(k, r, factor);
-
-                    println!("{:?}", u);
                 }
             }
 
             // reduce columns next to (r,r)
-            for l in (r + 1)..n {
+            for l in (r+1)..s.domain {
                 let entry = s.get(l, r);
                 if !entry.is_zero() {
                     let factor = -entry.unsafe_divide(pivot);
@@ -85,7 +82,28 @@ impl<R: ValuationRing> SmithNormalForm<R> for FlatMatrix<R> {
                 }
             }
         }
+        
+        // // println!("NEW");
+        // // println!("{:?}", s);
+        
+        // for r in (0..min_r) {
+        //     let pivot = s.get(r, r);
+        //     if !pivot.is_zero() {
+        //         // row reduce
+        //         for codom in (r+1)..s.codomain {
+        //             let entry = s.get(r, codom);
+        //             if !entry.is_zero() {
+        //                 let factor = -entry.unsafe_divide(pivot);
+                        
+        //                 u.add_row_multiple(codom, r, factor);
+        //                 u_inv_actions.push(Action::Add(codom,r,factor));
+        //                 s.add_row_multiple(codom, r, factor);
+        //             }
+        //         }
+        //     }
+        // }
 
+        // println!("{:?}", s);
         
         // construct u and v inverse
         let mut u_inv = Self::identity(self.codomain());
@@ -118,7 +136,7 @@ impl<R: ValuationRing> SmithNormalForm<R> for FlatMatrix<R> {
 
 // TODO: THIS CAN BE REMOVED / IMPROVED TO WORK WITH PID's
 // PROBABLY ONLY RELEVANT FOR THE PID Z (the integers) (or maybe a generic k[x])
-// k[x,y] will require a different method (groebner :( )
+// k[x,y] will require a different method (groebner :(, maybe not tho !)
 
 // impl<F: Field> SmithNormalForm<UniPolRing<F>> for FlatMatrix<UniPolRing<F>> {    
 //     fn snf(&self) -> (Self, Self, Self) 
