@@ -40,6 +40,6 @@ pub trait ComoduleMorphism<G: Grading, M: Comodule<G>> {
     /// in a specific morphism we only need to know its gen_index
     /// in the resolution we add the s
     /// (from_dot, to_dot, value, line_type)
-    fn get_structure_lines(&self) -> Vec<(usize, usize, M::BaseRing, String)>;
+    fn get_structure_lines(&self) -> Vec<((usize, G, usize), (usize, G, usize), M::BaseRing, String)>;
 }
 

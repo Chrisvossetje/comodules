@@ -15,10 +15,10 @@ mod tests {
         let mut g = FlatMatrix::zero(1, 1);
 
         let mut n = Module::new();
-        n.push((fake_el.clone(), UniGrading(0), None));
+        n.push((fake_el.clone(), UniGrading(3), None));
         
         let mut q = Module::new();
-        q.push((fake_el.clone(), UniGrading(0), None));
+        q.push((fake_el.clone(), UniGrading(3), None));
 
 
 
@@ -30,6 +30,7 @@ mod tests {
 
         assert_eq!(cohom.len(), 1);
         assert_eq!(cohom[0].2, None);
+        assert_eq!(cohom[0].1, UniGrading(3));
     }
 
     #[test]
@@ -104,10 +105,10 @@ mod tests {
         let mut g = FlatMatrix::zero(1, 1);
 
         let mut n = Module::new();
-        n.push((fake_el.clone(), UniGrading(0), Some(1)));
+        n.push((fake_el.clone(), UniGrading(4), Some(1)));
         
         let mut q = Module::new();
-        q.push((fake_el.clone(), UniGrading(0), Some(1)));
+        q.push((fake_el.clone(), UniGrading(4), Some(1)));
 
 
         f.set(0, 0, UniPolRing::<F2>::zero());
@@ -118,6 +119,7 @@ mod tests {
 
         assert_eq!(cohom.len(), 1);
         assert_eq!(cohom[0].2, Some(1));
+        assert_eq!(cohom[0].1, UniGrading(4));
     }
 
     #[test]
@@ -192,8 +194,8 @@ mod tests {
         let mut g = FlatMatrix::zero(2, 1);
 
         let mut n = Module::new();
-        n.push((fake_el.clone(), UniGrading(0), None));
-        n.push((fake_el.clone(), UniGrading(0), None));
+        n.push((fake_el.clone(), UniGrading(2), None));
+        n.push((fake_el.clone(), UniGrading(5), None));
         
         let mut q = Module::new();
         q.push((fake_el.clone(), UniGrading(0), None));
@@ -209,6 +211,8 @@ mod tests {
         assert_eq!(cohom.len(), 2);
         assert_eq!(cohom[0].2, None);
         assert_eq!(cohom[1].2, None);
+        assert_eq!(cohom[0].1, UniGrading(2));
+        assert_eq!(cohom[1].1, UniGrading(5));
     }
 
     #[test]
@@ -220,10 +224,10 @@ mod tests {
             generated_index: 0,
         };
 
-        let mut f = FlatMatrix::<UniPolRing<F2>>::zero(1, 0);
-        let mut g = FlatMatrix::<UniPolRing<F2>>::zero(0, 1);
+        let f = FlatMatrix::<UniPolRing<F2>>::zero(1, 0);
+        let g = FlatMatrix::<UniPolRing<F2>>::zero(0, 1);
 
-        let mut n = Module::new();
+        let n = Module::new();
         
         let mut q = Module::new();
         q.push((fake_el.clone(), UniGrading(0), None));
@@ -242,11 +246,11 @@ mod tests {
             generated_index: 0,
         };
 
-        let mut f = FlatMatrix::<UniPolRing<F2>>::zero(0, 1);
-        let mut g = FlatMatrix::<UniPolRing<F2>>::zero(1, 1);
+        let f = FlatMatrix::<UniPolRing<F2>>::zero(0, 1);
+        let g = FlatMatrix::<UniPolRing<F2>>::zero(1, 1);
 
         let mut n = Module::new();
-        n.push((fake_el.clone(), UniGrading(0), None));
+        n.push((fake_el.clone(), UniGrading(10), None));
         
         let mut q = Module::new();
         q.push((fake_el.clone(), UniGrading(0), None));
@@ -255,6 +259,7 @@ mod tests {
 
         assert_eq!(cohom.len(), 1);
         assert_eq!(cohom[0].2, None);
+        assert_eq!(cohom[0].1, UniGrading(10));
     }
 
     #[test]
@@ -266,18 +271,20 @@ mod tests {
             generated_index: 0,
         };
 
-        let mut f = FlatMatrix::<UniPolRing<F2>>::zero(1, 1);
-        let mut g = FlatMatrix::<UniPolRing<F2>>::zero(1, 0);
+        let f = FlatMatrix::<UniPolRing<F2>>::zero(1, 1);
+        let g = FlatMatrix::<UniPolRing<F2>>::zero(1, 0);
 
         let mut n = Module::new();
-        n.push((fake_el.clone(), UniGrading(0), None));
+        n.push((fake_el.clone(), UniGrading(4), None));
         
-        let mut q = Module::new();
+        let q = Module::new();
 
         let (cohom, _) = cohomology(&f, &g, &n, &q);
 
         assert_eq!(cohom.len(), 1);
         assert_eq!(cohom[0].2, None);
+        assert_eq!(cohom[0].1, UniGrading(4));
+        
     }
 
     #[test]
@@ -290,7 +297,7 @@ mod tests {
         };
 
         let mut f = FlatMatrix::<UniPolRing<F2>>::zero(1, 1);
-        let mut g = FlatMatrix::<UniPolRing<F2>>::zero(1, 0);
+        let g = FlatMatrix::<UniPolRing<F2>>::zero(1, 0);
 
         f.set(0, 0, UniPolRing::<F2>::one());
 
@@ -298,7 +305,7 @@ mod tests {
         let mut n = Module::new();
         n.push((fake_el.clone(), UniGrading(0), None));
         
-        let mut q = Module::new();
+        let q = Module::new();
 
         let (cohom, _) = cohomology(&f, &g, &n, &q);
 
@@ -315,7 +322,7 @@ mod tests {
         };
 
         let mut f = FlatMatrix::<UniPolRing<F2>>::zero(2, 1);
-        let mut g = FlatMatrix::<UniPolRing<F2>>::zero(1, 0);
+        let g = FlatMatrix::<UniPolRing<F2>>::zero(1, 0);
 
         f.set(1, 0, UniPolRing::<F2>::one());
 
@@ -323,7 +330,7 @@ mod tests {
         let mut n = Module::new();
         n.push((fake_el.clone(), UniGrading(0), Some(1)));
         
-        let mut q = Module::new();
+        let q = Module::new();
 
         let (cohom, _) = cohomology(&f, &g, &n, &q);
 
@@ -339,17 +346,18 @@ mod tests {
             generated_index: 0,
         };
 
-        let mut f = FlatMatrix::<UniPolRing<F2>>::zero(0, 1);
-        let mut g = FlatMatrix::<UniPolRing<F2>>::zero(1, 0);
+        let f = FlatMatrix::<UniPolRing<F2>>::zero(0, 1);
+        let g = FlatMatrix::<UniPolRing<F2>>::zero(1, 0);
 
         let mut n = Module::new();
-        n.push((fake_el.clone(), UniGrading(0), Some(1)));
+        n.push((fake_el.clone(), UniGrading(8), Some(1)));
         
-        let mut q = Module::new();
+        let q = Module::new();
 
         let (cohom, _) = cohomology(&f, &g, &n, &q);
 
         assert_eq!(cohom.len(), 1);
         assert_eq!(cohom[0].2, Some(1));
+        assert_eq!(cohom[0].1, UniGrading(8));
     }
 }

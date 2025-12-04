@@ -5,7 +5,7 @@ use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
-    basiselement::kBasisElement, comodule::{rcomodule::RComodule, traits::{Comodule, ComoduleMorphism}}, grading::{Grading, OrderedGrading}, linalg::{field::Field, flat_matrix::FlatMatrix, graded::BasisIndex, matrix::RModMorphism, ring::{CRing, UniPolRing}}, module::{morphism::GradedModuleMap}, tensor::Tensor
+    basiselement::kBasisElement, comodule::{rcomodule::RComodule, traits::{Comodule, ComoduleMorphism}}, grading::{Grading, OrderedGrading, UniGrading}, linalg::{field::Field, flat_matrix::FlatMatrix, graded::BasisIndex, matrix::RModMorphism, ring::{CRing, UniPolRing}}, module::morphism::GradedModuleMap, tensor::Tensor
 };
 
 
@@ -273,7 +273,8 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, RComodule<G,F>>
         self.codomain.clone()
     }
 
-    fn get_structure_lines(&self) -> Vec<(usize, usize, UniPolRing<F>, String)> {
+    // (generated index , Grade , real index )
+    fn get_structure_lines(&self) -> Vec<((usize, G, usize), (usize, G, usize), UniPolRing<F>, String)> {
         let mut lines = vec![];
 
         for (gr, gr_map) in self.map.maps.iter() {
@@ -285,9 +286,27 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, RComodule<G,F>>
                             let t_el = &self.codomain.space.0.get(gr).expect("As codomain of the map is non-zero this vector space should contain an element in this grade.")[t_id];
                             if t_el.0.generator {
                                 if !gr_map.get(el_id, t_id).is_zero() {
+                                    let s_gen_id = els[el_id].0.generated_index;
+                                    // find source generator
+                                    let (s_gr, s_id) = {
+                                        let mut a = None;
+                                        'outer: for (gr, module) in &self.domain.space.0 {
+                                            for (id,el) in module.iter().enumerate() {
+                                                if el.0.generator && el.0.generated_index == s_gen_id {
+                                                    a = Some((*gr, id));
+                                                    break 'outer;
+                                                }
+                                            }
+                                        }
+                                        match a {
+                                            Some(b) => b,
+                                            None => {panic!()},
+                                        }
+                                    };
+
                                     lines.push((
-                                        els[el_id].0.generated_index,
-                                        t_el.0.generated_index,
+                                        (s_gen_id, s_gr, s_id),
+                                        (t_el.0.generated_index, *gr, t_id),
                                         gr_map.get(el_id, t_id),
                                         "h_".to_string() + &prim_id.to_string(),
                                     ));

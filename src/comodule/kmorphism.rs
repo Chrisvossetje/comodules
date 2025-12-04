@@ -301,7 +301,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
         Self::new(domain, codomain, map)
     }
 
-    fn get_structure_lines(&self) -> Vec<(usize, usize, F, String)> {
+    fn get_structure_lines(&self) -> Vec<((usize, G, usize), (usize, G, usize), F, String)> {
         let mut lines = vec![];
 
         for (gr, gr_map) in self.map.maps.iter() {
@@ -314,8 +314,9 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                             if t_el.generator {
                                 if !gr_map.get(el_id, t_id).is_zero() {
                                     lines.push((
-                                        els[el_id].generated_index,
-                                        t_el.generated_index,
+                                        // TODO 
+                                        (els[el_id].generated_index, G::zero(), 0),
+                                        (t_el.generated_index, G::zero(), 0),
                                         gr_map.get(el_id, t_id),
                                         "h_".to_string() + &prim_id.to_string(),
                                     ));

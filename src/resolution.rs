@@ -137,7 +137,7 @@ impl<G: OrderedGrading, M: Comodule<G>> Resolution<G, M> {
                 let g = x.get_structure_lines();
                 g.into_iter()
                     .map(move |(from_gen, to_gen, value, prim_type)| {
-                        ((s - 1, from_gen), (s, to_gen), format!("{:?}", value), prim_type)
+                        ((s - 1, from_gen.0), (s, to_gen.0), format!("{:?}", value), prim_type)
                     })
             })
             .sorted_by_key(|f| (f.0, f.1))

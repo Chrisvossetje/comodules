@@ -317,13 +317,6 @@ pub fn cohomology<F: Field, B: BasisElement>(f: &Map<F>, g: &Map<F>, n: &Module<
     let (u_real_ker,s_real_ker,_) = real_g_ker.snf();
     let mut Y = u_real_ker.compose(&f);
     
-
-    // // TODO : Find module structure of this codomain :(
-    // let v = vec![];
-    // for i in 0..u_real_ker.domain {
-
-    // }
-
     // reduce(Y, codomain);
     
     println!("u_real_ker:\n{:?}s_real_ker:\n{:?}Y:\n{:?}", u_real_ker,s_real_ker, Y);
@@ -361,26 +354,39 @@ pub fn cohomology<F: Field, B: BasisElement>(f: &Map<F>, g: &Map<F>, n: &Module<
     for r in 0..sol_s.codomain {
         let el = sol_s.get(r, r);
         if !el.is_unit() {
-            if el.is_zero() {
-                // TODO : UNIGRADING
-                module.push((B::default(), UniGrading(0), None));
-                columns.push(sol_uinv.get_column(r));
-            } else {
-                let power = el.1;
-                module.push((B::default(), UniGrading(0), Some(power)));
-                columns.push(sol_uinv.get_column(r));
+            let structure = {
+                if el.is_zero() { None } else { Some(el.1) }
+            };
+            let col = sol_uinv.get_column(r);
+
+            let mut grade = UniGrading::infty();
+            for c in 0..col.len() {
+                if !col[c].is_zero() {
+                    let gr = real_ker_module_structure[c].1;
+                    grade = gr - (UniGrading(col[c].1 as i32));
+                    break;
+                }
             }
+
+            if cfg!(debug_assertions) {
+                if grade == UniGrading::infty() {
+                    panic!("THIS CAN NOT HAPPEN :(")
+                }
+            }
+
+            module.push((B::default(), grade, structure));
+            columns.push(col);
         }
     }
     
-    let mut module_original = FlatMatrix::zero(module.len(), real_g_ker.domain);
+    let mut cohom_to_ker = FlatMatrix::zero(module.len(), real_g_ker.domain);
     for (id, column) in columns.into_iter().enumerate() {
-        module_original.set_column(id, &column[..]);
+        cohom_to_ker.set_column(id, &column[..]);
     }
 
-    let original = trans_map_inv.compose(&real_g_ker.compose(&sol_uinv));
+    let ker_to_n = trans_map_inv.compose(&real_g_ker);
 
-    println!("original:\n{:?}", original);
+    println!("ker_to_n:\n{:?}\n\nker_to_cohom:\n{:?}", ker_to_n, cohom_to_ker);
 
-    (module, original)
+    (module, ker_to_n.compose(&cohom_to_ker))
 }
