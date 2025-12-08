@@ -3,12 +3,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    basiselement::BasisElement,
-    grading::Grading,
-    linalg::{
-        graded::{BasisIndex, GradedVectorSpace},
-    },
-    module::module::GradedModule,
+    basiselement::BasisElement, graded_module::GradedModule, graded_space::{BasisIndex, GradedVectorSpace}, grading::Grading
 };
 
 pub type TensorConstruct<G> =
@@ -46,7 +41,7 @@ impl<G: Grading, B: BasisElement> ObjectGenerator<G> for GradedVectorSpace<G, B>
     }
     
     fn sorted_els(&self,) -> Vec<(G, usize)> {
-        self.0.iter().sorted_by_key(|(&g, _)| g).map(|(&g, l)| (g,l.len())).collect()
+        self.0.iter().sorted_by_key(|(g, _)| **g).map(|(&g, l)| (g,l.len())).collect()
     }
 }
 
@@ -60,7 +55,7 @@ impl<G: Grading, B: BasisElement> ObjectGenerator<G> for GradedModule<G, B> {
     }
     
     fn sorted_els(&self,) -> Vec<(G, usize)> {
-        self.0.iter().sorted_by_key(|(&g, _)| g).map(|(&g, l)| (g,l.len())).collect()
+        self.0.iter().sorted_by_key(|(g, _)| **g).map(|(&g, l)| (g,l.len())).collect()
     }
 }
 

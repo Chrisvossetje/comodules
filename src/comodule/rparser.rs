@@ -1,11 +1,10 @@
 
 use ahash::HashMap;
+use algebra::{field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::univariate_polynomial_ring::UniPolRing};
 use itertools::Itertools;
 
 use crate::{
-    basiselement::kBasisElement, comodule::rcomodule::RCoalgebra, grading::{Grading, OrderedGrading, Parse, UniGrading}, linalg::{
-        field::Field, flat_matrix::FlatMatrix, graded::BasisIndex, matrix::RModMorphism, ring::{CRing, UniPolRing}
-    }, module::{module::GradedModule, morphism::GradedModuleMap}, tensor::Tensor
+    basiselement::kBasisElement, comodule::rcomodule::RCoalgebra, graded_module::GradedModule, graded_module_morphism::GradedModuleMap, graded_space::BasisIndex, grading::{Grading, OrderedGrading, Parse, UniGrading}, tensor::Tensor
 };
 
 

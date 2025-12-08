@@ -1,0 +1,23 @@
+[package]
+name = "algebra"
+version = "0.1.0"
+edition = "2024"
+description = "A supporting library for doing algebra with modules over k and k[t] primarily designed for use with the comodules library. Note that the polynomial rings here are all graded rings, meaning the element `1+t` does not `really` exist."
+authors = ["Chris Vos <chris@bitfox.nl>", "Jacco Hijmans"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/chrisvossetje/comodules" 
+
+[profile.profile]
+inherits = "release" # Inherit settings from the release profile
+debug = true         # Enable debug symbols
+strip = "none"
+
+[lib]
+name = "algebra"
+
+[dependencies]
+serde =  { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde-wasm-bindgen = "0.6.5"
+itertools = "0.13.0"

@@ -3,21 +3,12 @@ mod tests {
     use std::sync::Arc;
 
     use ahash::HashMap;
+    use algebra::{field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, rings::{finite_fields::{F2, Fp}, univariate_polynomial_ring::UniPolRing}};
 
     use crate::{
-        basiselement::kBasisElement,
-        comodule::{
+        basiselement::kBasisElement, comodule::{
             kcoalgebra::kCoalgebra, rcoalgebra::{A0_C, A1_C, tensor_k_coalgebra}, rcomodule::{RCoalgebra, RComodule}, traits::Comodule
-        },
-        grading::{BiGrading, Grading, UniGrading},
-        linalg::{
-            field::{F2, Field, Fp},
-            flat_matrix::FlatMatrix,
-            matrix::RModMorphism,
-            ring::UniPolRing,
-        },
-        module::{module::GradedModule, morphism::GradedModuleMap},
-        tensor::Tensor,
+        }, graded_module::GradedModule, graded_module_morphism::GradedModuleMap, grading::{BiGrading, Grading, UniGrading}, tensor::Tensor
     };
 
     /// Helper function to create a simple test RCoalgebra

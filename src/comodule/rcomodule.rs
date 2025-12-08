@@ -1,16 +1,12 @@
 use std::{sync::Arc};
 use ahash::HashMap;
+use algebra::{field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::univariate_polynomial_ring::UniPolRing};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     basiselement::kBasisElement, comodule::{
         rmorphism::RComoduleMorphism, traits::Comodule,
-    }, grading::{Grading, UniGrading}, helper::{hashmap_add_restrict, hashmap_add_restrict_transform}, linalg::{
-        field::Field,
-        flat_matrix::FlatMatrix,
-        matrix::RModMorphism,
-        ring::{CRing, UniPolRing},
-    }, module::{module::GradedModule, morphism::GradedModuleMap}, tensor::Tensor
+    }, graded_module::GradedModule, graded_module_morphism::GradedModuleMap, grading::{Grading, UniGrading}, helper::{hashmap_add_restrict, hashmap_add_restrict_transform}, tensor::Tensor
 };
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -36,10 +32,10 @@ impl<G: Grading, F: Field> RComodule<G, F> {
         }
 
         for (g,m) in &self.coaction.maps {
-            if m.domain != self.space.dimension_in_grade(&g) { 
+            if m.domain() != self.space.dimension_in_grade(&g) { 
                 return Err("Coaction domain does not have correct size".to_owned()) 
             };
-            if m.codomain != self.tensor.get_dimension(&g) { 
+            if m.codomain() != self.tensor.get_dimension(&g) { 
                 return Err("Coaction explanation does not have correct size".to_owned()) 
             };
         }
@@ -187,8 +183,8 @@ impl<G: Grading, F: Field> Comodule<G> for RComodule<G, F> {
         let coact_maps = match generator.1 {
             Some(power) => {
                 hashmap_add_restrict_transform(&coalgebra.coaction.maps, grade, limit, |mut map| {
-                for x in 0..map.domain {
-                    for y in 0..map.codomain {
+                for x in 0..map.domain() {
+                    for y in 0..map.codomain() {
                         let el = map.get(x, y);
                         if el.1 >= power { // WTF ??
                             map.set(x, y, UniPolRing::zero());

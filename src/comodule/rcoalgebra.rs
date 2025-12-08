@@ -1,14 +1,8 @@
+use algebra::{field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::{finite_fields::F2, univariate_polynomial_ring::UniPolRing}};
 use itertools::Itertools;
 
 use crate::{
-    basiselement::kBasisElement,
-    comodule::{kcoalgebra::kCoalgebra, rcomodule::RCoalgebra},
-    grading::{Grading, UniGrading},
-    linalg::{
-        field::{F2, Field}, flat_matrix::FlatMatrix, matrix::RModMorphism, ring::{CRing, UniPolRing}
-    },
-    module::{module::GradedModule, morphism::GradedModuleMap},
-    tensor::Tensor,
+    basiselement::kBasisElement, comodule::{kcoalgebra::kCoalgebra, rcomodule::RCoalgebra}, graded_module::GradedModule, graded_module_morphism::GradedModuleMap, grading::{Grading, UniGrading}, tensor::Tensor
 };
 
 
@@ -97,23 +91,22 @@ pub fn A0_C() -> RCoalgebra<UniGrading, F2> {
 
     let tensor = Tensor::generate(&space, &space);
 
+    let mut first_mat = FlatMatrix::zero(1, 1);
+    first_mat.set(0, 0, UniPolRing::<F2>::one());
+
+    let mut second_mat = FlatMatrix::zero(1, 2);
+    second_mat.set(0, 0, UniPolRing::<F2>::one());
+    second_mat.set(0, 1, UniPolRing::<F2>::one());
+
     let mut coaction = GradedModuleMap::default();
     coaction.maps.insert(
         UniGrading(0),
-        FlatMatrix {
-            data: vec![UniPolRing(F2::one(), 0)],
-            domain: 1,
-            codomain: 1,
-        },
+        first_mat
     );
 
     coaction.maps.insert(
         UniGrading(1),
-        FlatMatrix {
-            data: vec![UniPolRing(F2::one(), 0), UniPolRing(F2::one(), 0)],
-            domain: 1,
-            codomain: 2,
-        },
+        second_mat
     );
 
     RCoalgebra {
@@ -141,9 +134,9 @@ pub fn tensor_k_coalgebra(
         .collect();
 
     let coaction_maps = coaction.maps.into_iter().map(|(gr, m)| {        
-        let mut new_m = FlatMatrix::zero(m.domain, m.codomain);
-        for x in 0..m.domain {
-            for y in 0..m.codomain {
+        let mut new_m = FlatMatrix::zero(m.domain(), m.codomain());
+        for x in 0..m.domain() {
+            for y in 0..m.codomain() {
                 let el = m.get(x, y);
                 new_m.set(x, y, UniPolRing(el, 0));
             }

@@ -1,13 +1,11 @@
 #[cfg(test)]
 mod tests {
+    use algebra::{matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::finite_fields::{F2, Fp}};
     use itertools::Itertools;
 
     use crate::{
         comodule::kcoalgebra::{A0_coalgebra, kCoalgebra},
         grading::{Grading, UniGrading},
-        linalg::{
-            field::{F2, Fp}, flat_matrix::FlatMatrix, ring::CRing
-        },
     };
 
     #[test]
@@ -72,12 +70,12 @@ mod tests {
         for grade in kcoalg_direct.tensor.dimensions.keys() {
             assert_eq!(
                 (
-                    kcoalg_direct.coaction.maps[grade].domain,
-                    kcoalg_direct.coaction.maps[grade].codomain
+                    kcoalg_direct.coaction.maps[grade].domain(),
+                    kcoalg_direct.coaction.maps[grade].codomain()
                 ),
                 (
-                    kcoalg_poly.coaction.maps[grade].domain,
-                    kcoalg_poly.coaction.maps[grade].codomain
+                    kcoalg_poly.coaction.maps[grade].domain(),
+                    kcoalg_poly.coaction.maps[grade].codomain()
                 ),
                 "Mismatched dimensions, grade: {}",
                 grade

@@ -1,16 +1,11 @@
 use std::{ops::AddAssign, sync::Arc};
 
 use ahash::HashMap;
+use algebra::{field::Field, matrix::Matrix};
 use itertools::Itertools;
 
 use crate::{
-    basiselement::kBasisElement,
-    grading::{Grading, OrderedGrading},
-    linalg::{
-        field::Field,
-        graded::{BasisIndex, GradedLinearMap, GradedVectorSpace},
-        matrix::Matrix,
-    }, tensor::Tensor,
+    basiselement::kBasisElement, graded_space::{BasisIndex, GradedLinearMap, GradedVectorSpace}, grading::{Grading, OrderedGrading}, tensor::Tensor
 };
 
 use super::{

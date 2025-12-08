@@ -3,6 +3,7 @@ mod tests {
     use std::{sync::Arc};
 
     use ahash::HashMap;
+    use algebra::{matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::finite_fields::F2};
 
     use crate::{
         comodule::{
@@ -10,11 +11,7 @@ mod tests {
             kcomodule::kComodule,
             kmorphism::kComoduleMorphism,
             traits::{Comodule, ComoduleMorphism},
-        },
-        grading::{Grading, UniGrading},
-        linalg::{
-            field::F2, flat_matrix::FlatMatrix, graded::{GradedLinearMap, GradedVectorSpace}, matrix::RModMorphism, ring::CRing
-        },
+        }, graded_space::{GradedLinearMap, GradedVectorSpace}, grading::{Grading, UniGrading}
     };
 
     #[test]

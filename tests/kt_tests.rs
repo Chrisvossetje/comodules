@@ -3,10 +3,11 @@ mod tests {
     use std::sync::Arc;
 
     use ahash::HashMap;
+    use algebra::{abelian::Abelian, field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, rings::{finite_fields::F2, univariate_polynomial_ring::UniPolRing}};
     use comodules::{
-        basiselement::{BasisElement, kBasisElement}, comodule::{
+        basiselement::kBasisElement, comodule::{
             kcoalgebra::{A0_coalgebra, kCoalgebra}, rcoalgebra::{A0_C, tensor_k_coalgebra}, rcomodule::{RCoalgebra, RComodule}, traits::Comodule
-        }, export::{Page, SSeq}, grading::{Grading, UniGrading}, linalg::{field::{F2, Field}, flat_matrix::FlatMatrix, matrix::RModMorphism, ring::UniPolRing}, module::module::cohomology, resolution::Resolution
+        }, export::{Page, SSeq}, grading::{Grading, UniGrading}, resolution::Resolution
     };
     use itertools::Itertools;
 
@@ -130,12 +131,10 @@ mod tests {
                 let n = n_full.get(gr).unwrap_or(&empty);
                 let q = q_full.get(gr).unwrap_or(&empty); 
 
-                let (cohom, _) = cohomology(f, g, n, q);
+                let (_, cohom) = FlatMatrix::cohomology(f, g, &n.iter().map(|x| x.2).collect(), &q.iter().map(|x| x.2).collect());
 
                 for b in cohom {
-                    let l = format!("{:?} | {:?}", b.2, b.1);
-                    // let thing = Some((b.0.generated_index, *k, Some(s)));
-
+                    let l = format!("{:?}", b);
                 
                     println!("{:?}", l);
                     gens.push((s, count, gr.export_grade(), Some(l)));
@@ -202,12 +201,10 @@ mod tests {
                 let n = n_full.get(gr).unwrap_or(&empty);
                 let q = q_full.get(gr).unwrap_or(&empty); 
 
-                let (cohom, _) = cohomology(f, g, n, q);
+                let (_, cohom) = FlatMatrix::cohomology(f, g, &n.iter().map(|x| x.2).collect(), &q.iter().map(|x| x.2).collect());
 
                 for b in cohom {
-                    let l = format!("{:?} | {:?}", b.2, b.1);
-                    // let thing = Some((b.0.generated_index, *k, Some(s)));
-
+                    let l = format!("{:?}", b);
                 
                     println!("{:?}", l);
                     gens.push((s, count, gr.export_grade(), Some(l)));
@@ -244,7 +241,7 @@ mod tests {
     #[test]
     fn test_a2_c_parser() {
         let input = include_str!("../examples/polynomial/A(2)_C.txt");
-        let coalgebra = RCoalgebra::<UniGrading, F2>::parse(input, UniGrading::infty() - UniGrading(30)).unwrap().0; 
+        let coalgebra = RCoalgebra::<UniGrading, F2>::parse(input, UniGrading(20)).unwrap().0; 
     
         let coalgebra = Arc::new(coalgebra);
 
@@ -252,7 +249,7 @@ mod tests {
 
         let mut res = Resolution::new(kt);
 
-        res.resolve_to_s_with_print(10, UniGrading(30));
+        res.resolve_to_s_with_print(10, UniGrading(20));
 
         let ccpx = to_cochain_cpx(res);
 
@@ -274,13 +271,12 @@ mod tests {
                 let n = n_full.get(gr).unwrap_or(&empty);
                 let q = q_full.get(gr).unwrap_or(&empty); 
 
-                let (cohom, _) = cohomology(f, g, n, q);
+                let (_, cohom) = FlatMatrix::cohomology(f, g, &n.iter().map(|x| x.2).collect(), &q.iter().map(|x| x.2).collect());
 
                 for b in cohom {
-                    let l = format!("{:?} | {:?}", b.2, b.1);
-                    // let thing = Some((b.0.generated_index, *k, Some(s)));
+                    let l = format!("{:?}", b);
 
-                    if b.2.is_some() {
+                    if b.is_some() {
                         continue;
                     }
                     println!("{:?}", l);
@@ -366,7 +362,7 @@ mod tests {
         let mut codomains = vec![];
 
         // res.resolution[0].domain;
-        for (id,a) in res.resolution.iter().enumerate() {
+        for (_, a) in res.resolution.iter().enumerate() {
 
             let mut gr_map = HashMap::default();
             let mut gr_codom = HashMap::default();
@@ -393,8 +389,8 @@ mod tests {
     
                 let mut new_map = FlatMatrix::zero(new_domain.len(), new_codomain.len());
     
-                for x in 0..new_map.domain {
-                    for y in 0..new_map.codomain {
+                for x in 0..new_map.domain() {
+                    for y in 0..new_map.codomain() {
                         let original_x = new_domain[x].0;
                         let original_y = new_codomain[y].0;
                         let val = map.get(original_x, original_y);

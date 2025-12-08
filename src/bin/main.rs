@@ -2,15 +2,18 @@ use std::sync::Arc;
 
 use std::time::Instant;
 use ahash::HashMap;
+use algebra::abelian::Abelian;
+use algebra::field::Field;
+use algebra::matrices::flat_matrix::FlatMatrix;
+use algebra::matrix::Matrix;
+use algebra::ring::CRing;
+use algebra::rings::finite_fields::F2;
+use algebra::rings::univariate_polynomial_ring::UniPolRing;
 use comodules::basiselement::kBasisElement;
 use comodules::comodule::traits::ComoduleMorphism;
 use comodules::grading::Grading;
-use comodules::linalg::field::Field;
-use comodules::linalg::matrix::RModMorphism;
-use comodules::linalg::ring::{CRing, UniPolRing};
-use comodules::module::module::cohomology;
 use comodules::{
-    comodule::{kcoalgebra::kCoalgebra, kcomodule::kComodule, rcomodule::{RCoalgebra, RComodule}, traits::Comodule}, export::{Page, SSeq}, grading::UniGrading, linalg::{field::F2, flat_matrix::FlatMatrix}, resolution::Resolution
+    comodule::{rcomodule::{RCoalgebra, RComodule}, traits::Comodule}, export::{Page, SSeq}, grading::UniGrading, resolution::Resolution
 };
 use itertools::Itertools;
 
@@ -19,8 +22,7 @@ fn to_cochain_cpx<F: Field>(res: Resolution<UniGrading, RComodule<UniGrading, F>
     let mut maps = vec![];
     let mut codomains = vec![];
 
-    // res.resolution[0].domain;
-    for (id,a) in res.resolution.iter().enumerate() {
+    for (_, a) in res.resolution.iter().enumerate() {
 
         let mut gr_map = HashMap::default();
         let mut gr_codom = HashMap::default();
@@ -47,8 +49,8 @@ fn to_cochain_cpx<F: Field>(res: Resolution<UniGrading, RComodule<UniGrading, F>
 
             let mut new_map = FlatMatrix::zero(new_domain.len(), new_codomain.len());
 
-            for x in 0..new_map.domain {
-                for y in 0..new_map.codomain {
+            for x in 0..new_map.domain() {
+                for y in 0..new_map.codomain() {
                     let original_x = new_domain[x].0;
                     let original_y = new_codomain[y].0;
                     let val = map.get(original_x, original_y);
@@ -121,12 +123,13 @@ fn main() {
             let n = n_full.get(gr).unwrap_or(&empty);
             let q = q_full.get(gr).unwrap_or(&empty); 
 
-            let (cohom, cohom_to_n) = cohomology(f, g, &n.iter().map(|x| x.0.clone()).collect(),  &q.iter().map(|x| x.0.clone()).collect());
+            let (cohom_to_n, cohom) = FlatMatrix::cohomology(f, g, &n.iter().map(|x| x.0.2).collect(),  &q.iter().map(|x| x.0.2).collect());
 
             let mut cohom_plus = vec![];
             
             for b in &cohom {
-                let l = format!("{:?} | {:?}", b.2, b.1);
+                // TODO: deduce second grading somehow ???
+                let l = format!("{:?}", b);
                 // let thing = Some((b.0.generated_index, *k, Some(s)));
                 
                 cohom_plus.push((b.clone(), count));
@@ -173,8 +176,8 @@ fn main() {
                                 if target_el.1 == target_orig_id {
                                     // Now we found an element in the target n 
                                     let (cohom_target_n, target_cohom_to_n) = &map[&(target.0, target_gr)];
-                                    assert_eq!(target_full.len(), target_cohom_to_n.codomain);
-                                    assert_eq!(cohom_target_n.len(), target_cohom_to_n.domain);
+                                    assert_eq!(target_full.len(), target_cohom_to_n.codomain());
+                                    assert_eq!(cohom_target_n.len(), target_cohom_to_n.domain());
 
                                     println!("target_cohom_to_n:\n{:?}\n\n cohom_target:{:?}", target_cohom_to_n, cohom_target_n);
                                     
@@ -183,7 +186,7 @@ fn main() {
                                         let val2 = target_cohom_to_n.get(target_cohom_id, target_id);
                                         if !val2.is_zero() {
                                             let total_val = val * val2 * *map_value;
-                                            if let Some(power) = cohom_target_n[target_cohom_id].0.2 {
+                                            if let Some(power) = cohom_target_n[target_cohom_id].0 {
                                                 if total_val.1 >= power {
                                                     continue;
                                                 }

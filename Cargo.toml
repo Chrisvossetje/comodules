@@ -1,7 +1,7 @@
 [package]
 name = "comodules"
 version = "0.1.9"
-edition = "2021"
+edition = "2024"
 description = "A library for calculating Ext for coalgebra and comodules. Also does Finite Field linear algebra."
 authors = ["Chris Vos", "Jacco Hijmans"]
 license = "MIT"
@@ -28,3 +28,4 @@ itertools = "0.13.0"
 rayon = "1.10"
 ahash = "0.8.11"
 getrandom = { version = "0.2", features = ["js"] }
+algebra = { path = "./crates/algebra" }

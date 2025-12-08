@@ -3,18 +3,15 @@ mod tests {
     use std::sync::Arc;
 
     use ahash::HashMap;
+    use algebra::{field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, rings::finite_fields::{F2, Fp}};
 
     use crate::{
-        comodule::{
+        basiselement::kBasisElement, comodule::{
             rcomodule::{RCoalgebra, RComodule},
             rmorphism::RComoduleMorphism,
             traits::{Comodule, ComoduleMorphism},
-        },
-        grading::{BiGrading, Grading, UniGrading},
-        linalg::{
-            field::{F2, Field, Fp},
-            matrix::RModMorphism,
-        }, module::morphism::GradedModuleMap,
+        }, graded_module::GradedModule, graded_module_morphism::GradedModuleMap, grading::{BiGrading, Grading, UniGrading}
+
     };
 
     // Test 1: Test RComoduleMorphism structure and basic properties
@@ -33,7 +30,7 @@ mod tests {
         
         // Map should be empty or zero
         assert!(zero_morph.map.maps.is_empty() || 
-                zero_morph.map.maps.values().all(|m| m.domain == 0 || m.codomain == 0));
+                zero_morph.map.maps.values().all(|m| m.domain() == 0 || m.codomain() == 0));
     }
 
     // Test 3: Test composition method 
@@ -137,7 +134,7 @@ mod tests {
     // Helper functions
     fn create_simple_coalgebra<F: Field>() -> RCoalgebra<BiGrading, F> {
         let zero = BiGrading::zero();
-        let el = crate::basiselement::kBasisElement {
+        let el = kBasisElement {
             name: "1".to_string(),
             generator: false,
             primitive: None,
@@ -145,9 +142,9 @@ mod tests {
         };
 
         let space_map = [(zero, vec![(el, UniGrading(0), None)])].into_iter().collect();
-        let space = crate::module::module::GradedModule(space_map);
+        let space = GradedModule(space_map);
 
-        let coact_map = [(zero, crate::linalg::flat_matrix::FlatMatrix::identity(1))].into_iter().collect();
+        let coact_map = [(zero, FlatMatrix::identity(1))].into_iter().collect();
         let mut domain_explain = HashMap::default();
         domain_explain.insert(zero, vec![((zero, 0), 0)]);
         let mut codomain_explain = HashMap::default();

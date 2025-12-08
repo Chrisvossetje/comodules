@@ -3,19 +3,14 @@ mod tests {
     use std::{sync::Arc};
 
     use ahash::HashMap;
+    use algebra::{matrices::flat_matrix::FlatMatrix, matrix::Matrix, rings::finite_fields::{F2, Fp}};
 
     use crate::{
-        basiselement::kBasisElement,
-        comodule::{
-            kcoalgebra::{kCoalgebra, A0_coalgebra},
+        basiselement::kBasisElement, comodule::{
+            kcoalgebra::{A0_coalgebra, kCoalgebra},
             kcomodule::kComodule,
             traits::Comodule,
-        },
-        grading::{Grading, UniGrading},
-        linalg::{
-            field::{Fp, F2}, flat_matrix::FlatMatrix, graded::{GradedLinearMap, GradedVectorSpace}, matrix::RModMorphism
-        },
-        resolution::Resolution, tensor::Tensor,
+        }, graded_space::{GradedLinearMap, GradedVectorSpace}, grading::{Grading, UniGrading}, resolution::Resolution, tensor::Tensor
     };
 
     // Test for kComodule::zero_comodule

@@ -1,13 +1,10 @@
 use ahash::HashMap;
+use algebra::{field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::finite_fields::F2};
 use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
-    basiselement::kBasisElement,
-    grading::{Grading, UniGrading},
-    linalg::{
-        field::{F2, Field}, flat_matrix::FlatMatrix, graded::{GradedLinearMap, GradedVectorSpace}, matrix::Matrix, ring::CRing
-    }, tensor::Tensor
+    basiselement::kBasisElement, graded_space::{GradedLinearMap, GradedVectorSpace}, grading::{Grading, UniGrading}, tensor::Tensor
 };
 
 use serde::{Deserialize, Serialize};
@@ -115,22 +112,22 @@ pub fn A0_coalgebra() -> kCoalgebra<UniGrading, F2, FlatMatrix<F2>> {
         dimensions,
     };
 
+    let mut first_mat = FlatMatrix::zero(1, 1);
+    first_mat.set(0, 0, F2::one());
+
+    let mut second_mat = FlatMatrix::zero(1, 2);
+    second_mat.set(0, 0, F2::one());
+    second_mat.set(0, 1, F2::one());
+
+
     let mut coaction = GradedLinearMap::empty();
     coaction.maps.insert(
         UniGrading(0),
-        FlatMatrix {
-            data: vec![F2::one()],
-            domain: 1,
-            codomain: 1,
-        },
+        first_mat
     );
     coaction.maps.insert(
         UniGrading(1),
-        FlatMatrix {
-            data: vec![F2::one(),F2::one()],
-            domain: 1,
-            codomain: 2,
-        },
+        second_mat
     );
 
     kCoalgebra {

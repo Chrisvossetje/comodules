@@ -1,17 +1,12 @@
 use std::{sync::Arc};
 
 use ahash::HashMap;
+use algebra::{abelian::Abelian, field::Field, matrix::Matrix};
 use itertools::Itertools;
 use rayon::prelude::*;
 
 use crate::{
-    basiselement::kBasisElement,
-    grading::{Grading, OrderedGrading},
-    linalg::{
-        field::Field,
-        graded::{BasisIndex, GradedLinearMap},
-        matrix::Matrix,
-    }, tensor::Tensor,
+    basiselement::kBasisElement, graded_space::{BasisIndex, GradedLinearMap}, grading::{Grading, OrderedGrading}, tensor::Tensor
 };
 
 use super::{
@@ -70,7 +65,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComoduleMorphism<G, F, M> {
     }
 }
 
-impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
+impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kComodule<G, F, M>>
     for kComoduleMorphism<G, F, M>
 {
     fn cokernel(&self) -> Self {
@@ -183,12 +178,12 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                     .maps
                     .get(&grade)
                     .expect("This should exist")
-                    .kernel();
+                    .kernel_generators(&M::Module::default(), &M::Module::default());
 
-                match kernel.first_non_zero_entry() {
+                match kernel.first() {
                     Some(loc) => {
                         prev_grade = grade_id;
-                        pivot = Some((loc, grade));
+                        pivot = Some((*loc, grade));
                         break;
                     }
                     None => {}
@@ -205,7 +200,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
                 .codomain
                 .tensor
                 .construct
-                .get(&(pivot_grade, pivot.1))
+                .get(&(pivot_grade, pivot))
                 .expect("The tensor should exist on the codomain in this grade");
 
             let coalg_space = &self.codomain.coalgebra.space;
@@ -296,7 +291,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> ComoduleMorphism<G, kComodule<G, F, M>>
         let codomain = l.codomain.clone();
         let domain = r.domain.clone();
 
-        let map = l.map.compose(&r.map);
+        let map = GradedLinearMap::<G, F, M>::compose(&l.map, &r.map);
 
         Self::new(domain, codomain, map)
     }

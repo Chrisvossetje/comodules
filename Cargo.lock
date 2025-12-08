@@ -16,6 +16,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "algebra"
+version = "0.1.0"
+dependencies = [
+ "itertools",
+ "serde",
+ "serde-wasm-bindgen",
+ "serde_json",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -32,6 +42,7 @@ name = "comodules"
 version = "0.1.9"
 dependencies = [
  "ahash",
+ "algebra",
  "getrandom",
  "itertools",
  "rayon",
