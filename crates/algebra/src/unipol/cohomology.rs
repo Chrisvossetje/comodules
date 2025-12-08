@@ -14,12 +14,12 @@ pub(super) fn internal_cohomology<F: Field>(f: &UniPolMap<F>, g: &UniPolMap<F>, 
         }
     }
 
-    println!("f:\n{:?}g:\n{:?}n: {:?}\nq: {:?}\n", f, g, n,q);
+    // println!("f:\n{:?}g:\n{:?}n: {:?}\nq: {:?}\n", f, g, n,q);
 
     let (new_f,new_g, new_n, new_q, trans_map_inv) = order_maps(f, g, n, q);
     let (f,g,n,q) = (&new_f, &new_g, &new_n, &new_q);
     
-    println!("f:\n{:?}g:\n{:?}n: {:?}\nq: {:?}\n", f, g, n,q);
+    // println!("f:\n{:?}g:\n{:?}n: {:?}\nq: {:?}\n", f, g, n,q);
 
 
     let new_domain = g.domain + g.codomain;
@@ -47,7 +47,7 @@ pub(super) fn internal_cohomology<F: Field>(f: &UniPolMap<F>, g: &UniPolMap<F>, 
         }
     }
 
-    println!("g_aug:\n{:?}s_aug:\n{:?}v_aug:\n{:?}", g_aug, s_aug, v_aug);
+    // println!("g_aug:\n{:?}s_aug:\n{:?}v_aug:\n{:?}", g_aug, s_aug, v_aug);
 
     let g_ker_size = s_aug.domain - start_zeros;
     let mut g_ker = FlatMatrix::zero(g_ker_size, g.domain);
@@ -76,7 +76,7 @@ pub(super) fn internal_cohomology<F: Field>(f: &UniPolMap<F>, g: &UniPolMap<F>, 
         non_zero_els += 1;
     }
 
-    println!("s_ker:\n{:?}uinv_ker:\n{:?}v_ker:\n{:?}", s_ker, uinv_ker, v_ker);
+    // println!("s_ker:\n{:?}uinv_ker:\n{:?}v_ker:\n{:?}", s_ker, uinv_ker, v_ker);
     
 
     let mut vecs = vec![];
@@ -155,7 +155,7 @@ pub(super) fn internal_cohomology<F: Field>(f: &UniPolMap<F>, g: &UniPolMap<F>, 
         }
     }
 
-    println!("real_ker_module: {:?}\n\n", real_ker_module_structure);
+    // println!("real_ker_module: {:?}\n\n", real_ker_module_structure);
     
     let (u_real_ker,s_real_ker,_) = real_g_ker.snf();
     let f_in_kernel = u_real_ker.compose(&f);
@@ -190,7 +190,7 @@ pub(super) fn internal_cohomology<F: Field>(f: &UniPolMap<F>, g: &UniPolMap<F>, 
     
     let (_,sol_s,_, sol_uinv, _) = sol.full_snf();
 
-    println!("sol_s:\n{:?}sol_uinv:\n{:?}sol:\n{:?}", sol_s, sol_uinv, sol);
+    // println!("sol_s:\n{:?}sol_uinv:\n{:?}sol:\n{:?}", sol_s, sol_uinv, sol);
 
     let mut module = Vec::default();
     let mut columns = vec![];
@@ -214,7 +214,7 @@ pub(super) fn internal_cohomology<F: Field>(f: &UniPolMap<F>, g: &UniPolMap<F>, 
 
     let ker_to_n = trans_map_inv.compose(&real_g_ker);
 
-    println!("ker_to_n:\n{:?}\n\nker_to_cohom:\n{:?}", ker_to_n, cohom_to_ker);
+    // println!("ker_to_n:\n{:?}\n\nker_to_cohom:\n{:?}", ker_to_n, cohom_to_ker);
 
     (ker_to_n.compose(&cohom_to_ker), module)
 }
