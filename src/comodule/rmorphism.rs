@@ -161,81 +161,77 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, RComodule<G,F>>
 
         for pivot_grade in grades {
             // Get lowest graded pivot element
-            loop {
-                let map = growing_map.maps.get(&pivot_grade).unwrap();
-                let empty = vec![];
-                let domain: Vec<_> = self.codomain.space.0.get(&pivot_grade).unwrap_or(&empty).iter().map(|x| x.2).collect();
-                let codomain: Vec<_> = growing_comodule.space.0.get(&pivot_grade).unwrap_or(&empty).iter().map(|x| x.2).collect(); 
-                
-                let l = map.kernel_generators(&domain, &codomain);
-                if let Some(pivot) = l.first() {
-                    let (_, tau_shift, generator_power) = self.codomain.space.0.get(&pivot_grade).unwrap().get(*pivot).unwrap();
-    
-                    let alg_to_tens = self
-                        .codomain
-                        .tensor
-                        .construct
-                        .get(&(pivot_grade, *pivot))
-                        .expect("The tensor should exist on the codomain in this grade");
-    
-                    let coalg_space = &self.codomain.coalgebra.space;
-    
-                    let cofree_map: HashMap<G,FlatMatrix<_>> = coalg_space.0.iter().filter_map(|(alg_gr, alg_gr_space)| {
-                        let t_gr = *alg_gr + pivot_grade;
-    
-                        if t_gr > fixed_limit {
-                            return None;
-                        }
-    
-                        let codomain_len = self.codomain.space.dimension_in_grade(&t_gr);
-                        let coalg_len = alg_gr_space.len();
-    
-                        if !alg_to_tens.contains_key(&(*alg_gr, 0)) {
-                            let zero_map = FlatMatrix::zero(codomain_len, coalg_len);
-                            return Some((t_gr, zero_map));
-                        };
-    
-                        let mut map = FlatMatrix::zero(codomain_len, coalg_len);
-    
-                        for a_id in 0..coalg_len {
-                            let (t_gr, t_id) = alg_to_tens.get(&(*alg_gr,a_id)).expect("This BasisIndex should exist on the tensor object in the to inject comodule");
-                            let slice = self
-                                .codomain
-                                .coaction
-                                .maps
-                                .get(t_gr)
-                                .expect("This grade should exist on the coaction of the injecting comodule")
-                                .get_row(*t_id);
-                            map.set_row(a_id, slice);
-                        }
-    
-                        Some((t_gr, map))
-                    }).collect();
-    
-                    let mut f = RComodule::cofree_comodule(
-                        self.codomain.coalgebra.clone(),
-                        iteration,
-                        pivot_grade,
-                        fixed_limit,
-                        (*tau_shift, *generator_power)
-                    );
-    
-                    let mut extend_map = GradedModuleMap {
-                        maps: cofree_map,
-                    };
-    
-                    growing_comodule.direct_sum(&mut f);
-                    growing_map.vstack(&mut extend_map);
-    
-                    if cfg!(debug_assertions) {
-                        growing_map.verify(&self.codomain.space, &growing_comodule.space).unwrap();
+            let map = growing_map.maps.get(&pivot_grade).unwrap();
+            let empty = vec![];
+            let domain: Vec<_> = self.codomain.space.0.get(&pivot_grade).unwrap_or(&empty).iter().map(|x| x.2).collect();
+            let codomain: Vec<_> = growing_comodule.space.0.get(&pivot_grade).unwrap_or(&empty).iter().map(|x| x.2).collect(); 
+            
+            let l = map.kernel_generators(&domain, &codomain);
+            for pivot in l {
+                let (_, tau_shift, generator_power) = self.codomain.space.0.get(&pivot_grade).unwrap().get(pivot).unwrap();
+
+                let alg_to_tens = self
+                    .codomain
+                    .tensor
+                    .construct
+                    .get(&(pivot_grade, pivot))
+                    .expect("The tensor should exist on the codomain in this grade");
+
+                let coalg_space = &self.codomain.coalgebra.space;
+
+                let cofree_map: HashMap<G,FlatMatrix<_>> = coalg_space.0.iter().filter_map(|(alg_gr, alg_gr_space)| {
+                    let t_gr = *alg_gr + pivot_grade;
+
+                    if t_gr > fixed_limit {
+                        return None;
                     }
-    
-                    iteration += 1;                
-                } else {
-                    break;
+
+                    let codomain_len = self.codomain.space.dimension_in_grade(&t_gr);
+                    let coalg_len = alg_gr_space.len();
+
+                    if !alg_to_tens.contains_key(&(*alg_gr, 0)) {
+                        let zero_map = FlatMatrix::zero(codomain_len, coalg_len);
+                        return Some((t_gr, zero_map));
+                    };
+
+                    let mut map = FlatMatrix::zero(codomain_len, coalg_len);
+
+                    for a_id in 0..coalg_len {
+                        let (t_gr, t_id) = alg_to_tens.get(&(*alg_gr,a_id)).expect("This BasisIndex should exist on the tensor object in the to inject comodule");
+                        let slice = self
+                            .codomain
+                            .coaction
+                            .maps
+                            .get(t_gr)
+                            .expect("This grade should exist on the coaction of the injecting comodule")
+                            .get_row(*t_id);
+                        map.set_row(a_id, slice);
+                    }
+
+                    Some((t_gr, map))
+                }).collect();
+
+                let mut f = RComodule::cofree_comodule(
+                    self.codomain.coalgebra.clone(),
+                    iteration,
+                    pivot_grade,
+                    fixed_limit,
+                    (*tau_shift, *generator_power)
+                );
+
+                let mut extend_map = GradedModuleMap {
+                    maps: cofree_map,
+                };
+
+                growing_comodule.direct_sum(&mut f);
+                growing_map.vstack(&mut extend_map);
+
+                if cfg!(debug_assertions) {
+                    growing_map.verify(&self.codomain.space, &growing_comodule.space).unwrap();
                 }
-            }
+
+                iteration += 1;                
+            } 
         }
 
         Self {

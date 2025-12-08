@@ -241,7 +241,7 @@ mod tests {
     #[test]
     fn test_a2_c_parser() {
         let input = include_str!("../examples/polynomial/A(2)_C.txt");
-        let coalgebra = RCoalgebra::<UniGrading, F2>::parse(input, UniGrading(20)).unwrap().0; 
+        let coalgebra = RCoalgebra::<UniGrading, F2>::parse(input, UniGrading(30)).unwrap().0; 
     
         let coalgebra = Arc::new(coalgebra);
 
@@ -249,7 +249,7 @@ mod tests {
 
         let mut res = Resolution::new(kt);
 
-        res.resolve_to_s_with_print(10, UniGrading(20));
+        res.resolve_to_s_with_print(10, UniGrading(30));
 
         let ccpx = to_cochain_cpx(res);
 
