@@ -18,7 +18,7 @@ mod tests {
 
         // HASHMAPS are NOT deterministic SO DON'T COMPARE
         // as construct and deconstruct are dependent on insertion order
-        assert_eq!(kcoalg.tensor.dimensions, A0_coalgebra().tensor.dimensions);
+        assert_eq!(kcoalg.tensor, A0_coalgebra().tensor);
         assert_eq!(kcoalg.space, A0_coalgebra().space);
     }
 
@@ -67,7 +67,7 @@ mod tests {
         let (kcoalg_poly, _) =
             kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input_poly, UniGrading::infty() - UniGrading(10)).unwrap();
 
-        for grade in kcoalg_direct.tensor.dimensions.keys() {
+        for grade in kcoalg_direct.tensor.keys() {
             assert_eq!(
                 (
                     kcoalg_direct.coaction.maps[grade].domain(),

@@ -6,7 +6,7 @@ use itertools::Itertools;
 use rayon::prelude::*;
 
 use crate::{
-    basiselement::kBasisElement, graded_space::{BasisIndex, GradedLinearMap}, grading::{Grading, OrderedGrading}, tensor::TensorMap
+    basiselement::kBasisElement, graded_space::{BasisIndex, GradedLinearMap}, grading::{Grading, OrderedGrading}, tensor::{tensor_list_find_tensor_id, tensor_list_generate}
 };
 
 use super::{
@@ -74,33 +74,34 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kComodule<G, F, M>
         let coker_space = cokernel_map.codomain_space(kBasisElement::default());
 
         let coalg = self.codomain.coalgebra.as_ref();
-        let tensor = TensorMap::generate(&coalg.space, &coker_space);
-
+        let tensor = tensor_list_generate(&coalg.space, &coker_space);
         let pivots = cokernel_map.pivots();
 
         // The upcoming should be a "solve commutative square thingy ?"
 
         let m_lut: HashMap<BasisIndex<G>, Vec<(usize, F)>> = self
             .codomain
-            .tensor
-            .construct
+            .space.0
             .par_iter()
-            .map(|((f_gr, f_id), _)| {
-                // Transfer a specific codomain grade and id (f_gr, f_id) to a list of elements which it maps to in the cokernel
-                let v = (0..cokernel_map
-                    .maps
-                    .get(f_gr)
-                    .map(|map| map.codomain())
-                    .unwrap_or(0))
-                    .filter_map(|q_index| {
-                        let val = cokernel_map.maps.get(f_gr).unwrap().get(*f_id, q_index);
-                        match val.is_zero() {
-                            true => None,
-                            false => Some((q_index, val)),
-                        }
-                    })
-                    .collect();
-                ((*f_gr, *f_id), v)
+            .flat_map(|(f_gr, els)| {
+                let a: Vec<_> = els.iter().enumerate().map(|(f_id, _)| {
+                    // Transfer a specific codomain grade and id (f_gr, f_id) to a list of elements which it maps to in the cokernel
+                    let v = (0..cokernel_map
+                        .maps
+                        .get(f_gr)
+                        .map(|map| map.codomain())
+                        .unwrap_or(0))
+                        .filter_map(|q_index| {
+                            let val = cokernel_map.maps.get(f_gr).unwrap().get(f_id, q_index);
+                            match val.is_zero() {
+                                true => None,
+                                false => Some((q_index, val)),
+                            }
+                        })
+                        .collect();
+                        ((*f_gr, f_id), v)
+                }).collect();
+                a
             })
             .collect();
 
@@ -108,7 +109,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kComodule<G, F, M>
             .0
             .par_iter()
             .map(|(g, v)| {
-                let g_tensor_dimen = tensor.get_dimension(g);
+                let g_tensor_dimen = tensor[g].len();
                 let mut g_coaction = M::zero(v.len(), g_tensor_dimen);
 
                 // TODO:
@@ -117,17 +118,16 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kComodule<G, F, M>
 
                 // (domain, codomain)
                 for (codom_id, coker_id) in &pivots[g] { // TODO : THiS COULD BE PARALLEL
-                    let coact_size = self.codomain.tensor.dimensions[g];
+                    let coact_size = self.codomain.tensor.get(g).map(|x| x.len()).unwrap_or(0);
                     for codom_coact_id in 0..coact_size {
                         let coact_val =
                             self.codomain.coaction.maps[g].get(*codom_id, codom_coact_id);
                         if !coact_val.is_zero() {
                             let ((alg_gr, alg_id), (mod_gr, mod_id)) =
-                                self.codomain.tensor.deconstruct[&(*g, codom_coact_id)];
+                                self.codomain.tensor[g][codom_coact_id];
 
                             for (target_id, val) in m_lut.get(&(mod_gr, mod_id)).unwrap() {
-                                let (_, final_id) =
-                                    tensor.construct[&(mod_gr, *target_id)][&(alg_gr, alg_id)];
+                                let final_id = tensor_list_find_tensor_id(&tensor, *g, ((alg_gr, alg_id), (mod_gr, *target_id)));
                                 g_coaction.add_at(*coker_id, final_id, coact_val * *val);
                             }
                         }
@@ -196,13 +196,6 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kComodule<G, F, M>
                 }
             };
 
-            let alg_to_tens = self
-                .codomain
-                .tensor
-                .construct
-                .get(&(pivot_grade, pivot))
-                .expect("The tensor should exist on the codomain in this grade");
-
             let coalg_space = &self.codomain.coalgebra.space;
 
             // TODO: Verify is this parallel iterator is faster or not for big(ger) coalgebras
@@ -220,22 +213,22 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kComodule<G, F, M>
                 let codomain_len = self.codomain.space.dimension_in_grade(&t_gr);
                 let coalg_len = alg_gr_space.len();
 
-                if !alg_to_tens.contains_key(&(*alg_gr, 0)) {
-                    let zero_map = M::zero(codomain_len, coalg_len);
-                    return Some((t_gr, zero_map));
-                };
-
                 let mut map = M::zero(codomain_len, coalg_len);
 
+                if !self.codomain.tensor.contains_key(&t_gr) {
+                    return Some((t_gr, map));
+                };
+
                 for a_id in 0..coalg_len {
-                    let (t_gr, t_id) = alg_to_tens.get(&(*alg_gr,a_id)).expect("This BasisIndex should exist on the tensor object in the to inject comodule");
+                    let t_id = tensor_list_find_tensor_id(&self.codomain.tensor, t_gr, ((*alg_gr, a_id), (pivot_grade, pivot)));
+
                     let slice = self
                         .codomain
                         .coaction
                         .maps
-                        .get(t_gr)
+                        .get(&t_gr)
                         .expect("This grade should exist on the coaction of the injecting comodule")
-                        .get_row(*t_id);
+                        .get_row(t_id);
 
                     map.set_row(a_id, slice);
                 }

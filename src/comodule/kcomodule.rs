@@ -2,9 +2,10 @@ use std::sync::Arc;
 
 use ahash::HashMap;
 use algebra::{abelian::Abelian, field::Field, matrix::Matrix};
+use serde::de;
 
 use crate::{
-    basiselement::kBasisElement, graded_space::{GradedLinearMap, GradedVectorSpace}, grading::Grading, helper::hashmap_add_restrict, tensor::TensorMap
+    basiselement::kBasisElement, graded_space::{BasisIndex, GradedLinearMap, GradedVectorSpace}, grading::{Grading, UniGrading}, helper::hashmap_add_restrict, tensor::{TensorList, TensorMap, tensor_list_find_tensor_id}
 };
 
 use super::{
@@ -19,7 +20,7 @@ pub struct kComodule<G: Grading, F: Field, M: Matrix<F>> {
     pub coalgebra: Arc<kCoalgebra<G, F, M>>,
     pub space: GradedVectorSpace<G, kBasisElement>,
     pub coaction: GradedLinearMap<G, F, M>,
-    pub tensor: TensorMap<G>,
+    pub tensor: TensorList<G>,
 }
 
 impl<G: Grading, F: Field, M: Matrix<F>> std::fmt::Debug for kComodule<G, F, M> {
@@ -30,16 +31,15 @@ impl<G: Grading, F: Field, M: Matrix<F>> std::fmt::Debug for kComodule<G, F, M> 
 
 impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
     pub fn verify(&self) -> bool {
-        for (&(m_gr, m_id), map) in &self.tensor.construct {
-            let &(t_gr, t_id) = map.get(&(G::zero(), 0)).unwrap();
-            if t_gr != m_gr {
-                return false;
-            };
-
-            let val = self.coaction.maps.get(&t_gr).unwrap().get(m_id, t_id);
-            if val != F::one() {
-                return false;
-            };
+        for (&m_gr, m_els) in &self.space.0 {
+            for m_id in 0..m_els.len() {
+                let t_id = tensor_list_find_tensor_id(&self.tensor, m_gr, ((G::zero(), 0), (m_gr, m_id)));
+    
+                let val = self.coaction.maps.get(&m_gr).unwrap().get(m_id, t_id);
+                if val != F::one() {
+                    return false;
+                };
+            } 
         }
         true
     }
@@ -48,7 +48,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
         coalgebra: Arc<kCoalgebra<G, F, M>>,
         space: GradedVectorSpace<G, kBasisElement>,
         coaction: GradedLinearMap<G, F, M>,
-        tensor: TensorMap<G>,
+        tensor: TensorList<G>,
     ) -> Self {
         let com = Self {
             coalgebra,
@@ -115,7 +115,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> Comodule<G> for kComodule<G, F, M> {
             coalgebra: coalgebra,
             space: GradedVectorSpace::new(),
             coaction: GradedLinearMap::empty(),
-            tensor: TensorMap::default(),
+            tensor: TensorList::default(),
         }
     }
 
@@ -147,22 +147,8 @@ impl<G: Grading, F: Field, M: Abelian<F>> Comodule<G> for kComodule<G, F, M> {
             "Coalgebra is not a connected coalgebra"
         );
 
-        let mut dimensions = HashMap::default();
-        dimensions.insert(degree, 1);
-
-        let mut construct = HashMap::default();
-        let mut first_entry = HashMap::default();
-        first_entry.insert((zero, 0), (degree, 0));
-        construct.insert((degree, 0), first_entry);
-
-        let mut deconstruct = HashMap::default();
-        deconstruct.insert((degree, 0), ((zero, 0), (degree, 0)));
-
-        let tensor = TensorMap {
-            construct,
-            deconstruct,
-            dimensions,
-        };
+        let mut tensor = HashMap::default();
+        tensor.insert(degree, vec![((G::zero(), 0), (degree, 0))]);
 
         Self {
             coalgebra,
@@ -187,7 +173,18 @@ impl<G: Grading, F: Field, M: Abelian<F>> Comodule<G> for kComodule<G, F, M> {
                 .or_insert(other_els.drain(0..).collect());
         });
 
-        self.tensor.direct_sum(&mut other.tensor, &self_dimensions);
+
+        fn tensor_list_direct_sum<G: Grading>(left: &mut TensorList<G>, right: &mut TensorList<G>, dimensions: &HashMap<G,usize>) {
+            for (gr, right_els) in right {
+                let left_els = left.entry(*gr).or_default();
+                for (a, (m_gr, m_id)) in right_els.drain(..) {
+                    let module_size = *dimensions.get(&m_gr).unwrap_or(&0);
+                    left_els.push((a,(m_gr, m_id + module_size)));
+                }
+            }
+        }
+
+        tensor_list_direct_sum(&mut self.tensor, &mut other.tensor, &self_dimensions);
 
         debug_assert!(self.verify());
     }
@@ -215,7 +212,16 @@ impl<G: Grading, F: Field, M: Abelian<F>> Comodule<G> for kComodule<G, F, M> {
                 }
             })
             .collect();
-        let tensor = coalgebra.tensor.add_and_restrict(grade, limit);
+
+        let tensor: HashMap<_,_> = coalgebra.tensor.iter().filter_map(|(g,els)| {
+            let sum = *g + grade;
+            if sum <= limit {
+                let v: Vec<_> = els.iter().map(|(a,(m_gr, m_id))| (*a, (*m_gr + grade, *m_id))).collect();
+                Some((*g + grade,v))
+            } else {
+                None
+            }
+        }).collect();
         
         
         // // TODO! SOME UNSTABLE STUFF        

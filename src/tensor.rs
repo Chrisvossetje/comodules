@@ -2,7 +2,7 @@ use ahash::HashMap;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use std::fmt::Debug;
+use std::{fmt::Debug};
 
 use crate::{
     basiselement::BasisElement, graded_module::GradedModule, graded_space::{BasisIndex, GradedVectorSpace}, grading::Grading
@@ -31,6 +31,43 @@ pub struct TensorMap<G: Grading> {
 
     pub dimensions: TensorDimension<G>,
 }
+
+pub type TensorList<G> = HashMap<G, Vec<(BasisIndex<G>, BasisIndex<G>)>>;
+
+pub fn tensor_list_find_tensor_id<G: Grading>(t: &TensorList<G>, grade: G, el: (BasisIndex<G>, BasisIndex<G>)) -> usize {
+    t[&grade].iter().position(|p| p == &el).unwrap()
+}
+
+pub fn tensor_list_generate<G: Grading, GENS: ObjectGenerator<G>>(
+        left: &GENS,
+        right: &GENS,
+    ) -> TensorList<G> {
+    let mut tensor: HashMap<G, Vec<_>> = HashMap::default();
+    
+    // This sorted is important for consistency !
+    for (l_grade, l_elements) in left.sorted_els() {
+        for l_id in 0..l_elements {
+            for (r_grade, r_elements) in right.sorted_els() {
+                let t_grade = l_grade + r_grade;
+
+                if !right.contains_grade(&t_grade) {
+                    continue;
+                }  
+                
+                tensor.entry(t_grade).or_default();
+
+                for r_id in 0..r_elements {
+                    tensor.entry(t_grade).and_modify(|l| {
+                        l.push(((l_grade, l_id), (r_grade, r_id)));
+                    });
+                }
+            }
+        }
+    }
+
+    tensor
+}
+
 
 
 impl<G: Grading, B: BasisElement> ObjectGenerator<G> for GradedVectorSpace<G, B> {

@@ -119,42 +119,42 @@ pub fn A0_C() -> RCoalgebra<UniGrading, F2> {
 pub fn tensor_k_coalgebra(
     coalgebra: kCoalgebra<UniGrading, F2, FlatMatrix<F2>>,
 ) -> RCoalgebra<UniGrading, F2> {
+    todo!()
+    // let (space, coaction, tensor) = (coalgebra.space, coalgebra.coaction, coalgebra.tensor);
 
-    let (space, coaction, tensor) = (coalgebra.space, coalgebra.coaction, coalgebra.tensor);
+    // let space = space
+    //     .0
+    //     .into_iter()
+    //     .map(|x| {
+    //         let gr = UniGrading(x.0 .0);
+    //         let module: Vec<(kBasisElement, UniGrading, Option<u16>)> =
+    //             x.1.into_iter().map(|y| (y, UniGrading(0), None)).collect();
+    //         (gr, module)
+    //     })
+    //     .collect();
 
-    let space = space
-        .0
-        .into_iter()
-        .map(|x| {
-            let gr = UniGrading(x.0 .0);
-            let module: Vec<(kBasisElement, UniGrading, Option<u16>)> =
-                x.1.into_iter().map(|y| (y, UniGrading(0), None)).collect();
-            (gr, module)
-        })
-        .collect();
+    // let coaction_maps = coaction.maps.into_iter().map(|(gr, m)| {        
+    //     let mut new_m = FlatMatrix::zero(m.domain(), m.codomain());
+    //     for x in 0..m.domain() {
+    //         for y in 0..m.codomain() {
+    //             let el = m.get(x, y);
+    //             new_m.set(x, y, UniPolRing(el, 0));
+    //         }
+    //     }
+    //     (gr, new_m)
+    // }).collect();
 
-    let coaction_maps = coaction.maps.into_iter().map(|(gr, m)| {        
-        let mut new_m = FlatMatrix::zero(m.domain(), m.codomain());
-        for x in 0..m.domain() {
-            for y in 0..m.codomain() {
-                let el = m.get(x, y);
-                new_m.set(x, y, UniPolRing(el, 0));
-            }
-        }
-        (gr, new_m)
-    }).collect();
+    // if cfg!(debug_assertions) {
+    //     if !tensor.is_correct() {
+    //         panic!("Tensor is not correct");
+    //     }
+    // }
 
-    if cfg!(debug_assertions) {
-        if !tensor.is_correct() {
-            panic!("Tensor is not correct");
-        }
-    }
-
-    RCoalgebra {
-        space: GradedModule(space),
-        coaction: GradedModuleMap {
-            maps: coaction_maps,
-        },
-        tensor 
-    }
+    // RCoalgebra {
+    //     space: GradedModule(space),
+    //     coaction: GradedModuleMap {
+    //         maps: coaction_maps,
+    //     },
+    //     tensor 
+    // }
 }

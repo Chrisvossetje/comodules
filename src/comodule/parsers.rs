@@ -5,7 +5,7 @@ use algebra::{field::Field, matrix::Matrix};
 use itertools::Itertools;
 
 use crate::{
-    basiselement::kBasisElement, graded_space::{BasisIndex, GradedLinearMap, GradedVectorSpace}, grading::{Grading, OrderedGrading}, tensor::TensorMap
+    basiselement::kBasisElement, graded_space::{BasisIndex, GradedLinearMap, GradedVectorSpace}, grading::{Grading, OrderedGrading}, tensor::{TensorList, TensorMap, tensor_list_find_tensor_id, tensor_list_generate}
 };
 
 use super::{
@@ -196,12 +196,12 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         }
 
         let graded_space = GradedVectorSpace(transformed);
-        let tensor = TensorMap::generate(&graded_space, &graded_space);
+        let tensor = tensor_list_generate(&graded_space, &graded_space);
 
         let mut coaction: HashMap<G, M> = HashMap::default();
         for (gr, elements) in &graded_space.0 {
             let domain = elements.len();
-            let codomain = *tensor.dimensions.get(gr).unwrap_or(&0);
+            let codomain = tensor.get(gr).map(|x| x.len()).unwrap_or(0);
             coaction.insert(*gr, M::zero(domain, codomain));
         }
 
@@ -225,11 +225,12 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                         b, l_id.0, r_id.0, gr
                     ));
                 };
-                let t_id = tensor.construct[&r_id][&l_id];
-                if (t_id.0) != *gr {
+                let t_gr = l_id.0 + r_id.0;
+                let t_id = tensor_list_find_tensor_id(&tensor, t_gr, (*l_id, *r_id));
+                if (t_gr) != *gr {
                     return Err(format!(
                         "Tensor grades are not homogenous for coaction of '{}': {} != {}",
-                        b, t_id.0, gr
+                        b, t_gr, gr
                     ));
                 };
                 coaction
@@ -237,7 +238,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                     .ok_or(format!("Expected coaction to exist in grade {}", gr))?
                     .set(
                         *id,
-                        t_id.1,
+                        t_id,
                         F::parse(&scalar).map_err(|e| {
                             format!("Invalid scalar '{}' for coaction of '{}': {}", scalar, b, e)
                         })?,
@@ -508,13 +509,13 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         let coalg_vector_space = GradedVectorSpace::from(basis.clone());
 
         // create A \otimes A
-        let tensor = TensorMap::generate(&coalg_vector_space, &coalg_vector_space);
+        let tensor = tensor_list_generate(&coalg_vector_space, &coalg_vector_space);
 
         // Create the coaction map
         let mut coaction: HashMap<G, M> = HashMap::default();
 
         for (grade, els) in basis.iter() {
-            let tensor_rows = tensor.dimensions[grade];
+            let tensor_rows = tensor[grade].len();
             let basis_cols = els.len();
             let map = M::zero(basis_cols, tensor_rows);
             coaction.insert(*grade, map);
@@ -537,9 +538,11 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                     "Expected right monomial '{}' to exist when constructing coaction",
                     monomial_to_string(b, &generators)
                 ))?;
-                let (_, tensor_index) = tensor.construct[&b_grade_index][&a_grade_index];
 
-                map.set(*basis_index, tensor_index, *coeff);
+                let t_gr = a_grade_index.0 + b_grade_index.0;
+                let t_id = tensor_list_find_tensor_id(&tensor, t_gr, (*a_grade_index, *b_grade_index));
+
+                map.set(*basis_index, t_id, *coeff);
             }
         }
 
@@ -850,12 +853,12 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
         }
 
         let graded_space = GradedVectorSpace(transformed);
-        let tensor = TensorMap::generate(&coalgebra.space, &graded_space);
+        let tensor = tensor_list_generate(&coalgebra.space, &graded_space);
 
         let mut coaction: HashMap<G, M> = HashMap::default();
         for (gr, elements) in &graded_space.0 {
             let domain = elements.len();
-            let codomain = *tensor.dimensions.get(gr).unwrap_or(&0);
+            let codomain = tensor.get(gr).map(|x| x.len()).unwrap_or(0);
             coaction.insert(*gr, M::zero(domain, codomain));
         }
 
@@ -881,11 +884,12 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
                     ));
                 }
 
-                let t_id = tensor.construct[&r_id][&l_id];
-                if t_id.0 != *gr {
+                let t_gr = l_id.0 + r_id.0;
+                let t_id = tensor_list_find_tensor_id(&tensor, t_gr, (*l_id, *r_id));
+                if (t_gr) != *gr {
                     return Err(format!(
                         "Tensor grades are not homogenous for coaction of '{}': {} != {}",
-                        b, t_id.0, gr
+                        b, t_gr, gr
                     ));
                 }
 
@@ -894,7 +898,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
                     .ok_or(format!("Expected coaction to exist in grade {}", gr))?
                     .set(
                         *id,
-                        t_id.1,
+                        t_id,
                         F::parse(&scalar).map_err(|e| {
                             format!("Invalid scalar '{}' for coaction of '{}': {}", scalar, b, e)
                         })?,
@@ -1122,13 +1126,13 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
         let comodule_vector_space = GradedVectorSpace::from(basis.clone());
 
         // create C ⊗ M (coalgebra tensor comodule)
-        let tensor = TensorMap::generate(&coalgebra.space, &comodule_vector_space);
+        let tensor = tensor_list_generate(&coalgebra.space, &comodule_vector_space);
 
         // Create the coaction map
         let mut coaction: HashMap<G, M> = HashMap::default();
 
         for (grade, els) in basis.iter() {
-            let tensor_rows = tensor.dimensions[grade];
+            let tensor_rows = tensor[grade].len();
             let basis_cols = els.len();
             let map = M::zero(basis_cols, tensor_rows);
             coaction.insert(*grade, map);
@@ -1167,14 +1171,10 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
 
                 match coalgebra_translate.get(coalg_name) {
                     Some(coalg_index) => {
-                        let (_, tensor_index) = tensor
-                            .construct
-                            .get(mod_grade_index)
-                            .ok_or("Module BasisIndex  not found in tensor construction.")?
-                            .get(coalg_index)
-                            .ok_or("Algebra BasisIndex not found in tensor construction")?;
+                        let t_gr = coalg_index.0 + mod_grade_index.0;
+                        let t_id = tensor_list_find_tensor_id(&tensor, t_gr, (*coalg_index, *mod_grade_index));
 
-                        map.set(*basis_index, *tensor_index, *coeff);
+                        map.set(*basis_index, t_id, *coeff);
                     }
                     None => {
                         continue;
