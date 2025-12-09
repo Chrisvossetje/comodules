@@ -6,7 +6,7 @@ use itertools::Itertools;
 use rayon::prelude::*;
 
 use crate::{
-    basiselement::kBasisElement, graded_space::{BasisIndex, GradedLinearMap}, grading::{Grading, OrderedGrading}, tensor::Tensor
+    basiselement::kBasisElement, graded_space::{BasisIndex, GradedLinearMap}, grading::{Grading, OrderedGrading}, tensor::TensorMap
 };
 
 use super::{
@@ -74,7 +74,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kComodule<G, F, M>
         let coker_space = cokernel_map.codomain_space(kBasisElement::default());
 
         let coalg = self.codomain.coalgebra.as_ref();
-        let tensor = Tensor::generate(&coalg.space, &coker_space);
+        let tensor = TensorMap::generate(&coalg.space, &coker_space);
 
         let pivots = cokernel_map.pivots();
 

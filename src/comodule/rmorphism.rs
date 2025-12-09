@@ -6,7 +6,7 @@ use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
-    basiselement::kBasisElement, comodule::{rcomodule::RComodule, traits::{Comodule, ComoduleMorphism}}, graded_module_morphism::GradedModuleMap, graded_space::BasisIndex, grading::{Grading, OrderedGrading}, tensor::Tensor
+    basiselement::kBasisElement, comodule::{rcomodule::RComodule, traits::{Comodule, ComoduleMorphism}}, graded_module_morphism::GradedModuleMap, graded_space::BasisIndex, grading::{Grading, OrderedGrading}, tensor::TensorMap
 };
 
 
@@ -35,7 +35,7 @@ impl<G: Grading, F: Field> ComoduleMorphism<G, RComodule<G,F>>
         
 
         let coalg = self.codomain.coalgebra.as_ref();
-        let tensor = Tensor::generate(&coalg.space, &coker);
+        let tensor = TensorMap::generate(&coalg.space, &coker);
 
 
         let codom_lut: HashMap<BasisIndex<G>, Vec<(usize, UniPolRing<F>)>> = self

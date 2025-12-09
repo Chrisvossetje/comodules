@@ -2,7 +2,7 @@ use algebra::{field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, r
 use itertools::Itertools;
 
 use crate::{
-    basiselement::kBasisElement, comodule::{kcoalgebra::kCoalgebra, rcomodule::RCoalgebra}, graded_module::GradedModule, graded_module_morphism::GradedModuleMap, grading::{Grading, UniGrading}, tensor::Tensor
+    basiselement::kBasisElement, comodule::{kcoalgebra::kCoalgebra, rcomodule::RCoalgebra}, graded_module::GradedModule, graded_module_morphism::GradedModuleMap, grading::{Grading, UniGrading}, tensor::TensorMap
 };
 
 
@@ -89,7 +89,7 @@ pub fn A0_C() -> RCoalgebra<UniGrading, F2> {
         )],
     );
 
-    let tensor = Tensor::generate(&space, &space);
+    let tensor = TensorMap::generate(&space, &space);
 
     let mut first_mat = FlatMatrix::zero(1, 1);
     first_mat.set(0, 0, UniPolRing::<F2>::one());

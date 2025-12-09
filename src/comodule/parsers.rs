@@ -5,7 +5,7 @@ use algebra::{field::Field, matrix::Matrix};
 use itertools::Itertools;
 
 use crate::{
-    basiselement::kBasisElement, graded_space::{BasisIndex, GradedLinearMap, GradedVectorSpace}, grading::{Grading, OrderedGrading}, tensor::Tensor
+    basiselement::kBasisElement, graded_space::{BasisIndex, GradedLinearMap, GradedVectorSpace}, grading::{Grading, OrderedGrading}, tensor::TensorMap
 };
 
 use super::{
@@ -196,7 +196,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         }
 
         let graded_space = GradedVectorSpace(transformed);
-        let tensor = Tensor::generate(&graded_space, &graded_space);
+        let tensor = TensorMap::generate(&graded_space, &graded_space);
 
         let mut coaction: HashMap<G, M> = HashMap::default();
         for (gr, elements) in &graded_space.0 {
@@ -508,7 +508,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         let coalg_vector_space = GradedVectorSpace::from(basis.clone());
 
         // create A \otimes A
-        let tensor = Tensor::generate(&coalg_vector_space, &coalg_vector_space);
+        let tensor = TensorMap::generate(&coalg_vector_space, &coalg_vector_space);
 
         // Create the coaction map
         let mut coaction: HashMap<G, M> = HashMap::default();
@@ -850,7 +850,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
         }
 
         let graded_space = GradedVectorSpace(transformed);
-        let tensor = Tensor::generate(&coalgebra.space, &graded_space);
+        let tensor = TensorMap::generate(&coalgebra.space, &graded_space);
 
         let mut coaction: HashMap<G, M> = HashMap::default();
         for (gr, elements) in &graded_space.0 {
@@ -1122,7 +1122,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
         let comodule_vector_space = GradedVectorSpace::from(basis.clone());
 
         // create C ⊗ M (coalgebra tensor comodule)
-        let tensor = Tensor::generate(&coalgebra.space, &comodule_vector_space);
+        let tensor = TensorMap::generate(&coalgebra.space, &comodule_vector_space);
 
         // Create the coaction map
         let mut coaction: HashMap<G, M> = HashMap::default();

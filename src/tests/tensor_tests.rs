@@ -10,7 +10,7 @@ impl BasisElement for MockBasisElement {}
 mod tests {
     use ahash::HashMap;
 
-    use crate::{comodule::kcoalgebra::A0_coalgebra, graded_space::GradedVectorSpace, grading::UniGrading, tensor::Tensor};
+    use crate::{comodule::kcoalgebra::A0_coalgebra, graded_space::GradedVectorSpace, grading::UniGrading, tensor::TensorMap};
 
     use super::*;
 
@@ -22,7 +22,7 @@ mod tests {
 
     #[test]
     fn test_new_ktensor() {
-        let tensor: Tensor<UniGrading> = Tensor::default();
+        let tensor: TensorMap<UniGrading> = TensorMap::default();
         assert!(tensor.construct.is_empty());
         assert!(tensor.deconstruct.is_empty());
         assert!(tensor.dimensions.is_empty());
@@ -36,7 +36,7 @@ mod tests {
         let left_space = create_mock_vector_space(left_elements);
         let right_space = create_mock_vector_space(right_elements);
 
-        let tensor = Tensor::generate(&left_space, &right_space);
+        let tensor = TensorMap::generate(&left_space, &right_space);
 
         assert_eq!(tensor.dimensions.get(&UniGrading(0)), Some(&1));
         assert_eq!(tensor.dimensions.get(&UniGrading(1)), Some(&2));
@@ -57,7 +57,7 @@ mod tests {
         let left_space = create_mock_vector_space(left_elements);
         let right_space = create_mock_vector_space(right_elements);
 
-        let tensor = Tensor::<UniGrading>::generate(&left_space, &right_space);
+        let tensor = TensorMap::<UniGrading>::generate(&left_space, &right_space);
         assert_eq!(tensor.dimensions.get(&UniGrading(0)), Some(&1));
         assert_eq!(tensor.dimensions.get(&UniGrading(1)), Some(&2));
 
@@ -76,7 +76,7 @@ mod tests {
         let left_space = create_mock_vector_space(left_elements);
         let right_space = create_mock_vector_space(right_elements);
 
-        let tensor = Tensor::<UniGrading>::generate(&left_space, &right_space);
+        let tensor = TensorMap::<UniGrading>::generate(&left_space, &right_space);
         assert_eq!(tensor.dimensions.get(&UniGrading(0)), Some(&1));
         assert_eq!(tensor.dimensions.get(&UniGrading(1)), Some(&2));
 
@@ -95,8 +95,8 @@ mod tests {
         let left_space = create_mock_vector_space(left_elements.clone());
         let right_space = create_mock_vector_space(right_elements.clone());
 
-        let mut tensor1 = Tensor::<UniGrading>::generate(&left_space, &right_space);
-        let mut tensor2 = Tensor::<UniGrading>::generate(
+        let mut tensor1 = TensorMap::<UniGrading>::generate(&left_space, &right_space);
+        let mut tensor2 = TensorMap::<UniGrading>::generate(
             &create_mock_vector_space(left_elements),
             &create_mock_vector_space(right_elements),
         );

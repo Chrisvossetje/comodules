@@ -2,7 +2,7 @@ use ahash::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    basiselement::BasisElement, grading::{Grading, UniGrading}, tensor::Tensor
+    basiselement::BasisElement, grading::{Grading, UniGrading}, tensor::TensorMap
 };
 
 
@@ -22,7 +22,7 @@ impl<G: Grading, B: BasisElement> GradedModule<G, B> {
         self.0.get(grade).map(|x| x.len()).unwrap_or(0)
     }
 
-    pub fn generate_tensor_as_module(&self, coalgebra: &Self, tensor: &Tensor<G>) -> GradedModule<G, B> {
+    pub fn generate_tensor_as_module(&self, coalgebra: &Self, tensor: &TensorMap<G>) -> GradedModule<G, B> {
         let mut map = HashMap::default();
         for (&gr, dim) in &tensor.dimensions {
             map.insert(gr, vec![(B::default(), UniGrading(0), None); *dim]);

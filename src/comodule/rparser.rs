@@ -4,7 +4,7 @@ use algebra::{field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, r
 use itertools::Itertools;
 
 use crate::{
-    basiselement::kBasisElement, comodule::rcomodule::RCoalgebra, graded_module::GradedModule, graded_module_morphism::GradedModuleMap, graded_space::BasisIndex, grading::{Grading, OrderedGrading, Parse, UniGrading}, tensor::Tensor
+    basiselement::kBasisElement, comodule::rcomodule::RCoalgebra, graded_module::GradedModule, graded_module_morphism::GradedModuleMap, graded_space::BasisIndex, grading::{Grading, OrderedGrading, Parse, UniGrading}, tensor::TensorMap
 };
 
 
@@ -204,7 +204,7 @@ impl<G: Grading + OrderedGrading, F: Field> RCoalgebra<G, F> {
         }
 
         let graded_space = GradedModule(transformed);
-        let tensor = Tensor::generate(&graded_space, &graded_space);
+        let tensor = TensorMap::generate(&graded_space, &graded_space);
 
         let mut coaction: HashMap<G, FlatMatrix<UniPolRing<F>>> = HashMap::default();
         for (gr, elements) in &graded_space.0 {
@@ -543,7 +543,7 @@ impl<G: Grading + OrderedGrading, F: Field> RCoalgebra<G, F> {
         let coalg_module = GradedModule(basis.clone());
 
         // create A \otimes A
-        let tensor = Tensor::generate(&coalg_module, &coalg_module);
+        let tensor = TensorMap::generate(&coalg_module, &coalg_module);
 
         // Create the coaction map
         let mut coaction: HashMap<G, _> = HashMap::default();

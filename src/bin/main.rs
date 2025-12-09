@@ -10,6 +10,8 @@ use algebra::ring::CRing;
 use algebra::rings::finite_fields::F2;
 use algebra::rings::univariate_polynomial_ring::UniPolRing;
 use comodules::basiselement::kBasisElement;
+use comodules::comodule::kcoalgebra::kCoalgebra;
+use comodules::comodule::kcomodule::kComodule;
 use comodules::comodule::traits::ComoduleMorphism;
 use comodules::grading::Grading;
 use comodules::{
@@ -73,174 +75,198 @@ fn to_cochain_cpx<F: Field>(res: Resolution<UniGrading, RComodule<UniGrading, F>
 
 
 
-fn main() {
-    let start = Instant::now();
+// fn main() {
+//     let start = Instant::now();
 
-    let input = include_str!("../../examples/polynomial/A_C.txt");
-    let coalgebra = RCoalgebra::<UniGrading, F2>::parse(input, UniGrading(20)).unwrap().0; 
+//     let input = include_str!("../../examples/polynomial/A_C.txt");
+//     let coalgebra = RCoalgebra::<UniGrading, F2>::parse(input, UniGrading(20)).unwrap().0; 
 
-    let coalgebra = Arc::new(coalgebra);
+//     let coalgebra = Arc::new(coalgebra);
 
-    let kt = RComodule::fp_comodule(coalgebra, UniGrading(0));
+//     let kt = RComodule::fp_comodule(coalgebra, UniGrading(0));
 
-    let mut res = Resolution::new(kt);
+//     let mut res = Resolution::new(kt);
 
-    res.resolve_to_s_with_print(10, UniGrading(20));
+//     res.resolve_to_s_with_print(10, UniGrading(20));
 
-    let lines: Vec<_> = res.resolution[..(res.resolution.len())-1]
-        .iter()
-        .enumerate()
-        .flat_map(|(s, x)| {
-            let g = x.get_structure_lines();
-            g.into_iter()
-                .map(move |(from_gen, to_gen, value, prim_type)| {
-                    ((s - 1, from_gen), (s, to_gen), value, prim_type)
-                })
-        })
-        .sorted_by_key(|f| (f.0, f.1))
-        .collect();
+//     let lines: Vec<_> = res.resolution[..(res.resolution.len())-1]
+//         .iter()
+//         .enumerate()
+//         .flat_map(|(s, x)| {
+//             let g = x.get_structure_lines();
+//             g.into_iter()
+//                 .map(move |(from_gen, to_gen, value, prim_type)| {
+//                     ((s - 1, from_gen), (s, to_gen), value, prim_type)
+//                 })
+//         })
+//         .sorted_by_key(|f| (f.0, f.1))
+//         .collect();
     
-    let ccpx = to_cochain_cpx(res);
+//     let ccpx = to_cochain_cpx(res);
     
 
-    let mut gens = vec![];
+//     let mut gens = vec![];
 
-    let mut map: HashMap<(usize, UniGrading), _> = HashMap::default();
+//     let mut map: HashMap<(usize, UniGrading), _> = HashMap::default();
     
-    for (s, ((f_full, n_full), (g_full, q_full))) in ccpx.0.iter().zip(&ccpx.1).tuple_windows().enumerate() {
-        let mut count = 0;
-        for (gr, f) in f_full {
-            let zero_map = FlatMatrix::zero(0, 0);
-            let g = match g_full.get(gr) {
-                Some(g) => { g
-                },
-                None => {
-                    &zero_map
-                },
-            };
-            let empty = vec![];
+//     for (s, ((f_full, n_full), (g_full, q_full))) in ccpx.0.iter().zip(&ccpx.1).tuple_windows().enumerate() {
+//         let mut count = 0;
+//         for (gr, f) in f_full {
+//             let zero_map = FlatMatrix::zero(0, 0);
+//             let g = match g_full.get(gr) {
+//                 Some(g) => { g
+//                 },
+//                 None => {
+//                     &zero_map
+//                 },
+//             };
+//             let empty = vec![];
             
-            let n = n_full.get(gr).unwrap_or(&empty);
-            let q = q_full.get(gr).unwrap_or(&empty); 
+//             let n = n_full.get(gr).unwrap_or(&empty);
+//             let q = q_full.get(gr).unwrap_or(&empty); 
 
-            let (cohom_to_n, cohom) = FlatMatrix::cohomology(f, g, &n.iter().map(|x| x.0.2).collect(),  &q.iter().map(|x| x.0.2).collect());
+//             let (cohom_to_n, cohom) = FlatMatrix::cohomology(f, g, &n.iter().map(|x| x.0.2).collect(),  &q.iter().map(|x| x.0.2).collect());
 
-            let mut cohom_plus = vec![];
+//             let mut cohom_plus = vec![];
             
-            for b in &cohom {
-                // TODO: deduce second grading somehow ???
-                let l = format!("{:?}", b);
-                // let thing = Some((b.0.generated_index, *k, Some(s)));
+//             for b in &cohom {
+//                 // TODO: deduce second grading somehow ???
+//                 let l = format!("{:?}", b);
+//                 // let thing = Some((b.0.generated_index, *k, Some(s)));
                 
-                cohom_plus.push((b.clone(), count));
+//                 cohom_plus.push((b.clone(), count));
 
-                gens.push((s, count, gr.export_grade(), Some(l)));
-                count += 1;
-            }
+//                 gens.push((s, count, gr.export_grade(), Some(l)));
+//                 count += 1;
+//             }
 
-            map.insert((s,*gr), (cohom_plus, cohom_to_n));
-        }            
-    }
+//             map.insert((s,*gr), (cohom_plus, cohom_to_n));
+//         }            
+//     }
     
-    println!("{:?}", map);
-    println!("{:?}", lines);
+//     println!("{:?}", map);
+//     println!("{:?}", lines);
 
-    let mut new_lines = vec![];
+//     let mut new_lines = vec![];
 
-    // We are gonna do the MOST basic implementation which is probably too coarse.
-    for ((s, gr), (cohom_plus, cohom_to_n)) in &map {
-        let n_full = &ccpx.1[*s][gr];
+//     // We are gonna do the MOST basic implementation which is probably too coarse.
+//     for ((s, gr), (cohom_plus, cohom_to_n)) in &map {
+//         let n_full = &ccpx.1[*s][gr];
 
-        // For each basis in cohom, find a representable vector in n.
-        for (cohom_id, cohom_el) in cohom_plus.iter().enumerate() { 
-            let v = cohom_to_n.get_column(cohom_id);
+//         // For each basis in cohom, find a representable vector in n.
+//         for (cohom_id, cohom_el) in cohom_plus.iter().enumerate() { 
+//             let v = cohom_to_n.get_column(cohom_id);
             
-            // Then we check if this maps to some element in some s+1 thing.
-            for n_id in 0..n_full.len() {
-                let val = v[n_id];
-                if !val.is_zero() {
-                    let res_n_id = n_full[n_id].1;
-                    for (source, target, map_value, thing) in &lines {
-                        if &source.0 == s && source.1.2 == res_n_id && source.1.1 == *gr{
+//             // Then we check if this maps to some element in some s+1 thing.
+//             for n_id in 0..n_full.len() {
+//                 let val = v[n_id];
+//                 if !val.is_zero() {
+//                     let res_n_id = n_full[n_id].1;
+//                     for (source, target, map_value, thing) in &lines {
+//                         if &source.0 == s && source.1.2 == res_n_id && source.1.1 == *gr{
 
-                            if (*s == 3) && (*gr == UniGrading(6)) {
-                                println!("OPLETTEN!");
-                            }
+//                             if (*s == 3) && (*gr == UniGrading(6)) {
+//                                 println!("OPLETTEN!");
+//                             }
 
-                            // Then we check if target is represented by some element in the ker of that s+1 thing
-                            // This check will be super rough as "inclusion" in a vector is enoguh for us. 
-                            // So if we map to the second index and the ker is represented by (1 1) then we still map to it
-                            let (target_gr, target_orig_id) = (target.1.1, target.1.2);
-                            let target_full = &ccpx.1[target.0][&target_gr];
-                            for (target_id, target_el) in target_full.iter().enumerate() {
-                                if target_el.1 == target_orig_id {
-                                    // Now we found an element in the target n 
-                                    let (cohom_target_n, target_cohom_to_n) = &map[&(target.0, target_gr)];
-                                    assert_eq!(target_full.len(), target_cohom_to_n.codomain());
-                                    assert_eq!(cohom_target_n.len(), target_cohom_to_n.domain());
+//                             // Then we check if target is represented by some element in the ker of that s+1 thing
+//                             // This check will be super rough as "inclusion" in a vector is enoguh for us. 
+//                             // So if we map to the second index and the ker is represented by (1 1) then we still map to it
+//                             let (target_gr, target_orig_id) = (target.1.1, target.1.2);
+//                             let target_full = &ccpx.1[target.0][&target_gr];
+//                             for (target_id, target_el) in target_full.iter().enumerate() {
+//                                 if target_el.1 == target_orig_id {
+//                                     // Now we found an element in the target n 
+//                                     let (cohom_target_n, target_cohom_to_n) = &map[&(target.0, target_gr)];
+//                                     assert_eq!(target_full.len(), target_cohom_to_n.codomain());
+//                                     assert_eq!(cohom_target_n.len(), target_cohom_to_n.domain());
 
-                                    println!("target_cohom_to_n:\n{:?}\n\n cohom_target:{:?}", target_cohom_to_n, cohom_target_n);
+//                                     println!("target_cohom_to_n:\n{:?}\n\n cohom_target:{:?}", target_cohom_to_n, cohom_target_n);
                                     
-                                    // Here we look for a candidate in the cohom of target n 
-                                    for target_cohom_id in 0..cohom_target_n.len() {
-                                        let val2 = target_cohom_to_n.get(target_cohom_id, target_id);
-                                        if !val2.is_zero() {
-                                            let total_val = val * val2 * *map_value;
-                                            if let Some(power) = cohom_target_n[target_cohom_id].0 {
-                                                if total_val.1 >= power {
-                                                    continue;
-                                                }
-                                            }
+//                                     // Here we look for a candidate in the cohom of target n 
+//                                     for target_cohom_id in 0..cohom_target_n.len() {
+//                                         let val2 = target_cohom_to_n.get(target_cohom_id, target_id);
+//                                         if !val2.is_zero() {
+//                                             let total_val = val * val2 * *map_value;
+//                                             if let Some(power) = cohom_target_n[target_cohom_id].0 {
+//                                                 if total_val.1 >= power {
+//                                                     continue;
+//                                                 }
+//                                             }
                                             
-                                            new_lines.push(((*s, cohom_el.1), (target.0, cohom_target_n[target_cohom_id].1), format!("{:?}", total_val), thing.clone()));
-                                        }
+//                                             new_lines.push(((*s, cohom_el.1), (target.0, cohom_target_n[target_cohom_id].1), format!("{:?}", total_val), thing.clone()));
+//                                         }
                                         
-                                    }
+//                                     }
 
 
 
-                                    // Now we have found the element (find_id) in the "n" of the target
-                                    // We will try to find a vector which has this 
+//                                     // Now we have found the element (find_id) in the "n" of the target
+//                                     // We will try to find a vector which has this 
 
 
-                                }
-                            }
+//                                 }
+//                             }
 
 
-                        }
-                    }
-                }
-            }
+//                         }
+//                     }
+//                 }
+//             }
 
 
              
-            // Then we check if that gets mapped to some element of the cokernel.
-        }
-    }
+//             // Then we check if that gets mapped to some element of the cokernel.
+//         }
+//     }
 
-    println!("{:?}", new_lines);
+//     println!("{:?}", new_lines);
 
-    let page = Page {
-        id: 2,
-        generators: gens,
-        structure_lines: new_lines,
-    };
+//     let page = Page {
+//         id: 2,
+//         generators: gens,
+//         structure_lines: new_lines,
+//     };
 
-    let (x_formula, y_formula) = UniGrading::default_formulas();
+//     let (x_formula, y_formula) = UniGrading::default_formulas();
 
-    let sseq = SSeq {
-        name: "A_C".to_owned(),
-        degrees: UniGrading::degree_names(),
-        x_formula,
-        y_formula,
-        pages: vec![page],
-        differentials: vec![],
-    };
+//     let sseq = SSeq {
+//         name: "A_C".to_owned(),
+//         degrees: UniGrading::degree_names(),
+//         x_formula,
+//         y_formula,
+//         pages: vec![page],
+//         differentials: vec![],
+//     };
 
+
+//     // let sseq = res.generate_sseq("");
+
+//     sseq.save_to_json("A_C.json").unwrap();
+
+//     println!("\nProgram took: {:.2?}", start.elapsed());
+// }
+
+
+
+
+fn main() {
+    let start = Instant::now();
+
+    let input = include_str!("../../examples/polynomial/A.txt");
+    let coalgebra = kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input, UniGrading(50)).unwrap().0; 
+
+    let coalgebra = Arc::new(coalgebra);
+
+    let kt = kComodule::fp_comodule(coalgebra, UniGrading(0));
+
+    let mut res = Resolution::new(kt);
+
+    res.resolve_to_s_with_print(20, UniGrading(50));
 
     // let sseq = res.generate_sseq("");
 
-    sseq.save_to_json("A_C.json").unwrap();
+    // sseq.save_to_json("A_C.json").unwrap();
 
     println!("\nProgram took: {:.2?}", start.elapsed());
 }

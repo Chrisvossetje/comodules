@@ -10,7 +10,7 @@ mod tests {
             kcoalgebra::{A0_coalgebra, kCoalgebra},
             kcomodule::kComodule,
             traits::Comodule,
-        }, graded_space::{GradedLinearMap, GradedVectorSpace}, grading::{Grading, UniGrading}, resolution::Resolution, tensor::Tensor
+        }, graded_space::{GradedLinearMap, GradedVectorSpace}, grading::{Grading, UniGrading}, resolution::Resolution, tensor::TensorMap
     };
 
     // Test for kComodule::zero_comodule
@@ -103,7 +103,7 @@ mod tests {
             coalgebra,
             space: GradedVectorSpace::from(space_map),
             coaction: GradedLinearMap::empty(),
-            tensor: Tensor::default(),
+            tensor: TensorMap::default(),
         };
 
         let generators = comodule.get_generators();

@@ -4,7 +4,7 @@ use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
-    basiselement::kBasisElement, graded_space::{GradedLinearMap, GradedVectorSpace}, grading::{Grading, UniGrading}, tensor::Tensor
+    basiselement::kBasisElement, graded_space::{GradedLinearMap, GradedVectorSpace}, grading::{Grading, UniGrading}, tensor::TensorMap
 };
 
 use serde::{Deserialize, Serialize};
@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 pub struct kCoalgebra<G: Grading, F: Field, M: Matrix<F>> {
     pub space: GradedVectorSpace<G, kBasisElement>,
     pub coaction: GradedLinearMap<G, F, M>,
-    pub tensor: Tensor<G>,
+    pub tensor: TensorMap<G>,
 }
 
 impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
@@ -106,7 +106,7 @@ pub fn A0_coalgebra() -> kCoalgebra<UniGrading, F2, FlatMatrix<F2>> {
     deconstruct.insert((UniGrading(1), 1), ((UniGrading(1), 0), (UniGrading(0), 0)));
     deconstruct.insert((UniGrading(1), 0), ((UniGrading(0), 0), (UniGrading(1), 0)));
 
-    let tensor = Tensor {
+    let tensor = TensorMap {
         construct,
         deconstruct,
         dimensions,
@@ -139,7 +139,7 @@ pub fn A0_coalgebra() -> kCoalgebra<UniGrading, F2, FlatMatrix<F2>> {
 
 pub fn reduce_helper<G: Grading, F: Field, M: Matrix<F>>(
     coaction: &mut GradedLinearMap<G, F, M>,
-    tensor: &mut Tensor<G>,
+    tensor: &mut TensorMap<G>,
 ) {
     // Left vec goes from old t_id -> new t_id, usize is dimension
     let mapping: HashMap<G, (Vec<Option<usize>>, usize)> = tensor

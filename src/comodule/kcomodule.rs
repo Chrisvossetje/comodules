@@ -4,7 +4,7 @@ use ahash::HashMap;
 use algebra::{abelian::Abelian, field::Field, matrix::Matrix};
 
 use crate::{
-    basiselement::kBasisElement, graded_space::{GradedLinearMap, GradedVectorSpace}, grading::Grading, helper::hashmap_add_restrict, tensor::Tensor
+    basiselement::kBasisElement, graded_space::{GradedLinearMap, GradedVectorSpace}, grading::Grading, helper::hashmap_add_restrict, tensor::TensorMap
 };
 
 use super::{
@@ -19,7 +19,7 @@ pub struct kComodule<G: Grading, F: Field, M: Matrix<F>> {
     pub coalgebra: Arc<kCoalgebra<G, F, M>>,
     pub space: GradedVectorSpace<G, kBasisElement>,
     pub coaction: GradedLinearMap<G, F, M>,
-    pub tensor: Tensor<G>,
+    pub tensor: TensorMap<G>,
 }
 
 impl<G: Grading, F: Field, M: Matrix<F>> std::fmt::Debug for kComodule<G, F, M> {
@@ -48,7 +48,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
         coalgebra: Arc<kCoalgebra<G, F, M>>,
         space: GradedVectorSpace<G, kBasisElement>,
         coaction: GradedLinearMap<G, F, M>,
-        tensor: Tensor<G>,
+        tensor: TensorMap<G>,
     ) -> Self {
         let com = Self {
             coalgebra,
@@ -115,7 +115,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> Comodule<G> for kComodule<G, F, M> {
             coalgebra: coalgebra,
             space: GradedVectorSpace::new(),
             coaction: GradedLinearMap::empty(),
-            tensor: Tensor::default(),
+            tensor: TensorMap::default(),
         }
     }
 
@@ -158,7 +158,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> Comodule<G> for kComodule<G, F, M> {
         let mut deconstruct = HashMap::default();
         deconstruct.insert((degree, 0), ((zero, 0), (degree, 0)));
 
-        let tensor = Tensor {
+        let tensor = TensorMap {
             construct,
             deconstruct,
             dimensions,

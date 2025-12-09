@@ -163,7 +163,7 @@ mod tests {
         let mut deconstruct = HashMap::default();
         deconstruct.insert((zero, 0), ((zero, 0), (zero, 0)));
 
-        let tensor = crate::tensor::Tensor {
+        let tensor = crate::tensor::TensorMap {
             construct,
             deconstruct,
             dimensions,

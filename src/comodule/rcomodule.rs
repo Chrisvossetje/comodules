@@ -6,14 +6,14 @@ use serde::{Deserialize, Serialize};
 use crate::{
     basiselement::kBasisElement, comodule::{
         rmorphism::RComoduleMorphism, traits::Comodule,
-    }, graded_module::GradedModule, graded_module_morphism::GradedModuleMap, grading::{Grading, UniGrading}, helper::{hashmap_add_restrict, hashmap_add_restrict_transform}, tensor::Tensor
+    }, graded_module::GradedModule, graded_module_morphism::GradedModuleMap, grading::{Grading, UniGrading}, helper::{hashmap_add_restrict, hashmap_add_restrict_transform}, tensor::TensorMap
 };
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct RCoalgebra<G: Grading, F: Field> {
     pub space: GradedModule<G, kBasisElement>,
     pub coaction: GradedModuleMap<G, F>,
-    pub tensor: Tensor<G>,
+    pub tensor: TensorMap<G>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -21,7 +21,7 @@ pub struct RComodule<G: Grading, F: Field> {
     pub coalgebra: Arc<RCoalgebra<G, F>>,
     pub space: GradedModule<G, kBasisElement>,
     pub coaction: GradedModuleMap<G, F>,
-    pub tensor: Tensor<G>,
+    pub tensor: TensorMap<G>,
 }
 
 
@@ -85,7 +85,7 @@ impl<G: Grading, F: Field> Comodule<G> for RComodule<G, F> {
             coalgebra: coalgebra,
             space: GradedModule::default(),
             coaction: GradedModuleMap::default(),
-            tensor: Tensor::default(),
+            tensor: TensorMap::default(),
         }
     }
 
@@ -140,7 +140,7 @@ impl<G: Grading, F: Field> Comodule<G> for RComodule<G, F> {
         let mut deconstruct = HashMap::default();
         deconstruct.insert((degree, 0), ((zero, 0), (degree, 0)));
 
-        let tensor = Tensor {
+        let tensor = TensorMap {
             construct,
             deconstruct,
             dimensions,

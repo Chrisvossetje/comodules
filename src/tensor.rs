@@ -2,6 +2,8 @@ use ahash::HashMap;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
+use std::fmt::Debug;
+
 use crate::{
     basiselement::BasisElement, graded_module::GradedModule, graded_space::{BasisIndex, GradedVectorSpace}, grading::Grading
 };
@@ -20,7 +22,7 @@ pub trait ObjectGenerator<G: Grading> {
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default)]
-pub struct Tensor<G: Grading> {
+pub struct TensorMap<G: Grading> {
     // # Module Grade + Index -> Algebra Grading + index -> Tensor Grading + index
     pub construct: TensorConstruct<G>,
 
@@ -60,7 +62,7 @@ impl<G: Grading, B: BasisElement> ObjectGenerator<G> for GradedModule<G, B> {
 }
 
 
-impl<G: Grading> Tensor<G> {
+impl<G: Grading> TensorMap<G> {
     pub fn default() -> Self {
         Self {
             construct: Default::default(),
@@ -75,7 +77,7 @@ impl<G: Grading> Tensor<G> {
 
 }
 
-impl<G: Grading> Tensor<G> {
+impl<G: Grading> TensorMap<G> {
     pub fn generate<GENS: ObjectGenerator<G>>(
         left: &GENS,
         right: &GENS,

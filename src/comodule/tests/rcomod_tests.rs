@@ -8,7 +8,7 @@ mod tests {
     use crate::{
         basiselement::kBasisElement, comodule::{
             kcoalgebra::kCoalgebra, rcoalgebra::{A0_C, A1_C, tensor_k_coalgebra}, rcomodule::{RCoalgebra, RComodule}, traits::Comodule
-        }, graded_module::GradedModule, graded_module_morphism::GradedModuleMap, grading::{BiGrading, Grading, UniGrading}, tensor::Tensor
+        }, graded_module::GradedModule, graded_module_morphism::GradedModuleMap, grading::{BiGrading, Grading, UniGrading}, tensor::TensorMap
     };
 
     /// Helper function to create a simple test RCoalgebra
@@ -45,7 +45,7 @@ mod tests {
         let mut deconstruct = HashMap::default();
         deconstruct.insert((zero, 0), ((zero, 0), (zero, 0)));
 
-        let tensor = Tensor {
+        let tensor = TensorMap {
             construct,
             deconstruct,
             dimensions,
@@ -154,7 +154,7 @@ mod tests {
             coalgebra,
             space: GradedModule(space_map),
             coaction: GradedModuleMap::default(),
-            tensor: Tensor::default(),
+            tensor: TensorMap::default(),
         };
 
         let generators = comodule.get_generators();

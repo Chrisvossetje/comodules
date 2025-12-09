@@ -65,7 +65,7 @@ pub(super) fn internal_cohomology<F: Field>(f: &UniPolMap<F>, g: &UniPolMap<F>, 
     // println!("g_ker:\n{:?}", g_ker);
     
     
-    let (_,s_ker,v_ker, uinv_ker, _) = g_ker.full_snf();
+    let (_,s_ker,_, uinv_ker, _) = g_ker.full_snf();
     
     let mut non_zero_els = 0;
     for r in 0..s_ker.codomain {
