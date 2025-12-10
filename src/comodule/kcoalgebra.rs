@@ -1,5 +1,6 @@
 use ahash::HashMap;
 use algebra::{field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::finite_fields::F2};
+use deepsize::DeepSizeOf;
 use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
@@ -9,7 +10,7 @@ use crate::{
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, DeepSizeOf)]
 #[allow(non_camel_case_types)]
 pub struct kCoalgebra<G: Grading, F: Field, M: Matrix<F>> {
     pub space: GradedVectorSpace<G, kBasisElement>,

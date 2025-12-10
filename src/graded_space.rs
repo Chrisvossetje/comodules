@@ -2,6 +2,7 @@ use std::{fmt::Debug, marker::PhantomData};
 
 use ahash::HashMap;
 use algebra::{abelian::Abelian, field::Field, matrix::Matrix};
+use deepsize::DeepSizeOf;
 use rayon::prelude::*;
 
 use crate::{basiselement::BasisElement, grading::Grading};
@@ -11,10 +12,10 @@ use serde::{Deserialize, Serialize};
 
 pub type BasisIndex<G> = (G, usize);
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, DeepSizeOf)]
 pub struct GradedVectorSpace<G: Grading, B: BasisElement>(pub HashMap<G, Vec<B>>);
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, DeepSizeOf)]
 pub struct GradedLinearMap<G: Grading, F: Field, M: Matrix<F>> {
     pub maps: HashMap<G, M>,
     __: PhantomData<F>,

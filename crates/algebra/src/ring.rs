@@ -1,6 +1,8 @@
 use std::ops::{Add, Sub, Neg, Mul, AddAssign, SubAssign, MulAssign};
 use std::fmt::Debug;
 
+use deepsize::DeepSizeOf;
+
 pub trait CRing:
     Clone
     + Copy
@@ -18,6 +20,7 @@ pub trait CRing:
     + std::iter::Sum
     + Sync
     + Send
+    + DeepSizeOf
 {
     fn is_zero(&self) -> bool;
     fn one() -> Self;

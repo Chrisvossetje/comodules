@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use ahash::HashMap;
 use algebra::{abelian::Abelian, field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::univariate_polynomial_ring::UniPolRing};
+use deepsize::DeepSizeOf;
 use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
@@ -11,7 +12,7 @@ use crate::{
 
 
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, DeepSizeOf)]
 pub struct RComoduleMorphism<G: Grading, F: Field> {
     pub domain: Arc<RComodule<G, F>>,
     pub codomain: Arc<RComodule<G, F>>,

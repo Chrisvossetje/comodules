@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use deepsize::DeepSizeOf;
+
 use crate::{
     basiselement::BasisElement,
     grading::{Grading, OrderedGrading}
@@ -8,7 +10,7 @@ use crate::{
 pub trait Comodule<G: Grading>: Sized {
     type Element: BasisElement;
     type Coalgebra;
-    type Morphism: ComoduleMorphism<G, Self> + Clone;
+    type Morphism: ComoduleMorphism<G, Self> + Clone + DeepSizeOf;
     type BaseRing: std::fmt::Debug + Clone;
     type Generator;
 

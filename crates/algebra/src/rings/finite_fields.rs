@@ -1,9 +1,11 @@
 use std::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
+use deepsize::DeepSizeOf;
+
 use crate::{field::Field, ring::CRing};
 
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, DeepSizeOf)]
 pub struct Fp<const P: u8>(pub(crate) u8);
 
 impl<const P: u8> Add for Fp<P> {
@@ -141,7 +143,7 @@ impl<const P: u8> Field for Fp<P> {
 
 
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, DeepSizeOf)]
 pub struct F2(pub(crate) u8);
 
 impl Add for F2 {

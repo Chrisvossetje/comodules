@@ -59,14 +59,14 @@ mod tests {
         {
             let input = include_str!("../examples/polynomial/A.txt");
 
-            let coalgebra = Arc::new(kCoalgebra::parse(input, UniGrading(30)).unwrap().0);
+            let coalgebra = Arc::new(kCoalgebra::parse(input, UniGrading(40)).unwrap().0);
 
             let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 
             let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
                 Resolution::new(fp);
 
-            res.resolve_to_s(25, UniGrading(30));
+            res.resolve_to_s(25, UniGrading(40));
             dbg!(&res);
 
             let p = res.generate_sseq("A");

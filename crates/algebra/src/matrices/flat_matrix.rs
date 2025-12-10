@@ -2,9 +2,11 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 use crate::{matrix::Matrix, ring::CRing};
+use deepsize::DeepSizeOf;
 
 
-#[derive(Clone, PartialEq, Deserialize, Serialize)]
+
+#[derive(Clone, PartialEq, Deserialize, Serialize, DeepSizeOf)]
 pub struct FlatMatrix<R: CRing> {
     pub data: Vec<R>,
     pub(crate) domain: usize,

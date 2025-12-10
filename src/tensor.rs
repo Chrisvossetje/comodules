@@ -1,4 +1,5 @@
 use ahash::HashMap;
+use deepsize::DeepSizeOf;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -21,7 +22,7 @@ pub trait ObjectGenerator<G: Grading> {
     fn sorted_els(&self,) -> Vec<(G, usize)>;
 }
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default, DeepSizeOf)]
 pub struct TensorMap<G: Grading> {
     // # Module Grade + Index -> Algebra Grading + index -> Tensor Grading + index
     pub construct: TensorConstruct<G>,

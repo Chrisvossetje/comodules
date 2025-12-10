@@ -2,6 +2,7 @@ use std::{
     cmp::Ordering, fmt::{Debug, Display, Formatter}, hash::Hash, iter::Sum, ops::{Add, AddAssign, Sub, SubAssign}, str::FromStr
 };
 
+use deepsize::DeepSizeOf;
 use serde::{Deserialize, Serialize};
 
 pub trait Parse: Sized {
@@ -30,6 +31,7 @@ pub trait Grading:
     + Sum
     + PartialOrd 
     + Ord
+    + DeepSizeOf
 {
     fn degree_names() -> Vec<char>;
     fn default_formulas() -> (String, String);
@@ -77,10 +79,10 @@ impl PolyGrading for BiGrading {
 
 
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize, DeepSizeOf)]
 pub struct UniGrading(pub i32);
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize, DeepSizeOf)]
 pub struct BiGrading(pub i32, pub i32);
 
 

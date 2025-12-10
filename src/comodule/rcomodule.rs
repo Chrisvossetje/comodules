@@ -1,6 +1,7 @@
 use std::{sync::Arc};
 use ahash::HashMap;
 use algebra::{field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::univariate_polynomial_ring::UniPolRing};
+use deepsize::DeepSizeOf;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -9,14 +10,14 @@ use crate::{
     }, graded_module::GradedModule, graded_module_morphism::GradedModuleMap, grading::{Grading, UniGrading}, helper::{hashmap_add_restrict, hashmap_add_restrict_transform}, tensor::TensorMap
 };
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, DeepSizeOf)]
 pub struct RCoalgebra<G: Grading, F: Field> {
     pub space: GradedModule<G, kBasisElement>,
     pub coaction: GradedModuleMap<G, F>,
     pub tensor: TensorMap<G>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, DeepSizeOf)]
 pub struct RComodule<G: Grading, F: Field> {
     pub coalgebra: Arc<RCoalgebra<G, F>>,
     pub space: GradedModule<G, kBasisElement>,

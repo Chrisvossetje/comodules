@@ -262,11 +262,23 @@ fn main() {
 
     let mut res = Resolution::new(kt);
 
+    
     res.resolve_to_s_with_print(20, UniGrading(50));
+    
+    for s in &res.resolution {
+        deepsize::DeepSizeOf::deep_size_of(&s.map);
+        println!("Size of map: {:?}\nSize of codomain:{:?}\nSize of codomain.space:{:?}\nSize of codomain.tensor:{:?}\nSize of codomain.coaction:{:?}\n",         deepsize::DeepSizeOf::deep_size_of(&s.map)
+        ,         deepsize::DeepSizeOf::deep_size_of(&s.codomain),
+        deepsize::DeepSizeOf::deep_size_of(&s.codomain.space),
+        deepsize::DeepSizeOf::deep_size_of(&s.codomain.tensor),
+        deepsize::DeepSizeOf::deep_size_of(&s.codomain.coaction),
+)       ;
+    }
 
+    println!("Size of resolution: {:?}", deepsize::DeepSizeOf::deep_size_of(&res));
     // let sseq = res.generate_sseq("");
 
     // sseq.save_to_json("A_C.json").unwrap();
-
+    
     println!("\nProgram took: {:.2?}", start.elapsed());
 }

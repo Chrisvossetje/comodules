@@ -2,6 +2,7 @@
 
 use ahash::HashMap;
 use algebra::{abelian::Abelian, field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, rings::univariate_polynomial_ring::UniPolRing};
+use deepsize::DeepSizeOf;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +10,7 @@ use crate::{
     basiselement::BasisElement, graded_module::GradedModule, grading::{Grading, UniGrading}
 };
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default, DeepSizeOf)]
 pub struct GradedModuleMap<G: Grading, F: Field> {
     // (Grade, (BasisIndex, t multiplication))
     pub maps: HashMap<G, FlatMatrix<UniPolRing<F>>>,

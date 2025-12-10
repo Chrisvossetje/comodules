@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use ahash::HashMap;
 use algebra::{abelian::Abelian, field::Field, matrix::Matrix};
+use deepsize::DeepSizeOf;
 
 use crate::{
     basiselement::kBasisElement, graded_space::{GradedLinearMap, GradedVectorSpace}, grading::Grading, helper::hashmap_add_restrict, tensor::TensorMap
@@ -13,7 +14,7 @@ use super::{
 
 
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, DeepSizeOf)]
 #[allow(non_camel_case_types)]
 pub struct kComodule<G: Grading, F: Field, M: Matrix<F>> {
     pub coalgebra: Arc<kCoalgebra<G, F, M>>,

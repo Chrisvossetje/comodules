@@ -29,3 +29,4 @@ rayon = "1.10"
 ahash = "0.8.11"
 getrandom = { version = "0.2", features = ["js"] }
 algebra = { path = "./crates/algebra" }
+deepsize = "0.2.0"

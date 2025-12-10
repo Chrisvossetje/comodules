@@ -1,10 +1,12 @@
+use deepsize::DeepSizeOf;
+
 use crate::ring::CRing;
 use std::fmt::Debug;
 
 
 /// This represents a map between (free) R-modules
 /// (or represents vectors inside an R-module)
-pub trait Matrix<R: CRing>: Clone + Send + Sync + PartialEq + Debug {
+pub trait Matrix<R: CRing>: Clone + Send + Sync + PartialEq + Debug + DeepSizeOf {
     fn zero(domain: usize, codomain: usize) -> Self;
     fn identity(d: usize) -> Self;
 

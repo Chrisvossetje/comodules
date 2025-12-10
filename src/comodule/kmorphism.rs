@@ -1,7 +1,8 @@
-use std::{sync::Arc};
+use std::sync::{Arc, atomic::AtomicPtr};
 
 use ahash::HashMap;
 use algebra::{abelian::Abelian, field::Field, matrix::Matrix};
+use deepsize::DeepSizeOf;
 use itertools::Itertools;
 use rayon::prelude::*;
 
@@ -14,7 +15,7 @@ use super::{
     traits::{Comodule, ComoduleMorphism},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, DeepSizeOf)]
 #[allow(non_camel_case_types)]
 pub struct kComoduleMorphism<G: Grading, F: Field, M: Matrix<F>> {
     pub domain: Arc<kComodule<G, F, M>>,
@@ -111,12 +112,14 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kComodule<G, F, M>
                 let g_tensor_dimen = tensor.get_dimension(g);
                 let mut g_coaction = M::zero(v.len(), g_tensor_dimen);
 
+                
+                let coact_ref = &mut g_coaction as *mut M;
+                let a = AtomicPtr::new(coact_ref);
+                
                 // TODO:
                 // THERE SHOULD? BE A FASTER VERSION OF THIS, BUT THIS IS SIMPLER ?
                 // THIS COMMENTS WAS WRITTERN BEFORE M_lUT()
-
-                // (domain, codomain)
-                for (codom_id, coker_id) in &pivots[g] { // TODO : THiS COULD BE PARALLEL
+                pivots[g].par_iter().for_each(|(codom_id, coker_id)| {
                     let coact_size = self.codomain.tensor.dimensions[g];
                     for codom_coact_id in 0..coact_size {
                         let coact_val =
@@ -124,15 +127,22 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kComodule<G, F, M>
                         if !coact_val.is_zero() {
                             let ((alg_gr, alg_id), (mod_gr, mod_id)) =
                                 self.codomain.tensor.deconstruct[&(*g, codom_coact_id)];
-
+    
                             for (target_id, val) in m_lut.get(&(mod_gr, mod_id)).unwrap() {
                                 let (_, final_id) =
-                                    tensor.construct[&(mod_gr, *target_id)][&(alg_gr, alg_id)];
-                                g_coaction.add_at(*coker_id, final_id, coact_val * *val);
+                                    tensor.construct[&(mod_gr, *target_id)][&(alg_gr, alg_id)];                                
+                                
+                                // As coker_id is seperate across parallel instances
+                                // This unsafe code is fine, AS LONG as the matrix is FlatMatrix :)
+                                // TODO : This is not reallly generic, and depends on the underlying implementation
+                                // This probably breaks for a F2 matrix implementation. 
+                                unsafe {
+                                    (**(a.as_ptr())).add_at(*coker_id, final_id, coact_val * *val);
+                                }
                             }
                         }
                     }
-                }
+                });
                 (*g, g_coaction)
             })
             .collect();

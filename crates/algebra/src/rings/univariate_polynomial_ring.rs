@@ -1,13 +1,14 @@
 use std::fmt::{Debug, Formatter};
 use std::ops::{Add, Sub, Neg, Mul, AddAssign, SubAssign, MulAssign};
 
+use deepsize::DeepSizeOf;
 use serde::{Deserialize, Serialize};
 
 use crate::{field::Field, ring::{CRing, ValuationRing}};
 
 
 
-#[derive(Clone, Copy, Deserialize, Serialize)]
+#[derive(Clone, Copy, Deserialize, Serialize, DeepSizeOf)]
 pub struct UniPolRing<F: Field>(pub F, pub u16);
 
 

@@ -2,6 +2,7 @@ use std::{
     io::{self, Write}, marker::PhantomData, sync::Arc
 };
 
+use deepsize::DeepSizeOf;
 use itertools::Itertools;
 
 use crate::{
@@ -9,14 +10,14 @@ use crate::{
     export::{Page, SSeq}, grading::OrderedGrading,
 };
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Resolution<G: OrderedGrading, M: Comodule<G>> {
+#[derive(Debug, Clone, PartialEq, DeepSizeOf)]
+pub struct Resolution<G: OrderedGrading, M: Comodule<G> + DeepSizeOf> {
     pub comodule: Arc<M>,
     pub resolution: Vec<M::Morphism>,
     _grading: PhantomData<G>,
 }
 
-impl<G: OrderedGrading, M: Comodule<G>> Resolution<G, M> {
+impl<G: OrderedGrading, M: Comodule<G> + DeepSizeOf> Resolution<G, M> {
     pub fn new(comodule: M) -> Self {
         Resolution {
             comodule: Arc::new(comodule),

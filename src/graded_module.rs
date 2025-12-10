@@ -1,4 +1,5 @@
 use ahash::HashMap;
+use deepsize::DeepSizeOf;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -9,7 +10,7 @@ use crate::{
 #[allow(type_alias_bounds)]
 pub type Module<B: BasisElement> = Vec<(B, UniGrading, Option<u16>)>;
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default, DeepSizeOf)]
 pub struct GradedModule<G: Grading, B: BasisElement>(pub HashMap<G, Module<B>>);
 
 

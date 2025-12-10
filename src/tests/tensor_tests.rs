@@ -1,7 +1,9 @@
+use deepsize::DeepSizeOf;
+
 use crate::basiselement::BasisElement;
 use crate::grading::OrderedGrading;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, DeepSizeOf)]
 struct MockBasisElement;
 
 impl BasisElement for MockBasisElement {}
