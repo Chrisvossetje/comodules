@@ -34,7 +34,7 @@ pub struct TensorMap<G: Grading> {
 }
 
 
-impl<G: Grading, B: BasisElement> ObjectGenerator<G> for GradedVectorSpace<G, B> {
+impl<G: Grading, B> ObjectGenerator<G> for GradedVectorSpace<G, B> {
     fn contains_grade(&self, grade: &G) -> bool {
         self.0.contains_key(grade)
     }
@@ -79,9 +79,9 @@ impl<G: Grading> TensorMap<G> {
 }
 
 impl<G: Grading> TensorMap<G> {
-    pub fn generate<GENS: ObjectGenerator<G>>(
-        left: &GENS,
-        right: &GENS,
+    pub fn generate<G1: ObjectGenerator<G>, G2: ObjectGenerator<G>>(
+        left: &G1,
+        right: &G2,
     ) -> Self {
         let mut construct = HashMap::default();
         let mut deconstruct = HashMap::default();

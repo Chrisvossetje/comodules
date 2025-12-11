@@ -5,7 +5,7 @@ mod tests {
     use algebra::{matrices::flat_matrix::FlatMatrix, rings::finite_fields::F2};
     use comodules::{
         comodule::{
-            kcoalgebra::{A0_coalgebra, kCoalgebra}, kcomodule::kComodule, traits::Comodule
+            kcoalgebra::{A0_coalgebra, kCoalgebra}, kcomodule::{kCofreeComodule, kComodule}, kmorphism::kComoduleMorphism, traits::Comodule
         }, export::SSeq, grading::{Grading, UniGrading}, resolution::Resolution
     };
     use itertools::Itertools;
@@ -15,8 +15,8 @@ mod tests {
         {
             let coalgebra = Arc::new(A0_coalgebra());
             let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
-            let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
-                Resolution::new(fp);
+            let mut res: Resolution<UniGrading, kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>> =
+            Resolution::new(fp);
 
             res.resolve_to_s(20, UniGrading(20));
 
@@ -30,8 +30,8 @@ mod tests {
 
             let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 
-            let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
-                Resolution::new(fp);
+            let mut res: Resolution<UniGrading, kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>> =
+            Resolution::new(fp);
 
             res.resolve_to_s(20, UniGrading(20));
 
@@ -46,8 +46,8 @@ mod tests {
 
             let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 
-            let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
-                Resolution::new(fp);
+            let mut res: Resolution<UniGrading, kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>> =
+            Resolution::new(fp);
 
             res.resolve_to_s(20, UniGrading(20));
             dbg!(&res);
@@ -63,8 +63,8 @@ mod tests {
 
             let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 
-            let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
-                Resolution::new(fp);
+            let mut res: Resolution<UniGrading, kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>> =
+            Resolution::new(fp);
 
             res.resolve_to_s(25, UniGrading(40));
             dbg!(&res);
@@ -80,7 +80,7 @@ mod tests {
 
         let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 
-        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
+        let mut res: Resolution<UniGrading, kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>> =
             Resolution::new(fp);
 
         res.resolve_to_s(4, UniGrading(10));
@@ -128,7 +128,7 @@ mod tests {
 
         let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 
-        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
+        let mut res: Resolution<UniGrading, kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>> =
             Resolution::new(fp);
 
         res.resolve_to_s(20, UniGrading(20));
@@ -145,7 +145,7 @@ mod tests {
 
         let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 
-        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
+        let mut res: Resolution<UniGrading, kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>> =
             Resolution::new(fp);
 
         res.resolve_to_s(20, UniGrading(20));
@@ -162,7 +162,7 @@ mod tests {
 
         let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 
-        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
+        let mut res: Resolution<UniGrading, kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>> =
             Resolution::new(fp);
 
         res.resolve_to_s(20, UniGrading(20));
@@ -180,11 +180,10 @@ mod tests {
 
         let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 
-        let mut res: Resolution<UniGrading, kComodule<UniGrading, F2, FlatMatrix<F2>>> =
+        let mut res: Resolution<UniGrading, kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>> =
             Resolution::new(fp);
 
         res.resolve_to_s(20, UniGrading(20));
-        dbg!(&res);
 
         let p = res.generate_sseq("A(2)");
         let comp_p: SSeq = serde_json::from_str(include_str!("./A(2).json")).unwrap();

@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 pub type BasisIndex<G> = (G, usize);
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, DeepSizeOf)]
-pub struct GradedVectorSpace<G: Grading, B: BasisElement>(pub HashMap<G, Vec<B>>);
+pub struct GradedVectorSpace<G: Grading, B>(pub HashMap<G, Vec<B>>);
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, DeepSizeOf)]
 pub struct GradedLinearMap<G: Grading, F: Field, M: Matrix<F>> {
@@ -21,7 +21,7 @@ pub struct GradedLinearMap<G: Grading, F: Field, M: Matrix<F>> {
     __: PhantomData<F>,
 }
 
-impl<G: Grading, B: BasisElement> GradedVectorSpace<G, B> {
+impl<G: Grading, B> GradedVectorSpace<G, B> {
     pub fn new() -> Self {
         Self(HashMap::default())
     }
@@ -30,7 +30,7 @@ impl<G: Grading, B: BasisElement> GradedVectorSpace<G, B> {
     }
 }
 
-impl<G: Grading, B: BasisElement> From<HashMap<G, Vec<B>>>
+impl<G: Grading, B> From<HashMap<G, Vec<B>>>
     for GradedVectorSpace<G, B>
 {
     fn from(value: HashMap<G, Vec<B>>) -> Self {
@@ -160,30 +160,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> GradedLinearMap<G, F, M> {
             .collect()
     }
 
-    pub fn zero<B: BasisElement>(
-        domain: &GradedVectorSpace<G, B>,
-        codomain: &GradedVectorSpace<G, B>,
-    ) -> Self {
-        let mut maps: HashMap<G, M> = domain
-            .0
-            .iter()
-            .map(|(g, els)| {
-                let codom_len = codomain.dimension_in_grade(g);
-                (*g, Matrix::zero(els.len(), codom_len))
-            })
-            .collect();
-        codomain.0.iter().for_each(|(g, v)| {
-            if !maps.contains_key(g) {
-                maps.insert(*g, Matrix::zero(0, v.len()));
-            }
-        });
-        Self {
-            maps,
-            __: PhantomData,
-        }
-    }
-
-    pub fn zero_codomain<B: BasisElement>(codomain: &GradedVectorSpace<G, B>) -> Self {
+    pub fn zero_codomain<B>(codomain: &GradedVectorSpace<G, B>) -> Self {
         let maps = codomain
             .0
             .iter()
@@ -195,7 +172,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> GradedLinearMap<G, F, M> {
         }
     }
 
-    pub fn codomain_space<B: BasisElement>(&self, b: B) -> GradedVectorSpace<G, B> {
+    pub fn codomain_space<B: Clone>(&self, b: B) -> GradedVectorSpace<G, B> {
         let space = self
             .maps
             .iter()

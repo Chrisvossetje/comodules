@@ -845,7 +845,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
         let mut basis_translate: HashMap<String, BasisIndex<G>> = HashMap::default();
 
         for (name, (el, gr)) in basis_dict.iter().sorted_by_key(|(name, _)| *name) {
-            transformed.entry(*gr).or_insert(vec![]).push(el.clone());
+            transformed.entry(*gr).or_insert(vec![]).push(());
             basis_translate.insert(name.clone(), (*gr, transformed[&gr].len() - 1));
         }
 
@@ -1098,7 +1098,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
         }
 
         // Construct the basis structure
-        let mut basis: HashMap<G, Vec<kBasisElement>> = HashMap::default();
+        let mut basis: HashMap<G, Vec<()>> = HashMap::default();
         let mut monomial_to_grade_index: HashMap<Monomial, (G, usize)> =
             HashMap::default();
 
@@ -1115,7 +1115,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
 
             let index = basis.entry(grade).or_insert_with(Vec::new).len();
             monomial_to_grade_index.insert(monomial.clone(), (grade, index));
-            basis.entry(grade).or_insert_with(Vec::new).push(element);
+            basis.entry(grade).or_insert_with(Vec::new).push(());
         }
 
         // Create the graded vector space
