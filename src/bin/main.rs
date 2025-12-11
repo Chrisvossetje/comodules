@@ -254,8 +254,8 @@ use itertools::Itertools;
 fn main() {
     let start = Instant::now();
 
-    let input = include_str!("../../examples/polynomial/A.txt");
-    let coalgebra = kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input, UniGrading(30)).unwrap().0; 
+    let input = include_str!("../../examples/polynomial/A(2).txt");
+    let coalgebra = kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input, UniGrading(100)).unwrap().0; 
 
     let coalgebra = Arc::new(coalgebra);
 
@@ -264,7 +264,7 @@ fn main() {
     let mut res: Resolution<UniGrading, kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>> = Resolution::new(kt);
 
     
-    res.resolve_to_s_with_print(20, UniGrading(30));
+    res.resolve_to_s_with_print(40, UniGrading(100));
     
 //     for s in &res.resolution {
 //         deepsize::DeepSizeOf::deep_size_of(&s.map);

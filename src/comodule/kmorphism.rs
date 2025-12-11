@@ -22,31 +22,29 @@ pub struct kComoduleMorphism<G: Grading, F: Field, M: Matrix<F>> {
 }
 
 impl<G: Grading, F: Field, M: Matrix<F>> kComoduleMorphism<G, F, M> {
-    fn verify_dimensions(&self) -> bool {
-        // TODO :
+    fn verify_dimensions(&self, domain: &kComodule<G,F,M>, codomain: &kCofreeComodule<G,F,M>) -> bool {
+        for k in domain.space.0.keys() {
+            if !self.map.maps.contains_key(k) {
+                return false;
+            };
+        }
 
-        // for k in self.domain.space.0.keys() {
-        //     if !self.map.maps.contains_key(k) {
-        //         return false;
-        //     };
-        // }
+        for k in codomain.space.0.keys() {
+            if !self.map.maps.contains_key(k) {
+                return false;
+            };
+        }
 
-        // for k in self.codomain.space.0.keys() {
-        //     if !self.map.maps.contains_key(k) {
-        //         return false;
-        //     };
-        // }
-
-        // for (g, map) in self.map.maps.iter() {
-        //     let dom_dim = self.domain.space.dimension_in_grade(g);
-        //     let codom_dim = self.codomain.space.dimension_in_grade(g);
-        //     if dom_dim != map.domain() {
-        //         return false;
-        //     };
-        //     if codom_dim != map.codomain() {
-        //         return false;
-        //     };
-        // }
+        for (g, map) in self.map.maps.iter() {
+            let dom_dim = domain.space.dimension_in_grade(g);
+            let codom_dim = codomain.space.dimension_in_grade(g);
+            if dom_dim != map.domain() {
+                return false;
+            };
+            if codom_dim != map.codomain() {
+                return false;
+            };
+        }
 
         true
     }
@@ -57,7 +55,6 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComoduleMorphism<G, F, M> {
         let new = Self {
             map,
         };
-        debug_assert!(new.verify_dimensions());
         new
     }
 }
@@ -273,14 +270,23 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G>
                 ()
             );
 
-            
+            if cfg!(debug_assertions) {
+
+            }
+
             growing_comodule.direct_sum(&mut f);
             growing_map.vstack(&mut GradedLinearMap::from(cofree_map));
 
+   
             iteration += 1;
         }
 
-        (kComoduleMorphism { map: growing_map } ,growing_comodule)
+        let total_domain_size = growing_map.maps.iter().fold(0, |sum, m| sum + (m.1.codomain() * m.1.domain()));
+        println!("{:?}", total_domain_size);
+
+        let m = kComoduleMorphism { map: growing_map };
+        m.verify_dimensions(&comodule, &growing_comodule);
+        (m, growing_comodule)
     }
 
 
@@ -312,29 +318,34 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G>
     fn get_structure_lines(&self, domain: &Self::CofreeComodule, codomain: &Self::CofreeComodule) -> Vec<((usize, G, usize), (usize, G, usize), Self::BaseRing, String)> {
         let mut lines = vec![];
 
+        let c_space = &domain.coalgebra.space.0;
+
         for (gr, gr_map) in self.map.maps.iter() {
             for el_id in 0..domain.space.dimension_in_grade(gr) {
                 let els = domain.space.0.get(gr).unwrap();
-                // TODO :
-                // match els[el_id].primitive {
-                //     Some(prim_id) => {
-                //         for t_id in 0..gr_map.codomain() {
-                //             let t_el = &codomain.space.0.get(gr).expect("As codomain of the map is non-zero this vector space should contain an element in this grade.")[t_id];
-                //             if t_el.generator {
-                //                 if !gr_map.get(el_id, t_id).is_zero() {
-                //                     lines.push((
-                //                         // TODO 
-                //                         (els[el_id].generated_index, G::zero(), 0),
-                //                         (t_el.generated_index, G::zero(), 0),
-                //                         gr_map.get(el_id, t_id),
-                //                         "h_".to_string() + &prim_id.to_string(),
-                //                     ));
-                //                 }
-                //             }
-                //         }
-                //     }
-                //     None => {}
-                // }
+                let (((alg_gr, alg_id), gen_id), _) = els[el_id];
+                let alg_el = &c_space[&alg_gr][alg_id];
+                match alg_el.primitive {
+                    Some(prim_id) => {
+                        for t_id in 0..gr_map.codomain() {
+                            let (((codom_alg_gr, codom_alg_id), codom_gen_id), _) = codomain.space.0.get(gr).expect("As codomain of the map is non-zero this vector space should contain an element in this grade.")[t_id];
+                            
+                            let alg_el = &c_space[&codom_alg_gr][codom_alg_id];
+                            if alg_el.generator {
+                                if !gr_map.get(el_id, t_id).is_zero() {
+                                    lines.push((
+                                        // TODO 
+                                        (gen_id, G::zero(), 0),
+                                        (codom_gen_id, G::zero(), 0),
+                                        gr_map.get(el_id, t_id),
+                                        "h_".to_string() + &prim_id.to_string(),
+                                    ));
+                                }
+                            }
+                        }
+                    }
+                    None => {}
+                }
             }
         }
 

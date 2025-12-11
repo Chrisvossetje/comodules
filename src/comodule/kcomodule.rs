@@ -145,7 +145,6 @@ impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G> for kCofreeComodule<
                 }
             })
             .collect();
-            
 
         // // TODO! SOME UNSTABLE STUFF        
         // for ((t_gr, _), (a, m)) in &tensor.deconstruct {
