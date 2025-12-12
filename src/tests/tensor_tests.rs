@@ -12,7 +12,10 @@ impl BasisElement for MockBasisElement {}
 mod tests {
     use ahash::HashMap;
 
-    use crate::{comodule::kcoalgebra::A0_coalgebra, graded_space::GradedVectorSpace, grading::UniGrading, tensor::TensorMap};
+    use crate::{
+        comodule::kcoalgebra::A0_coalgebra, graded_space::GradedVectorSpace, grading::UniGrading,
+        tensor::TensorMap,
+    };
 
     use super::*;
 
@@ -32,8 +35,14 @@ mod tests {
 
     #[test]
     fn test_generate_ktensor() {
-        let left_elements = vec![(UniGrading(0), vec![MockBasisElement]), (UniGrading(1), vec![MockBasisElement])];
-        let right_elements = vec![(UniGrading(0), vec![MockBasisElement]), (UniGrading(1), vec![MockBasisElement])];
+        let left_elements = vec![
+            (UniGrading(0), vec![MockBasisElement]),
+            (UniGrading(1), vec![MockBasisElement]),
+        ];
+        let right_elements = vec![
+            (UniGrading(0), vec![MockBasisElement]),
+            (UniGrading(1), vec![MockBasisElement]),
+        ];
 
         let left_space = create_mock_vector_space(left_elements);
         let right_space = create_mock_vector_space(right_elements);
@@ -53,8 +62,14 @@ mod tests {
 
     #[test]
     fn test_add() {
-        let left_elements = vec![(UniGrading(0), vec![MockBasisElement]), (UniGrading(1), vec![MockBasisElement])];
-        let right_elements = vec![(UniGrading(0), vec![MockBasisElement]), (UniGrading(1), vec![MockBasisElement])];
+        let left_elements = vec![
+            (UniGrading(0), vec![MockBasisElement]),
+            (UniGrading(1), vec![MockBasisElement]),
+        ];
+        let right_elements = vec![
+            (UniGrading(0), vec![MockBasisElement]),
+            (UniGrading(1), vec![MockBasisElement]),
+        ];
 
         let left_space = create_mock_vector_space(left_elements);
         let right_space = create_mock_vector_space(right_elements);
@@ -72,8 +87,14 @@ mod tests {
 
     #[test]
     fn test_restrict() {
-        let left_elements = vec![(UniGrading(0), vec![MockBasisElement]), (UniGrading(1), vec![MockBasisElement])];
-        let right_elements = vec![(UniGrading(0), vec![MockBasisElement]), (UniGrading(1), vec![MockBasisElement])];
+        let left_elements = vec![
+            (UniGrading(0), vec![MockBasisElement]),
+            (UniGrading(1), vec![MockBasisElement]),
+        ];
+        let right_elements = vec![
+            (UniGrading(0), vec![MockBasisElement]),
+            (UniGrading(1), vec![MockBasisElement]),
+        ];
 
         let left_space = create_mock_vector_space(left_elements);
         let right_space = create_mock_vector_space(right_elements);
@@ -91,8 +112,14 @@ mod tests {
 
     #[test]
     fn test_direct_sum() {
-        let left_elements = vec![(UniGrading(0), vec![MockBasisElement]), (UniGrading(1), vec![MockBasisElement])];
-        let right_elements = vec![(UniGrading(0), vec![MockBasisElement]), (UniGrading(1), vec![MockBasisElement])];
+        let left_elements = vec![
+            (UniGrading(0), vec![MockBasisElement]),
+            (UniGrading(1), vec![MockBasisElement]),
+        ];
+        let right_elements = vec![
+            (UniGrading(0), vec![MockBasisElement]),
+            (UniGrading(1), vec![MockBasisElement]),
+        ];
 
         let left_space = create_mock_vector_space(left_elements.clone());
         let right_space = create_mock_vector_space(right_elements.clone());

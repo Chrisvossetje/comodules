@@ -6,20 +6,20 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 use crate::{
-    basiselement::BasisElement, graded_module::GradedModule, graded_space::{BasisIndex, GradedVectorSpace}, grading::Grading
+    basiselement::BasisElement,
+    graded_module::GradedModule,
+    graded_space::{BasisIndex, GradedVectorSpace},
+    grading::Grading,
 };
 
-pub type TensorConstruct<G> =
-    HashMap<BasisIndex<G>, HashMap<BasisIndex<G>, BasisIndex<G>>>;
+pub type TensorConstruct<G> = HashMap<BasisIndex<G>, HashMap<BasisIndex<G>, BasisIndex<G>>>;
 pub type TensorDeconstruct<G> = HashMap<BasisIndex<G>, (BasisIndex<G>, BasisIndex<G>)>;
 pub type TensorDimension<G> = HashMap<G, usize>;
-
-
 
 pub trait ObjectGenerator<G: Grading> {
     fn contains_grade(&self, grade: &G) -> bool;
     fn els(&self, grade: &G) -> usize;
-    fn sorted_els(&self,) -> Vec<(G, usize)>;
+    fn sorted_els(&self) -> Vec<(G, usize)>;
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default, DeepSizeOf)]
@@ -33,18 +33,21 @@ pub struct TensorMap<G: Grading> {
     pub dimensions: TensorDimension<G>,
 }
 
-
 impl<G: Grading, B> ObjectGenerator<G> for GradedVectorSpace<G, B> {
     fn contains_grade(&self, grade: &G) -> bool {
         self.0.contains_key(grade)
     }
-    
+
     fn els(&self, grade: &G) -> usize {
         self.0.get(grade).map_or(0, |x| x.len())
     }
-    
-    fn sorted_els(&self,) -> Vec<(G, usize)> {
-        self.0.iter().sorted_by_key(|(g, _)| **g).map(|(&g, l)| (g,l.len())).collect()
+
+    fn sorted_els(&self) -> Vec<(G, usize)> {
+        self.0
+            .iter()
+            .sorted_by_key(|(g, _)| **g)
+            .map(|(&g, l)| (g, l.len()))
+            .collect()
     }
 }
 
@@ -52,16 +55,19 @@ impl<G: Grading, B: BasisElement> ObjectGenerator<G> for GradedModule<G, B> {
     fn contains_grade(&self, grade: &G) -> bool {
         self.0.contains_key(grade)
     }
-    
+
     fn els(&self, grade: &G) -> usize {
         self.0.get(grade).map_or(0, |x| x.len())
     }
-    
-    fn sorted_els(&self,) -> Vec<(G, usize)> {
-        self.0.iter().sorted_by_key(|(g, _)| **g).map(|(&g, l)| (g,l.len())).collect()
+
+    fn sorted_els(&self) -> Vec<(G, usize)> {
+        self.0
+            .iter()
+            .sorted_by_key(|(g, _)| **g)
+            .map(|(&g, l)| (g, l.len()))
+            .collect()
     }
 }
-
 
 impl<G: Grading> TensorMap<G> {
     pub fn default() -> Self {
@@ -75,18 +81,14 @@ impl<G: Grading> TensorMap<G> {
     pub fn get_dimension(&self, grading: &G) -> usize {
         *self.dimensions.get(grading).unwrap_or(&0)
     }
-
 }
 
 impl<G: Grading> TensorMap<G> {
-    pub fn generate<G1: ObjectGenerator<G>, G2: ObjectGenerator<G>>(
-        left: &G1,
-        right: &G2,
-    ) -> Self {
+    pub fn generate<G1: ObjectGenerator<G>, G2: ObjectGenerator<G>>(left: &G1, right: &G2) -> Self {
         let mut construct = HashMap::default();
         let mut deconstruct = HashMap::default();
         let mut dimensions = HashMap::default();
-        
+
         // This sorted is important for consistency !
         for (l_grade, l_elements) in left.sorted_els() {
             for l_id in 0..l_elements {

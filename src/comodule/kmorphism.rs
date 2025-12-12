@@ -7,7 +7,11 @@ use itertools::Itertools;
 use rayon::prelude::*;
 
 use crate::{
-    basiselement::kBasisElement, comodule::{kcomodule::kCofreeComodule, traits::CofreeComodule}, graded_space::{BasisIndex, GradedLinearMap}, grading::{Grading, OrderedGrading}, tensor::TensorMap
+    basiselement::kBasisElement,
+    comodule::{kcomodule::kCofreeComodule, traits::CofreeComodule},
+    graded_space::{BasisIndex, GradedLinearMap},
+    grading::{Grading, OrderedGrading},
+    tensor::TensorMap,
 };
 
 use super::{
@@ -22,7 +26,11 @@ pub struct kComoduleMorphism<G: Grading, F: Field, M: Matrix<F>> {
 }
 
 impl<G: Grading, F: Field, M: Matrix<F>> kComoduleMorphism<G, F, M> {
-    fn verify_dimensions(&self, domain: &kComodule<G,F,M>, codomain: &kCofreeComodule<G,F,M>) -> bool {
+    fn verify_dimensions(
+        &self,
+        domain: &kComodule<G, F, M>,
+        codomain: &kCofreeComodule<G, F, M>,
+    ) -> bool {
         for k in domain.space.0.keys() {
             if !self.map.maps.contains_key(k) {
                 return false;
@@ -33,6 +41,12 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComoduleMorphism<G, F, M> {
             if !self.map.maps.contains_key(k) {
                 return false;
             };
+        }
+
+        for k in self.map.maps.keys() {
+            if !codomain.space.0.contains_key(&k) {
+                return false;
+            }
         }
 
         for (g, map) in self.map.maps.iter() {
@@ -49,24 +63,18 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComoduleMorphism<G, F, M> {
         true
     }
 
-    pub fn new(
-        map: GradedLinearMap<G, F, M>,
-    ) -> Self {
-        let new = Self {
-            map,
-        };
+    pub fn new(map: GradedLinearMap<G, F, M>) -> Self {
+        let new = Self { map };
         new
     }
 }
 
-impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G>
-    for kComoduleMorphism<G, F, M>
-{
-    type CofreeComodule = kCofreeComodule<G,F,M>;
-    type Comodule = kComodule<G,F,M>;
+impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G> for kComoduleMorphism<G, F, M> {
+    type CofreeComodule = kCofreeComodule<G, F, M>;
+    type Comodule = kComodule<G, F, M>;
     type BaseRing = F;
 
-    fn cokernel(&self, codomain: &Self::CofreeComodule) -> (Self, Self::Comodule) {  
+    fn cokernel(&self, codomain: &Self::CofreeComodule) -> (Self, Self::Comodule) {
         let cokernel_map = self.map.get_cokernel();
 
         let coker_space = cokernel_map.codomain_space(());
@@ -78,9 +86,9 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G>
 
         // The upcoming should be a "solve commutative square thingy ?"
 
-        let m_lut: HashMap<BasisIndex<G>, Vec<(usize, F)>> = 
-            codomain
-            .space.0
+        let m_lut: HashMap<BasisIndex<G>, Vec<(usize, F)>> = codomain
+            .space
+            .0
             .par_iter()
             .flat_map(|(f_gr, m)| {
                 // Transfer a specific codomain grade and id (f_gr, f_id) to a list of elements which it maps to in the cokernel
@@ -117,34 +125,33 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G>
                 let g_tensor_dimen = tensor.get_dimension(g);
                 let mut g_coaction = M::zero(v.len(), g_tensor_dimen);
 
-                
                 let coact_ref = &mut g_coaction as *mut M;
                 let a = AtomicPtr::new(coact_ref);
 
                 let space = &codomain.space.0[g];
-                
+
                 pivots[g].par_iter().for_each(|(codom_id, coker_id)| {
                     let (((alg_gr, alg_id), gen_id), _) = space[*codom_id];
-                    
+
                     let coact_size = codomain.coalgebra.tensor.dimensions[&alg_gr];
                     for codom_coact_id in 0..coact_size {
                         let coact_val =
                             codomain.coalgebra.coaction.maps[&alg_gr].get(alg_id, codom_coact_id);
-                        
+
                         if !coact_val.is_zero() {
                             let ((alg_l_gr, alg_l_id), (alg_r_gr, alg_r_id)) =
                                 codomain.coalgebra.tensor.deconstruct[&(alg_gr, codom_coact_id)];
-                            
+
                             let (mod_gr, mod_id) = find[&((alg_r_gr, alg_r_id), gen_id)];
-                                
+
                             for (target_id, val) in m_lut.get(&(mod_gr, mod_id)).unwrap() {
                                 let (_, final_id) =
-                                    tensor.construct[&(mod_gr, *target_id)][&(alg_l_gr, alg_l_id)];                                
-                                
+                                    tensor.construct[&(mod_gr, *target_id)][&(alg_l_gr, alg_l_id)];
+
                                 // As coker_id is seperate across parallel instances
                                 // This unsafe code is fine, AS LONG as the matrix is FlatMatrix :)
                                 // TODO : This is not reallly generic, and depends on the underlying implementation
-                                // This probably breaks for a F2 matrix implementation. 
+                                // This probably breaks for a F2 matrix implementation.
                                 unsafe {
                                     (**(a.as_ptr())).add_at(*coker_id, final_id, coact_val * *val);
                                 }
@@ -163,14 +170,15 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G>
             tensor,
         );
 
-       
-
-        (kComoduleMorphism { map: cokernel_map}, comodule)
+        (kComoduleMorphism { map: cokernel_map }, comodule)
     }
 
-    fn inject_codomain_to_cofree(comodule: &Self::Comodule, limit: G) -> (Self, Self::CofreeComodule) 
+    fn inject_codomain_to_cofree(
+        comodule: &Self::Comodule,
+        limit: G,
+    ) -> (Self, Self::CofreeComodule)
     where
-        G: OrderedGrading
+        G: OrderedGrading,
     {
         let mut growing_map: GradedLinearMap<G, F, M> =
             GradedLinearMap::zero_codomain(&comodule.space);
@@ -181,9 +189,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G>
             .maps
             .iter()
             .map(|(g, _)| *g)
-            .sorted_by(|a,b| {
-                a.compare(b)
-            })  
+            .sorted_by(|a, b| a.compare(b))
             .filter(|&g| g.compare(&limit).is_le())
             .collect();
         let mut prev_grade = 0;
@@ -226,7 +232,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G>
             let coalg_space = &comodule.coalgebra.space;
 
             // TODO: Verify is this parallel iterator is faster or not for big(ger) coalgebras
-            let cofree_map: HashMap<G,M> = coalg_space.0.iter().filter_map(|(alg_gr, alg_gr_space)| {
+            let cofree_map: HashMap<G,M> = coalg_space.0.par_iter().filter_map(|(alg_gr, alg_gr_space)| {
                 let t_gr = *alg_gr + pivot_grade;
 
                 if t_gr > fixed_limit {
@@ -267,28 +273,21 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G>
                 iteration,
                 pivot_grade,
                 fixed_limit,
-                ()
+                (),
             );
 
-            if cfg!(debug_assertions) {
-
-            }
+            if cfg!(debug_assertions) {}
 
             growing_comodule.direct_sum(&mut f);
             growing_map.vstack(&mut GradedLinearMap::from(cofree_map));
 
-   
             iteration += 1;
         }
 
-        let total_domain_size = growing_map.maps.iter().fold(0, |sum, m| sum + (m.1.codomain() * m.1.domain()));
-        println!("{:?}", total_domain_size);
-
         let m = kComoduleMorphism { map: growing_map };
-        m.verify_dimensions(&comodule, &growing_comodule);
+        assert!(m.verify_dimensions(&comodule, &growing_comodule));
         (m, growing_comodule)
     }
-
 
     fn zero_morphism(comodule: &Self::Comodule) -> Self {
         // Verify how we want to handle this zero map
@@ -298,9 +297,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G>
             zero_map.maps.insert(*gr, M::zero(0, elements.len()));
         }
 
-        Self {
-            map: zero_map,
-        }
+        Self { map: zero_map }
     }
 
     // domain l == codomain r, l \circ r
@@ -310,12 +307,15 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G>
         Self { map }
     }
 
-
     /// (s, gen_index) uniquely defines a generator of Ext
     /// in a specific morphism we only need to know its gen_index
     /// in the resolution we add the s
     /// (from_dot, to_dot, value, line_type)
-    fn get_structure_lines(&self, domain: &Self::CofreeComodule, codomain: &Self::CofreeComodule) -> Vec<((usize, G, usize), (usize, G, usize), Self::BaseRing, String)> {
+    fn get_structure_lines(
+        &self,
+        domain: &Self::CofreeComodule,
+        codomain: &Self::CofreeComodule,
+    ) -> Vec<((usize, G, usize), (usize, G, usize), Self::BaseRing, String)> {
         let mut lines = vec![];
 
         let c_space = &domain.coalgebra.space.0;
@@ -329,12 +329,12 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G>
                     Some(prim_id) => {
                         for t_id in 0..gr_map.codomain() {
                             let (((codom_alg_gr, codom_alg_id), codom_gen_id), _) = codomain.space.0.get(gr).expect("As codomain of the map is non-zero this vector space should contain an element in this grade.")[t_id];
-                            
+
                             let alg_el = &c_space[&codom_alg_gr][codom_alg_id];
                             if alg_el.generator {
                                 if !gr_map.get(el_id, t_id).is_zero() {
                                     lines.push((
-                                        // TODO 
+                                        // TODO
                                         (gen_id, G::zero(), 0),
                                         (codom_gen_id, G::zero(), 0),
                                         gr_map.get(el_id, t_id),
@@ -351,8 +351,13 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G>
 
         lines
     }
-    
-    fn direct_sum(a: &mut Self, b: &mut Self, a_codom: &mut Self::CofreeComodule, b_codom: &mut Self::CofreeComodule) {
+
+    fn direct_sum(
+        a: &mut Self,
+        b: &mut Self,
+        a_codom: &mut Self::CofreeComodule,
+        b_codom: &mut Self::CofreeComodule,
+    ) {
         todo!()
     }
 }

@@ -34,7 +34,7 @@
 //     fn neutral() -> Self;
 
 //     fn elements() -> Vec<Self>;
-    
+
 //     fn names() -> Vec<(usize, String)>;
 //     fn generate_coalgebra<F: Field>() -> Result<kCoalgebra<Self, F, FlatMatrix<F>>, String>
 //     where
@@ -42,8 +42,6 @@
 
 //     fn toi32(self) -> i32;
 // }
-
-
 
 // macro_rules! define_group {
 //     ($name:ident, $table:expr, $names:expr) => {
@@ -69,7 +67,7 @@
 
 //         impl FromStr for $name {
 //             type Err = String;
-            
+
 //             fn from_str(s: &str) -> Result<Self, Self::Err> {
 //                 Self::parse(s)
 //             }
@@ -102,7 +100,7 @@
 //             {
 
 //                 let mut pre_space = HashMap::default();
-                
+
 //                 for (index, name) in $name::names() {
 //                     pre_space.insert($name(index), vec![kBasisElement {
 //                             name: name.clone(),
@@ -111,13 +109,13 @@
 //                             generated_index: 0,
 //                     }]);
 //                 }
-//                 let space = GradedVectorSpace::<Self, kBasisElement>(pre_space);            
-                
+//                 let space = GradedVectorSpace::<Self, kBasisElement>(pre_space);
+
 //                 let tensor = Tensor::generate(&space, &space);
 
 //                 let mut pre_coaction = HashMap::default();
 //                 for g in Self::elements() {
-//                     // All els (h,i) such that hi = g 
+//                     // All els (h,i) such that hi = g
 //                     let mut els_to_g: Vec<(Self, Self)> = Vec::new();
 //                     for h in Self::elements() {
 //                         for i in Self::elements() {
@@ -142,7 +140,6 @@
 
 //                 let coaction = GradedLinearMap::from(pre_coaction);
 
-                
 //                 let mut coalg = kCoalgebra {
 //                     space,
 //                     coaction,
@@ -166,12 +163,11 @@
 //     };
 // }
 
-
 // macro_rules! impl_group_arithmetic {
 //     ($type:ty) => {
 //         impl Add for $type {
 //             type Output = Self;
-            
+
 //             fn add(self, other: Self) -> Self::Output {
 //                 self.mult(other)
 //             }
@@ -205,7 +201,6 @@
 //     };
 // }
 
-
 // macro_rules! impl_group_grading {
 //     ($type:ty) => {
 //         impl Grading for $type {
@@ -238,7 +233,6 @@
 //         }
 //     };
 // }
-
 
 // define_group!(Z2,
 //     [

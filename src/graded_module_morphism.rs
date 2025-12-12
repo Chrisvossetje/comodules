@@ -1,13 +1,16 @@
-
-
 use ahash::HashMap;
-use algebra::{abelian::Abelian, field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, rings::univariate_polynomial_ring::UniPolRing};
+use algebra::{
+    abelian::Abelian, field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix,
+    rings::univariate_polynomial_ring::UniPolRing,
+};
 use deepsize::DeepSizeOf;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    basiselement::BasisElement, graded_module::GradedModule, grading::{Grading, UniGrading}
+    basiselement::BasisElement,
+    graded_module::GradedModule,
+    grading::{Grading, UniGrading},
 };
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, Default, DeepSizeOf)]
@@ -16,16 +19,15 @@ pub struct GradedModuleMap<G: Grading, F: Field> {
     pub maps: HashMap<G, FlatMatrix<UniPolRing<F>>>,
 }
 
+impl<G: Grading, F: Field> GradedModuleMap<G, F> {
+    pub fn zero_codomain<B: BasisElement>(domain: &GradedModule<G, B>) -> Self {
+        let maps = domain
+            .0
+            .iter()
+            .map(|(g, v)| (*g, FlatMatrix::zero(v.len(), 0)))
+            .collect();
 
-impl<G: Grading, F: Field> GradedModuleMap<G, F> {    
-    pub fn zero_codomain<B: BasisElement>(domain: &GradedModule<G,B>) -> Self {
-        let maps = domain.0.iter().map(|(g,v)| {
-            (*g,FlatMatrix::zero(v.len(), 0))
-        }).collect();
-
-        Self {
-            maps
-        }
+        Self { maps }
     }
 
     pub fn vstack(&mut self, other: &mut Self) {
@@ -61,17 +63,31 @@ impl<G: Grading, F: Field> GradedModuleMap<G, F> {
         });
     }
 
-    pub fn verify<B: BasisElement>(&self, domain: &GradedModule<G,B>, codomain: &GradedModule<G,B>) -> Result<(), String> {
+    pub fn verify<B: BasisElement>(
+        &self,
+        domain: &GradedModule<G, B>,
+        codomain: &GradedModule<G, B>,
+    ) -> Result<(), String> {
         for (grade, map) in &self.maps {
             let empty = vec![];
-            let dom: Vec<_> = domain.0.get(grade).unwrap_or(&empty).iter().map(|x| x.2).collect();
-            let codom: Vec<_> = codomain.0.get(grade).unwrap_or(&empty).iter().map(|x| x.2).collect(); 
+            let dom: Vec<_> = domain
+                .0
+                .get(grade)
+                .unwrap_or(&empty)
+                .iter()
+                .map(|x| x.2)
+                .collect();
+            let codom: Vec<_> = codomain
+                .0
+                .get(grade)
+                .unwrap_or(&empty)
+                .iter()
+                .map(|x| x.2)
+                .collect();
             map.verify(&dom, &codom)?;
         }
         Ok(())
     }
-
-   
 
     // pub fn reduce(&self) -> Self {
     //     let mut total_map = HashMap::default();
@@ -132,16 +148,16 @@ impl<G: Grading, F: Field> GradedModuleMap<G, F> {
         }
 
         // TODO ! check if powers are now too high
-        
-        Self { 
-            maps: compose 
-        }
-    }
-} 
 
+        Self { maps: compose }
+    }
+}
 
 impl<G: Grading, F: Field> GradedModuleMap<G, F> {
-    pub fn zero<B: BasisElement>(domain: &GradedModule<G, B>, codomain: &GradedModule<G, B>) -> Self {
+    pub fn zero<B: BasisElement>(
+        domain: &GradedModule<G, B>,
+        codomain: &GradedModule<G, B>,
+    ) -> Self {
         let mut maps: HashMap<G, FlatMatrix<UniPolRing<F>>> = domain
             .0
             .iter()
@@ -155,31 +171,36 @@ impl<G: Grading, F: Field> GradedModuleMap<G, F> {
                 maps.insert(*g, Matrix::zero(0, v.len()));
             }
         });
-        Self {
-            maps,
-        }
+        Self { maps }
     }
 
-    /// If self is a map from A -> B, let Q be the cokernel. 
-    /// Then we return the map from (B -> Q, Q -> B, Q). 
-    /// "The map from B to Q, an 'inverse' map from Q to B and the cokernel object Q. 
-    pub fn cokernel<B: BasisElement>(&self, codomain: &GradedModule<G,B>) -> (Self, Self, GradedModule<G, B>) {        
+    /// If self is a map from A -> B, let Q be the cokernel.
+    /// Then we return the map from (B -> Q, Q -> B, Q).
+    /// "The map from B to Q, an 'inverse' map from Q to B and the cokernel object Q.
+    pub fn cokernel<B: BasisElement>(
+        &self,
+        codomain: &GradedModule<G, B>,
+    ) -> (Self, Self, GradedModule<G, B>) {
         if cfg!(debug_assertions) {
             for g in codomain.0.keys() {
                 assert!(self.maps.contains_key(g));
             }
         }
-        
-        let mut coker = HashMap::default();
-        let mut coker_map = HashMap::default();        
-        let mut coker_inv_map = HashMap::default(); 
 
-        for (&g, mat) in &self.maps { // TODO, parallelization
+        let mut coker = HashMap::default();
+        let mut coker_map = HashMap::default();
+        let mut coker_inv_map = HashMap::default();
+
+        for (&g, mat) in &self.maps {
+            // TODO, parallelization
             let codom: Vec<_> = codomain.0[&g].iter().map(|x| x.2).collect();
             let (g_map, g_inv_map, module) = mat.cokernel(&codom);
 
             // TODO: This unigrading ?
-            let module: Vec<_> = module.into_iter().map(|x| (B::default(), UniGrading(0), x)).collect();
+            let module: Vec<_> = module
+                .into_iter()
+                .map(|x| (B::default(), UniGrading(0), x))
+                .collect();
             if module.len() > 0 {
                 coker.insert(g, module);
             }
@@ -189,13 +210,15 @@ impl<G: Grading, F: Field> GradedModuleMap<G, F> {
         }
 
         let to = GradedModuleMap { maps: coker_map };
-        let inv = GradedModuleMap { maps: coker_inv_map };
+        let inv = GradedModuleMap {
+            maps: coker_inv_map,
+        };
         let coker = GradedModule(coker);
 
         if cfg!(debug_assertions) {
             to.verify(codomain, &coker).unwrap();
         }
-        
+
         (to, inv, coker)
     }
 }

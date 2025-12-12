@@ -1,5 +1,10 @@
 use std::{
-    cmp::Ordering, fmt::{Debug, Display, Formatter}, hash::Hash, iter::Sum, ops::{Add, AddAssign, Sub, SubAssign}, str::FromStr
+    cmp::Ordering,
+    fmt::{Debug, Display, Formatter},
+    hash::Hash,
+    iter::Sum,
+    ops::{Add, AddAssign, Sub, SubAssign},
+    str::FromStr,
 };
 
 use deepsize::DeepSizeOf;
@@ -8,7 +13,6 @@ use serde::{Deserialize, Serialize};
 pub trait Parse: Sized {
     fn parse(s: &str) -> Result<Self, String>;
 }
-
 
 pub trait Grading:
     'static
@@ -29,7 +33,7 @@ pub trait Grading:
     + Send
     + Parse
     + Sum
-    + PartialOrd 
+    + PartialOrd
     + Ord
     + DeepSizeOf
 {
@@ -44,9 +48,7 @@ pub trait Grading:
     fn infty() -> Self;
 }
 
-pub trait OrderedGrading:
-    'static + Grading
-{
+pub trait OrderedGrading: 'static + Grading {
     fn incr(self) -> Self;
     fn compare(self, rhs: &Self) -> Ordering;
 }
@@ -57,36 +59,31 @@ pub trait PolyGrading: Grading {
 }
 
 impl PolyGrading for BiGrading {
-    const TAU_GRADE: BiGrading = BiGrading(0,-1);
-
+    const TAU_GRADE: BiGrading = BiGrading(0, -1);
 
     fn gen_diff_power(source: Self, target: Self) -> Option<usize> {
-        let diff = target-source;
+        let diff = target - source;
         if diff.0 == 0 {
             if diff.1 > 0 {
                 None
             } else {
-                Some(diff.1.unsigned_abs() as usize) 
+                Some(diff.1.unsigned_abs() as usize)
             }
         } else {
             None
         }
-        
     }
 }
 
-
-
-
-
-#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize, DeepSizeOf)]
+#[derive(
+    Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize, DeepSizeOf,
+)]
 pub struct UniGrading(pub i32);
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize, DeepSizeOf)]
+#[derive(
+    Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize, DeepSizeOf,
+)]
 pub struct BiGrading(pub i32, pub i32);
-
-
-
 
 impl Add for UniGrading {
     type Output = Self;
@@ -134,12 +131,11 @@ impl Debug for UniGrading {
     }
 }
 
-
 impl OrderedGrading for UniGrading {
     fn incr(self) -> Self {
         UniGrading(self.0 + 1)
     }
-    
+
     fn compare(self, rhs: &Self) -> Ordering {
         self.0.cmp(&rhs.0)
     }
@@ -147,9 +143,10 @@ impl OrderedGrading for UniGrading {
 
 impl Parse for UniGrading {
     fn parse(s: &str) -> Result<Self, String> {
-        Ok(UniGrading(i32::from_str(s).map_err(|_| format!("Grade: {} could not be parsed", s))?))
+        Ok(UniGrading(i32::from_str(s).map_err(|_| {
+            format!("Grade: {} could not be parsed", s)
+        })?))
     }
-
 }
 
 impl Grading for UniGrading {
@@ -172,23 +169,11 @@ impl Grading for UniGrading {
     fn integer_multiplication(self, other: i32) -> Self {
         UniGrading(self.0 * other)
     }
-    
+
     fn infty() -> Self {
         UniGrading(i32::MAX)
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 impl Add for BiGrading {
     type Output = Self;
@@ -237,11 +222,11 @@ impl Parse for BiGrading {
         let s = s.trim();
         // Remove parentheses if present
         let s = if s.starts_with('(') && s.ends_with(')') {
-            &s[1..s.len()-1]
+            &s[1..s.len() - 1]
         } else {
             s
         };
-        
+
         let parts: Vec<&str> = s.split(',').collect();
         if parts.len() != 2 {
             return Err(format!("Grade: {} could not be parsed", s));
@@ -290,7 +275,7 @@ impl Grading for BiGrading {
     fn integer_multiplication(self, other: i32) -> Self {
         BiGrading(self.0 * other, self.1 * other)
     }
-    
+
     fn infty() -> Self {
         BiGrading(i32::MAX, i32::MAX)
     }

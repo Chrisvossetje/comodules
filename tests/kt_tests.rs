@@ -43,7 +43,6 @@
 //         sseq.save_to_json("LOL.json").unwrap();
 //     }
 
-
 //     #[test]
 //     fn test_a1_tensor_resolution() {
 //         let input = include_str!("../examples/direct/A(1).txt");
@@ -78,7 +77,6 @@
 
 //         sseq.save_to_json("LOL.json").unwrap();
 //     }
-    
 
 //     #[test]
 //     fn test_a_tensor_resolution() {
@@ -86,7 +84,7 @@
 //         let coalgebra = kCoalgebra::parse(input, UniGrading(20)).unwrap().0;
 
 //         let tensor_coalgebra = Arc::new(tensor_k_coalgebra(coalgebra));
-                
+
 //         let kt = RComodule::fp_comodule(tensor_coalgebra, UniGrading(0));
 
 //         let mut res = Resolution::new(kt);
@@ -97,7 +95,6 @@
 
 //         sseq.save_to_json("LOL.json").unwrap();
 //     }
-
 
 //     #[test]
 //     fn test_a1_c_resolution() {
@@ -114,7 +111,7 @@
 //         let ccpx = to_cochain_cpx(res);
 
 //         let mut gens = vec![];
-        
+
 //         for (s, ((f_full, n_full), (g_full, q_full))) in ccpx.0.iter().zip(ccpx.1).tuple_windows().enumerate() {
 //             let mut count = 0;
 //             for (gr, f) in f_full {
@@ -127,20 +124,20 @@
 //                     },
 //                 };
 //                 let empty = vec![];
-                
+
 //                 let n = n_full.get(gr).unwrap_or(&empty);
-//                 let q = q_full.get(gr).unwrap_or(&empty); 
+//                 let q = q_full.get(gr).unwrap_or(&empty);
 
 //                 let (_, cohom) = FlatMatrix::cohomology(f, g, &n.iter().map(|x| x.2).collect(), &q.iter().map(|x| x.2).collect());
 
 //                 for b in cohom {
 //                     let l = format!("{:?}", b);
-                
+
 //                     println!("{:?}", l);
 //                     gens.push((s, count, gr.export_grade(), Some(l)));
 //                     count += 1;
 //                 }
-//             }            
+//             }
 //         }
 
 //         println!("{:?}",gens);
@@ -162,7 +159,6 @@
 //             differentials: vec![],
 //         };
 
-
 //         // let sseq = res.generate_sseq("");
 
 //         sseq.save_to_json("A(1)_C.json").unwrap();
@@ -171,8 +167,8 @@
 //     #[test]
 //     fn test_a1_c_parser() {
 //         let input = include_str!("../examples/polynomial/A(1)_C.txt");
-//         let coalgebra = RCoalgebra::<UniGrading, F2>::parse(input, UniGrading::infty() - UniGrading(30)).unwrap().0; 
-    
+//         let coalgebra = RCoalgebra::<UniGrading, F2>::parse(input, UniGrading::infty() - UniGrading(30)).unwrap().0;
+
 //                 let coalgebra = Arc::new(coalgebra);
 
 //         let kt = RComodule::fp_comodule(coalgebra, UniGrading(0));
@@ -184,7 +180,7 @@
 //         let ccpx = to_cochain_cpx(res);
 
 //         let mut gens = vec![];
-        
+
 //         for (s, ((f_full, n_full), (g_full, q_full))) in ccpx.0.iter().zip(ccpx.1).tuple_windows().enumerate() {
 //             let mut count = 0;
 //             for (gr, f) in f_full {
@@ -197,20 +193,20 @@
 //                     },
 //                 };
 //                 let empty = vec![];
-                
+
 //                 let n = n_full.get(gr).unwrap_or(&empty);
-//                 let q = q_full.get(gr).unwrap_or(&empty); 
+//                 let q = q_full.get(gr).unwrap_or(&empty);
 
 //                 let (_, cohom) = FlatMatrix::cohomology(f, g, &n.iter().map(|x| x.2).collect(), &q.iter().map(|x| x.2).collect());
 
 //                 for b in cohom {
 //                     let l = format!("{:?}", b);
-                
+
 //                     println!("{:?}", l);
 //                     gens.push((s, count, gr.export_grade(), Some(l)));
 //                     count += 1;
 //                 }
-//             }            
+//             }
 //         }
 
 //         println!("{:?}",gens);
@@ -232,7 +228,6 @@
 //             differentials: vec![],
 //         };
 
-
 //         // let sseq = res.generate_sseq("");
 
 //         sseq.save_to_json("A(1)_C.json").unwrap();
@@ -241,8 +236,8 @@
 //     #[test]
 //     fn test_a2_c_parser() {
 //         let input = include_str!("../examples/polynomial/A(2)_C.txt");
-//         let coalgebra = RCoalgebra::<UniGrading, F2>::parse(input, UniGrading(30)).unwrap().0; 
-    
+//         let coalgebra = RCoalgebra::<UniGrading, F2>::parse(input, UniGrading(30)).unwrap().0;
+
 //         let coalgebra = Arc::new(coalgebra);
 
 //         let kt = RComodule::fp_comodule(coalgebra, UniGrading(0));
@@ -254,7 +249,7 @@
 //         let ccpx = to_cochain_cpx(res);
 
 //         let mut gens = vec![];
-        
+
 //         for (s, ((f_full, n_full), (g_full, q_full))) in ccpx.0.iter().zip(ccpx.1).tuple_windows().enumerate() {
 //             let mut count = 0;
 //             for (gr, f) in f_full {
@@ -267,9 +262,9 @@
 //                     },
 //                 };
 //                 let empty = vec![];
-                
+
 //                 let n = n_full.get(gr).unwrap_or(&empty);
-//                 let q = q_full.get(gr).unwrap_or(&empty); 
+//                 let q = q_full.get(gr).unwrap_or(&empty);
 
 //                 let (_, cohom) = FlatMatrix::cohomology(f, g, &n.iter().map(|x| x.2).collect(), &q.iter().map(|x| x.2).collect());
 
@@ -283,9 +278,8 @@
 //                     gens.push((s, count, gr.export_grade(), Some(l)));
 //                     count += 1;
 //                 }
-//             }            
+//             }
 //         }
-
 
 //         println!("{:?}",gens);
 
@@ -305,7 +299,6 @@
 //             pages: vec![page],
 //             differentials: vec![],
 //         };
-
 
 //         // let sseq = res.generate_sseq("");
 
@@ -371,24 +364,23 @@
 //                 let empty = vec![];
 //                 let domain = a.domain.as_ref().space.0.get(gr).unwrap_or(&empty);
 //                 let codomain = a.codomain.as_ref().space.0.get(gr).unwrap_or(&empty);
-    
+
 //                 let mut new_domain = vec![];
 //                 for (id, el) in domain.iter().enumerate() {
 //                     if el.0.generator {
 //                         new_domain.push((id, el.clone()));
 //                     }
 //                 }
-                
+
 //                 let mut new_codomain = vec![];
 //                 for (id, el) in codomain.iter().enumerate() {
 //                     if el.0.generator {
 //                         new_codomain.push((id, el.clone()));
 //                     }
 //                 }
-                
-    
+
 //                 let mut new_map = FlatMatrix::zero(new_domain.len(), new_codomain.len());
-    
+
 //                 for x in 0..new_map.domain() {
 //                     for y in 0..new_map.codomain() {
 //                         let original_x = new_domain[x].0;

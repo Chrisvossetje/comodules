@@ -8,8 +8,6 @@ use rayon::prelude::*;
 use crate::{basiselement::BasisElement, grading::Grading};
 use serde::{Deserialize, Serialize};
 
-
-
 pub type BasisIndex<G> = (G, usize);
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, DeepSizeOf)]
@@ -30,17 +28,13 @@ impl<G: Grading, B> GradedVectorSpace<G, B> {
     }
 }
 
-impl<G: Grading, B> From<HashMap<G, Vec<B>>>
-    for GradedVectorSpace<G, B>
-{
+impl<G: Grading, B> From<HashMap<G, Vec<B>>> for GradedVectorSpace<G, B> {
     fn from(value: HashMap<G, Vec<B>>) -> Self {
         Self(value)
     }
 }
 
-impl<G: Grading, F: Field, M: Matrix<F>> From<HashMap<G, M>>
-    for GradedLinearMap<G, F, M>
-{
+impl<G: Grading, F: Field, M: Matrix<F>> From<HashMap<G, M>> for GradedLinearMap<G, F, M> {
     fn from(value: HashMap<G, M>) -> Self {
         Self {
             maps: value,
@@ -57,7 +51,6 @@ impl<G: Grading, F: Field, M: Abelian<F>> GradedLinearMap<G, F, M> {
         }
     }
 }
-
 
 impl<G: Grading, F: Field, M: Abelian<F>> GradedLinearMap<G, F, M> {
     pub fn get_cokernel(&self) -> Self {
@@ -147,7 +140,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> GradedLinearMap<G, F, M> {
                 let mut pivots = vec![];
                 for row in 0..v.codomain() {
                     while col < v.domain() {
-                        if !v.get(col,row).is_zero() {
+                        if !v.get(col, row).is_zero() {
                             pivots.push((col, row));
                             col += 1;
                             break;
@@ -156,7 +149,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> GradedLinearMap<G, F, M> {
                     }
                 }
                 (*k, pivots)
-            })    
+            })
             .collect()
     }
 

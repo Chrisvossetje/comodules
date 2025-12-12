@@ -13,7 +13,7 @@
 //     #[test]
 //     fn test_z2_coalgebra_generation() {
 //         let coalg = Arc::new(Z2::generate_coalgebra::<F2>().unwrap());
-        
+
 //         let fp = kComodule::fp_comodule(coalg, Z2::zero());
 
 //         let mut res = Resolution::new(fp);

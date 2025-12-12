@@ -1,6 +1,6 @@
-use std::fmt::Debug;
 use deepsize::DeepSizeOf;
 use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 
 pub trait BasisElement: 'static + Debug + Clone + Default + DeepSizeOf {}
 

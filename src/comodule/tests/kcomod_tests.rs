@@ -1,35 +1,37 @@
 #[cfg(test)]
 mod tests {
-    use std::{sync::Arc};
+    use std::sync::Arc;
 
     use ahash::HashMap;
-    use algebra::{matrices::flat_matrix::FlatMatrix, matrix::Matrix, rings::finite_fields::{F2, Fp}};
+    use algebra::{
+        matrices::flat_matrix::FlatMatrix,
+        matrix::Matrix,
+        rings::finite_fields::{F2, Fp},
+    };
 
     use crate::{
         comodule::{
             kcoalgebra::{A0_coalgebra, kCoalgebra},
             kcomodule::kComodule,
             traits::Comodule,
-        }, graded_space::{GradedLinearMap, GradedVectorSpace}, grading::{Grading, UniGrading}, tensor::TensorMap
+        },
+        graded_space::{GradedLinearMap, GradedVectorSpace},
+        grading::{Grading, UniGrading},
+        tensor::TensorMap,
     };
 
     // Test for creating an empty kComodule manually
     #[test]
     fn test_empty_comodule() {
         let coalgebra = Arc::new(A0_coalgebra());
-        
+
         // Create empty comodule manually
         let empty_space = GradedVectorSpace::new();
         let empty_coaction_maps = HashMap::default();
         let empty_coaction = GradedLinearMap::from(empty_coaction_maps);
         let empty_tensor = TensorMap::default();
-        
-        let comodule = kComodule::new(
-            coalgebra.clone(),
-            empty_space,
-            empty_coaction,
-            empty_tensor,
-        );
+
+        let comodule = kComodule::new(coalgebra.clone(), empty_space, empty_coaction, empty_tensor);
 
         assert_eq!(
             comodule.coalgebra.clone().as_ref(),
@@ -54,7 +56,10 @@ mod tests {
 
         assert!(comodule.coaction.maps.contains_key(&UniGrading(0)));
         assert_eq!(comodule.coaction.maps.len(), 1);
-        assert_eq!(comodule.coaction.maps[&UniGrading(0)], FlatMatrix::<F2>::identity(1));
+        assert_eq!(
+            comodule.coaction.maps[&UniGrading(0)],
+            FlatMatrix::<F2>::identity(1)
+        );
     }
 
     // Test for direct_sum - simplified since we can't test specific names
@@ -67,7 +72,7 @@ mod tests {
         // Test basic properties of the comodules
         assert_eq!(comodule1.space.0.len(), 1);
         assert_eq!(comodule2.space.0.len(), 1);
-        
+
         // Check dimensions in specific grades
         assert_eq!(comodule1.space.dimension_in_grade(&UniGrading(0)), 1);
         assert_eq!(comodule2.space.dimension_in_grade(&UniGrading(1)), 1);
@@ -77,16 +82,16 @@ mod tests {
     #[test]
     fn test_comodule_construction() {
         let coalgebra = Arc::new(A0_coalgebra());
-        
+
         // Create a simple space with () elements
         let mut space_map = HashMap::default();
         space_map.insert(UniGrading(0), vec![()]);
-        
+
         // Create simple coaction and tensor maps
         let mut coaction_maps = HashMap::default();
         coaction_maps.insert(UniGrading(0), FlatMatrix::identity(1));
         let coaction = GradedLinearMap::from(coaction_maps);
-        
+
         let tensor = TensorMap::default();
 
         let comodule = kComodule::new(
@@ -108,7 +113,8 @@ mod tests {
         let input_comod = include_str!("../../../examples/comodule/F2_comod.txt");
 
         let (kcoalg, translator) =
-            kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input_coalg, UniGrading::infty()).unwrap();
+            kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input_coalg, UniGrading::infty())
+                .unwrap();
 
         match kComodule::<UniGrading, F2, FlatMatrix<F2>>::parse(
             input_comod,
@@ -134,7 +140,8 @@ mod tests {
         let input_comod = include_str!("../../../examples/comodule/A(0)_comod.txt");
 
         let (kcoalg, translator) =
-            kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input_coalg, UniGrading(32)).unwrap();
+            kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input_coalg, UniGrading(32))
+                .unwrap();
 
         match kComodule::<UniGrading, F2, FlatMatrix<F2>>::parse(
             input_comod,
@@ -158,7 +165,8 @@ mod tests {
         let input_comod = include_str!("../../../examples/comodule/gen_comod.txt");
 
         let (kcoalg, translator) =
-            kCoalgebra::<UniGrading, Fp<3>, FlatMatrix<Fp<3>>>::parse(input_coalg, UniGrading(128)).unwrap();
+            kCoalgebra::<UniGrading, Fp<3>, FlatMatrix<Fp<3>>>::parse(input_coalg, UniGrading(128))
+                .unwrap();
         match kComodule::<UniGrading, Fp<3>, FlatMatrix<Fp<3>>>::parse(
             input_comod,
             Arc::new(kcoalg),
@@ -204,7 +212,7 @@ mod tests {
 
         let comod = kComodule::parse(input, coalgebra, &translate, MAX_GRADING).unwrap();
 
-        // Just test that the parsing worked correctly  
+        // Just test that the parsing worked correctly
         assert!(comod.space.0.len() > 0);
         assert!(comod.coaction.maps.len() > 0);
     }

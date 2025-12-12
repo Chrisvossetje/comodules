@@ -5,13 +5,13 @@ use algebra::{field::Field, matrix::Matrix};
 use itertools::Itertools;
 
 use crate::{
-    basiselement::kBasisElement, graded_space::{BasisIndex, GradedLinearMap, GradedVectorSpace}, grading::{Grading, OrderedGrading}, tensor::TensorMap
+    basiselement::kBasisElement,
+    graded_space::{BasisIndex, GradedLinearMap, GradedVectorSpace},
+    grading::{Grading, OrderedGrading},
+    tensor::TensorMap,
 };
 
-use super::{
-    kcoalgebra::kCoalgebra,
-    kcomodule::kComodule,
-};
+use super::{kcoalgebra::kCoalgebra, kcomodule::kComodule};
 
 impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
     fn check_translator(&self, translate: &HashMap<String, BasisIndex<G>>) -> bool {
@@ -33,13 +33,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
     pub fn parse(
         input: &str,
         max_grading: G,
-    ) -> Result<
-        (
-            kCoalgebra<G, F, M>,
-            HashMap<String, BasisIndex<G>>,
-        ),
-        String,
-    > {
+    ) -> Result<(kCoalgebra<G, F, M>, HashMap<String, BasisIndex<G>>), String> {
         if input.contains("- BASIS") {
             Self::parse_direct(input)
         } else {
@@ -49,13 +43,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
 
     fn parse_direct(
         input: &str,
-    ) -> Result<
-        (
-            kCoalgebra<G, F, M>,
-            HashMap<String, BasisIndex<G>>,
-        ),
-        String,
-    > {
+    ) -> Result<(kCoalgebra<G, F, M>, HashMap<String, BasisIndex<G>>), String> {
         #[derive(Debug, Clone, PartialEq)]
         enum State {
             None,
@@ -263,13 +251,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
     fn parse_polynomial_hopf_algebra(
         input: &str,
         max_grading: G,
-    ) -> Result<
-        (
-            kCoalgebra<G, F, M>,
-            HashMap<String, BasisIndex<G>>,
-        ),
-        String,
-    > {
+    ) -> Result<(kCoalgebra<G, F, M>, HashMap<String, BasisIndex<G>>), String> {
         #[derive(Debug, Clone, PartialEq)]
         enum State {
             None,
@@ -413,7 +395,12 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                             })
                             .try_collect()?;
                         if name.trim() != generators[coactions.len()].0 {
-                            return Err(format!("Line {}: Coaction for '{}' must match generator order, expected '{}'", line_num, name.trim(), generators[coactions.len()].0));
+                            return Err(format!(
+                                "Line {}: Coaction for '{}' must match generator order, expected '{}'",
+                                line_num,
+                                name.trim(),
+                                generators[coactions.len()].0
+                            ));
                         }
 
                         coactions.push(tensors);
@@ -482,8 +469,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         }
         // Construct the basis structure
         let mut basis: HashMap<G, Vec<kBasisElement>> = HashMap::default();
-        let mut monomial_to_grade_index: HashMap<Monomial, (G, usize)> =
-            HashMap::default();
+        let mut monomial_to_grade_index: HashMap<Monomial, (G, usize)> = HashMap::default();
 
         for monomial in monomial_coaction.keys().sorted() {
             let grade = monomial_to_grade(monomial, &generators);
@@ -581,7 +567,7 @@ fn parse_name_exponent(el: &str) -> Result<(&str, usize), String> {
             return Err(format!(
                 "Invalid monomial format '{}' - expected 'name' or 'name^exponent'",
                 el
-            ))
+            ));
         }
     })
 }
@@ -1035,7 +1021,12 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
                             })
                             .try_collect()?;
                         if name.trim() != generators[coactions.len()].0 {
-                            return Err(format!("Line {}: Coaction for '{}' must match generator order, expected '{}'", line_num, name.trim(), generators[coactions.len()].0));
+                            return Err(format!(
+                                "Line {}: Coaction for '{}' must match generator order, expected '{}'",
+                                line_num,
+                                name.trim(),
+                                generators[coactions.len()].0
+                            ));
                         }
                         coactions.push(tensors);
                     }
@@ -1099,8 +1090,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
 
         // Construct the basis structure
         let mut basis: HashMap<G, Vec<()>> = HashMap::default();
-        let mut monomial_to_grade_index: HashMap<Monomial, (G, usize)> =
-            HashMap::default();
+        let mut monomial_to_grade_index: HashMap<Monomial, (G, usize)> = HashMap::default();
 
         for monomial in monomial_coaction.keys().sorted() {
             let grade = monomial_to_grade(monomial, &generators);

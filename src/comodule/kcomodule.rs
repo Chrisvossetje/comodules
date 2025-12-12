@@ -5,14 +5,15 @@ use algebra::{abelian::Abelian, field::Field, matrix::Matrix};
 use deepsize::DeepSizeOf;
 
 use crate::{
-    basiselement::kBasisElement, comodule::traits::CofreeComodule, graded_space::{BasisIndex, GradedLinearMap, GradedVectorSpace}, grading::Grading, helper::hashmap_add_restrict, tensor::TensorMap
+    basiselement::kBasisElement,
+    comodule::traits::CofreeComodule,
+    graded_space::{BasisIndex, GradedLinearMap, GradedVectorSpace},
+    grading::Grading,
+    helper::hashmap_add_restrict,
+    tensor::TensorMap,
 };
 
-use super::{
-    kcoalgebra::kCoalgebra, kmorphism::kComoduleMorphism, traits::Comodule,
-};
-
-
+use super::{kcoalgebra::kCoalgebra, kmorphism::kComoduleMorphism, traits::Comodule};
 
 #[derive(Clone, PartialEq, DeepSizeOf)]
 #[allow(non_camel_case_types)]
@@ -98,7 +99,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
 
 impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G> for kCofreeComodule<G, F, M> {
     type Coalgebra = kCoalgebra<G, F, M>;
-    type Generator = (); 
+    type Generator = ();
 
     fn get_generators(&self) -> Vec<(usize, G, Option<String>)> {
         self.space
@@ -130,7 +131,13 @@ impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G> for kCofreeComodule<
         self.gen_id_gr.append(&mut other.gen_id_gr);
     }
 
-    fn cofree_comodule(coalgebra: Arc<Self::Coalgebra>, index: usize, grade: G, limit: G, generator: Self::Generator) -> Self {
+    fn cofree_comodule(
+        coalgebra: Arc<Self::Coalgebra>,
+        index: usize,
+        grade: G,
+        limit: G,
+        generator: Self::Generator,
+    ) -> Self {
         let space: HashMap<G, Vec<_>> = coalgebra
             .space
             .0
@@ -138,7 +145,9 @@ impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G> for kCofreeComodule<
             .filter_map(|(g, v)| {
                 let sum = *g + grade;
                 if sum <= limit {
-                    let k_basis: Vec<_> = (0..v.len()).map(|j| (((*g, j), index), generator)).collect();
+                    let k_basis: Vec<_> = (0..v.len())
+                        .map(|j| (((*g, j), index), generator))
+                        .collect();
                     Some((*g + grade, k_basis))
                 } else {
                     None
@@ -146,7 +155,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G> for kCofreeComodule<
             })
             .collect();
 
-        // // TODO! SOME UNSTABLE STUFF        
+        // // TODO! SOME UNSTABLE STUFF
         // for ((t_gr, _), (a, m)) in &tensor.deconstruct {
         //     if *t_gr > grade + grade {
         //         tensor.construct.get_mut(m).unwrap().remove(a);
@@ -168,22 +177,18 @@ impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G> for kCofreeComodule<
         //     }
         // }
 
-        // for ((t_gr,t_id), ((a_gr, _), (m_gr, _))) in &tensor.deconstruct { 
+        // for ((t_gr,t_id), ((a_gr, _), (m_gr, _))) in &tensor.deconstruct {
         //     if a_gr > m_gr {
         //         coaction.get_mut(t_gr).unwrap().set_row_zero(*t_id);
         //     }
         // }
-        
-
 
         Self {
             coalgebra,
             space: GradedVectorSpace::from(space),
             gen_id_gr: vec![grade],
         }
-    } 
-
-    
+    }
 
     fn zero_comodule(coalgebra: Arc<Self::Coalgebra>) -> Self {
         Self {
@@ -191,7 +196,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G> for kCofreeComodule<
             space: GradedVectorSpace::new(),
             gen_id_gr: vec![],
         }
-    }   
+    }
 }
 
 impl<G: Grading, F: Field, M: Abelian<F>> Comodule<G, F> for kComodule<G, F, M> {
@@ -199,7 +204,6 @@ impl<G: Grading, F: Field, M: Abelian<F>> Comodule<G, F> for kComodule<G, F, M> 
     // type Morphism = kComoduleMorphism<G, F, M>;
     // type Generator = ();
     // type BaseRing = F;
-
 
     fn fp_comodule(coalgebra: Arc<Self::Coalgebra>, degree: G) -> Self {
         let zero = G::zero();
@@ -245,5 +249,5 @@ impl<G: Grading, F: Field, M: Abelian<F>> Comodule<G, F> for kComodule<G, F, M> 
             coaction,
             tensor,
         }
-    } 
+    }
 }

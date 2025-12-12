@@ -1,9 +1,11 @@
 #[cfg(test)]
 mod tests {
-    use std::{sync::Arc};
+    use std::sync::Arc;
 
     use ahash::HashMap;
-    use algebra::{matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::finite_fields::F2};
+    use algebra::{
+        matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::finite_fields::F2,
+    };
 
     use crate::{
         comodule::{
@@ -11,7 +13,9 @@ mod tests {
             kcomodule::{kCofreeComodule, kComodule},
             kmorphism::kComoduleMorphism,
             traits::{CofreeComodule, Comodule, ComoduleMorphism},
-        }, graded_space::GradedLinearMap, grading::{Grading, UniGrading}
+        },
+        graded_space::GradedLinearMap,
+        grading::{Grading, UniGrading},
     };
 
     #[test]
@@ -19,7 +23,8 @@ mod tests {
         let coalgebra = Arc::new(A0_coalgebra());
         let comodule = kComodule::fp_comodule(coalgebra.clone(), UniGrading::zero());
 
-        let (_cofree_morphism, cofree_comod) = kComoduleMorphism::inject_codomain_to_cofree(&comodule, UniGrading(5));
+        let (_cofree_morphism, cofree_comod) =
+            kComoduleMorphism::inject_codomain_to_cofree(&comodule, UniGrading(5));
 
         let comp = kCofreeComodule::cofree_comodule(coalgebra, 0, UniGrading(0), UniGrading(5), ());
 
@@ -33,19 +38,24 @@ mod tests {
 
         let domain = kComodule::fp_comodule(coalgebra.clone(), UniGrading::zero());
 
-        let codomain = kCofreeComodule::cofree_comodule(coalgebra, 0, UniGrading(0), UniGrading(5), ());
+        let codomain =
+            kCofreeComodule::cofree_comodule(coalgebra, 0, UniGrading(0), UniGrading(5), ());
 
         // Manually create a zero map
         let mut maps = HashMap::default();
-        maps.insert(UniGrading(0), FlatMatrix::zero(domain.space.dimension_in_grade(&UniGrading(0)), codomain.space.dimension_in_grade(&UniGrading(0))));
+        maps.insert(
+            UniGrading(0),
+            FlatMatrix::zero(
+                domain.space.dimension_in_grade(&UniGrading(0)),
+                codomain.space.dimension_in_grade(&UniGrading(0)),
+            ),
+        );
         let mut map: GradedLinearMap<UniGrading, F2, FlatMatrix<F2>> = GradedLinearMap::from(maps);
-        
+
         // Set one element to F2::one()
         map.maps.get_mut(&UniGrading(0)).unwrap().data[0] = F2::one();
 
-        let morphism = kComoduleMorphism {
-            map,
-        };
+        let morphism = kComoduleMorphism { map };
 
         let (cokernel_morphism, _cokernel_comodule) = morphism.cokernel(&codomain);
 
@@ -57,15 +67,28 @@ mod tests {
     fn test_structure_lines() {
         let coalgebra = Arc::new(A0_coalgebra());
 
-        let domain = kCofreeComodule::cofree_comodule(coalgebra.clone(), 0, UniGrading(0), UniGrading(5), ());
+        let domain = kCofreeComodule::cofree_comodule(
+            coalgebra.clone(),
+            0,
+            UniGrading(0),
+            UniGrading(5),
+            (),
+        );
 
-        let codomain = kCofreeComodule::cofree_comodule(coalgebra, 0, UniGrading(1), UniGrading(5), ());
+        let codomain =
+            kCofreeComodule::cofree_comodule(coalgebra, 0, UniGrading(1), UniGrading(5), ());
 
         // Manually create a zero map
         let mut maps = HashMap::default();
-        maps.insert(UniGrading(1), FlatMatrix::zero(domain.space.dimension_in_grade(&UniGrading(1)), codomain.space.dimension_in_grade(&UniGrading(1))));
+        maps.insert(
+            UniGrading(1),
+            FlatMatrix::zero(
+                domain.space.dimension_in_grade(&UniGrading(1)),
+                codomain.space.dimension_in_grade(&UniGrading(1)),
+            ),
+        );
         let mut map: GradedLinearMap<UniGrading, F2, FlatMatrix<F2>> = GradedLinearMap::from(maps);
-        
+
         // Set one element to F2::one() if dimensions allow
         if let Some(matrix) = map.maps.get_mut(&UniGrading(1)) {
             if matrix.data.len() > 0 {
@@ -73,12 +96,10 @@ mod tests {
             }
         }
 
-        let morphism = kComoduleMorphism {
-            map,
-        };
+        let morphism = kComoduleMorphism { map };
 
         let lines = morphism.get_structure_lines(&domain, &codomain);
-        
+
         // Just test that we can call the function without error
         assert!(lines.is_empty() || !lines.is_empty());
     }

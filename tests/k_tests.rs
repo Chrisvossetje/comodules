@@ -5,8 +5,14 @@ mod tests {
     use algebra::{matrices::flat_matrix::FlatMatrix, rings::finite_fields::F2};
     use comodules::{
         comodule::{
-            kcoalgebra::{A0_coalgebra, kCoalgebra}, kcomodule::{kCofreeComodule, kComodule}, kmorphism::kComoduleMorphism, traits::Comodule
-        }, export::SSeq, grading::{Grading, UniGrading}, resolution::Resolution
+            kcoalgebra::{A0_coalgebra, kCoalgebra},
+            kcomodule::{kCofreeComodule, kComodule},
+            kmorphism::kComoduleMorphism,
+            traits::Comodule,
+        },
+        export::SSeq,
+        grading::{Grading, UniGrading},
+        resolution::Resolution,
     };
     use itertools::Itertools;
 
@@ -16,7 +22,7 @@ mod tests {
             let coalgebra = Arc::new(A0_coalgebra());
             let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
             let mut res: Resolution<UniGrading, kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>> =
-            Resolution::new(fp);
+                Resolution::new(fp);
 
             res.resolve_to_s(20, UniGrading(20));
 
@@ -31,7 +37,7 @@ mod tests {
             let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 
             let mut res: Resolution<UniGrading, kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>> =
-            Resolution::new(fp);
+                Resolution::new(fp);
 
             res.resolve_to_s(20, UniGrading(20));
 
@@ -42,12 +48,16 @@ mod tests {
         {
             let input = include_str!("../examples/polynomial/A(2).txt");
 
-            let coalgebra = Arc::new(kCoalgebra::parse(input, UniGrading::infty() - UniGrading(10)).unwrap().0);
+            let coalgebra = Arc::new(
+                kCoalgebra::parse(input, UniGrading::infty() - UniGrading(10))
+                    .unwrap()
+                    .0,
+            );
 
             let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 
             let mut res: Resolution<UniGrading, kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>> =
-            Resolution::new(fp);
+                Resolution::new(fp);
 
             res.resolve_to_s(20, UniGrading(20));
             dbg!(&res);
@@ -64,7 +74,7 @@ mod tests {
             let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 
             let mut res: Resolution<UniGrading, kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>> =
-            Resolution::new(fp);
+                Resolution::new(fp);
 
             res.resolve_to_s(25, UniGrading(40));
             dbg!(&res);
@@ -109,7 +119,7 @@ mod tests {
             .structure_lines
             .iter()
             .map(|x| x.clone())
-            .sorted_by_key(|x| format!("{:?}", x.0 .0 * 1000 + x.0 .1))
+            .sorted_by_key(|x| format!("{:?}", x.0.0 * 1000 + x.0.1))
             .collect();
         assert_eq!(
             sorted_lines,
@@ -176,7 +186,11 @@ mod tests {
     fn test_a2_resolution_poly() {
         let input = include_str!("../examples/polynomial/A(2).txt");
 
-        let coalgebra = Arc::new(kCoalgebra::parse(input, UniGrading::infty() - UniGrading(10)).unwrap().0);
+        let coalgebra = Arc::new(
+            kCoalgebra::parse(input, UniGrading::infty() - UniGrading(10))
+                .unwrap()
+                .0,
+        );
 
         let fp = kComodule::fp_comodule(coalgebra, UniGrading::zero());
 

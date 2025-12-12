@@ -1,5 +1,7 @@
 use std::{
-    io::{self, Write}, marker::PhantomData, sync::Arc
+    io::{self, Write},
+    marker::PhantomData,
+    sync::Arc,
 };
 
 use deepsize::DeepSizeOf;
@@ -7,7 +9,8 @@ use itertools::Itertools;
 
 use crate::{
     comodule::traits::{CofreeComodule, Comodule, ComoduleMorphism},
-    export::{Page, SSeq}, grading::OrderedGrading,
+    export::{Page, SSeq},
+    grading::OrderedGrading,
 };
 
 #[derive(Debug, Clone, PartialEq, DeepSizeOf)]
@@ -28,18 +31,17 @@ impl<G: OrderedGrading, C: ComoduleMorphism<G>> Resolution<G, C> {
 
     pub fn resolve_to_s(&mut self, s: usize, mut limit: G) {
         let mut last_morph = C::zero_morphism(&self.comodule);
-        
+
         if self.resolution.len() == 0 {
             let zero_morph = C::zero_morphism(&self.comodule);
-            
-            let (initial_inject, a_0) = C::inject_codomain_to_cofree(&self.comodule ,limit);
-            
+
+            let (initial_inject, a_0) = C::inject_codomain_to_cofree(&self.comodule, limit);
+
             let compose = C::compose(&initial_inject, &zero_morph, &a_0);
 
             self.resolution.push((compose, a_0));
             last_morph = initial_inject;
         }
-        
 
         for _ in self.resolution.len()..=s {
             // Increment limit and get last morphism
@@ -48,9 +50,9 @@ impl<G: OrderedGrading, C: ComoduleMorphism<G>> Resolution<G, C> {
             let a_i = &self.resolution.last().unwrap().1;
             let (coker_map, coker_comodule) = last_morph.cokernel(&a_i);
             let (inject, a_i) = C::inject_codomain_to_cofree(&coker_comodule, limit);
-            
+
             let compose = C::compose(&inject, &coker_map, &a_i);
-            
+
             last_morph = inject;
 
             self.resolution.push((compose, a_i));
@@ -61,7 +63,6 @@ impl<G: OrderedGrading, C: ComoduleMorphism<G>> Resolution<G, C> {
     pub fn resolve_to_s_with_print(&mut self, s: usize, mut limit: G) {
         let mut last_morph = C::zero_morphism(&self.comodule);
 
-        
         println!("Resolving to filtration index: {} \n", s);
 
         if self.resolution.len() == 0 {
@@ -72,24 +73,15 @@ impl<G: OrderedGrading, C: ComoduleMorphism<G>> Resolution<G, C> {
 
             let zero_morph = C::zero_morphism(&self.comodule);
 
-            let (initial_inject, a_0) = C::inject_codomain_to_cofree(&self.comodule ,limit);
+            let (initial_inject, a_0) = C::inject_codomain_to_cofree(&self.comodule, limit);
             let compose = C::compose(&initial_inject, &zero_morph, &a_0);
-            
+
             println!("took: {:.2?}\n", inject_time.elapsed());
-            
+
             self.resolution.push((compose, a_0));
             last_morph = initial_inject;
         }
 
-
-
-        for _ in self.resolution.len()..=s {
-            // Increment limit and get last morphism
-            limit = limit.incr();
-
-            
-
-        }
         for i in self.resolution.len()..=s {
             // Increment limit and get last morphism
             limit = limit.incr();
@@ -121,13 +113,13 @@ impl<G: OrderedGrading, C: ComoduleMorphism<G>> Resolution<G, C> {
                 "Total time:                 took: {:.2?}\n",
                 coker_time.elapsed()
             );
-            
+
             last_morph = inject;
 
             self.resolution.push((compose, a_i));
         }
     }
-    
+
     pub fn generate_sseq(&self, name: &str) -> SSeq {
         let (x_formula, y_formula) = G::default_formulas();
 
@@ -145,17 +137,22 @@ impl<G: OrderedGrading, C: ComoduleMorphism<G>> Resolution<G, C> {
 
         let lines = self
             .resolution
-            .iter().skip(1)
+            .iter()
+            .skip(1)
             .enumerate()
             .flat_map(|(s, x)| {
                 let s = s + 1; // Note Skip above
-                let domain = &self.resolution[s-1].1;
+                let domain = &self.resolution[s - 1].1;
                 let g = x.0.get_structure_lines(domain, &x.1);
                 g.into_iter()
                     .map(move |(from_gen, to_gen, value, prim_type)| {
-                        ((s - 1, from_gen.0), (s, to_gen.0), format!("{:?}", value), prim_type)
+                        (
+                            (s - 1, from_gen.0),
+                            (s, to_gen.0),
+                            format!("{:?}", value),
+                            prim_type,
+                        )
                     })
-                
             })
             .sorted_by_key(|f| (f.0, f.1))
             .collect();

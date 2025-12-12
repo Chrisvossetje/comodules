@@ -1,11 +1,17 @@
 use ahash::HashMap;
-use algebra::{field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::finite_fields::F2};
+use algebra::{
+    field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing,
+    rings::finite_fields::F2,
+};
 use deepsize::DeepSizeOf;
 use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
-    basiselement::kBasisElement, graded_space::{GradedLinearMap, GradedVectorSpace}, grading::{Grading, UniGrading}, tensor::TensorMap
+    basiselement::kBasisElement,
+    graded_space::{GradedLinearMap, GradedVectorSpace},
+    grading::{Grading, UniGrading},
+    tensor::TensorMap,
 };
 
 use serde::{Deserialize, Serialize};
@@ -120,16 +126,9 @@ pub fn A0_coalgebra() -> kCoalgebra<UniGrading, F2, FlatMatrix<F2>> {
     second_mat.set(0, 0, F2::one());
     second_mat.set(0, 1, F2::one());
 
-
     let mut coaction = GradedLinearMap::empty();
-    coaction.maps.insert(
-        UniGrading(0),
-        first_mat
-    );
-    coaction.maps.insert(
-        UniGrading(1),
-        second_mat
-    );
+    coaction.maps.insert(UniGrading(0), first_mat);
+    coaction.maps.insert(UniGrading(1), second_mat);
 
     kCoalgebra {
         space,
