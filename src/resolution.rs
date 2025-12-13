@@ -8,36 +8,38 @@ use deepsize::DeepSizeOf;
 use itertools::Itertools;
 
 use crate::{
-    comodule::traits::{CofreeComodule, Comodule, ComoduleMorphism},
+    comodule::traits::{Coalgebra, CofreeComodule, Comodule, ComoduleMorphism},
     export::{Page, SSeq},
     grading::OrderedGrading,
 };
 
 #[derive(Debug, Clone, PartialEq, DeepSizeOf)]
-pub struct Resolution<G: OrderedGrading, C: ComoduleMorphism<G>> {
-    pub comodule: C::Comodule,
-    pub resolution: Vec<(C, C::CofreeComodule)>,
+pub struct Resolution<G: OrderedGrading, C: Coalgebra, M: ComoduleMorphism<G,C>> {
+    pub coalgebra: C,
+    pub comodule: M::Comodule,
+    pub resolution: Vec<(M, M::CofreeComodule)>,
     _grading: PhantomData<G>,
 }
 
-impl<G: OrderedGrading, C: ComoduleMorphism<G>> Resolution<G, C> {
-    pub fn new(comodule: C::Comodule) -> Self {
+impl<G: OrderedGrading, C: Coalgebra, M: ComoduleMorphism<G, C>> Resolution<G, C, M> {
+    pub fn new(coalgebra: C, comodule: M::Comodule) -> Self {
         Resolution {
-            comodule: comodule,
+            coalgebra,
+            comodule,
             resolution: vec![],
             _grading: PhantomData,
         }
     }
 
     pub fn resolve_to_s(&mut self, s: usize, mut limit: G) {
-        let mut last_morph = C::zero_morphism(&self.comodule);
+        let mut last_morph = M::zero_morphism(&self.comodule);
 
         if self.resolution.len() == 0 {
-            let zero_morph = C::zero_morphism(&self.comodule);
+            let zero_morph = M::zero_morphism(&self.comodule);
 
-            let (initial_inject, a_0) = C::inject_codomain_to_cofree(&self.comodule, limit);
+            let (initial_inject, a_0) = M::inject_codomain_to_cofree(&self.coalgebra, &self.comodule, limit);
 
-            let compose = C::compose(&initial_inject, &zero_morph, &a_0);
+            let compose = M::compose(&initial_inject, &zero_morph, &a_0);
 
             self.resolution.push((compose, a_0));
             last_morph = initial_inject;
@@ -48,10 +50,10 @@ impl<G: OrderedGrading, C: ComoduleMorphism<G>> Resolution<G, C> {
             limit = limit.incr();
 
             let a_i = &self.resolution.last().unwrap().1;
-            let (coker_map, coker_comodule) = last_morph.cokernel(&a_i);
-            let (inject, a_i) = C::inject_codomain_to_cofree(&coker_comodule, limit);
+            let (coker_map, coker_comodule) = last_morph.cokernel(&self.coalgebra, &a_i);
+            let (inject, a_i) = M::inject_codomain_to_cofree(&self.coalgebra, &coker_comodule, limit);
 
-            let compose = C::compose(&inject, &coker_map, &a_i);
+            let compose = M::compose(&inject, &coker_map, &a_i);
 
             last_morph = inject;
 
@@ -61,7 +63,7 @@ impl<G: OrderedGrading, C: ComoduleMorphism<G>> Resolution<G, C> {
 
     /// This crashes on WASM
     pub fn resolve_to_s_with_print(&mut self, s: usize, mut limit: G) {
-        let mut last_morph = C::zero_morphism(&self.comodule);
+        let mut last_morph = M::zero_morphism(&self.comodule);
 
         println!("Resolving to filtration index: {} \n", s);
 
@@ -71,10 +73,10 @@ impl<G: OrderedGrading, C: ComoduleMorphism<G>> Resolution<G, C> {
             io::stdout().flush().unwrap();
             let inject_time = std::time::Instant::now();
 
-            let zero_morph = C::zero_morphism(&self.comodule);
+            let zero_morph = M::zero_morphism(&self.comodule);
 
-            let (initial_inject, a_0) = C::inject_codomain_to_cofree(&self.comodule, limit);
-            let compose = C::compose(&initial_inject, &zero_morph, &a_0);
+            let (initial_inject, a_0) = M::inject_codomain_to_cofree(&self.coalgebra, &self.comodule, limit);
+            let compose = M::compose(&initial_inject, &zero_morph, &a_0);
 
             println!("took: {:.2?}\n", inject_time.elapsed());
 
@@ -92,21 +94,21 @@ impl<G: OrderedGrading, C: ComoduleMorphism<G>> Resolution<G, C> {
             // Cokernel
             io::stdout().flush().unwrap();
             let a_i = &self.resolution.last().unwrap().1;
-            let (coker_map, coker_comodule) = last_morph.cokernel(&a_i);
+            let (coker_map, coker_comodule) = last_morph.cokernel(&self.coalgebra, &a_i);
             println!("took: {:.2?}", coker_time.elapsed());
 
             let inject_time = std::time::Instant::now();
             print!("Injecting to cofree         ");
             io::stdout().flush().unwrap();
             // Inject to cofree
-            let (inject, a_i) = C::inject_codomain_to_cofree(&coker_comodule, limit);
+            let (inject, a_i) = M::inject_codomain_to_cofree(&self.coalgebra, &coker_comodule, limit);
             println!("took: {:.2?}", inject_time.elapsed());
 
             let compose_time = std::time::Instant::now();
             print!("Composing morphisms         ");
             // Compose
             io::stdout().flush().unwrap();
-            let compose = C::compose(&inject, &coker_map, &a_i);
+            let compose = M::compose(&inject, &coker_map, &a_i);
             println!("took: {:.2?}", compose_time.elapsed());
 
             println!(
@@ -143,7 +145,7 @@ impl<G: OrderedGrading, C: ComoduleMorphism<G>> Resolution<G, C> {
             .flat_map(|(s, x)| {
                 let s = s + 1; // Note Skip above
                 let domain = &self.resolution[s - 1].1;
-                let g = x.0.get_structure_lines(domain, &x.1);
+                let g = x.0.get_structure_lines(&self.coalgebra, domain, &x.1);
                 g.into_iter()
                     .map(move |(from_gen, to_gen, value, prim_type)| {
                         (

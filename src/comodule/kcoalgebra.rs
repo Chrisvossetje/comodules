@@ -8,10 +8,7 @@ use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
-    basiselement::kBasisElement,
-    graded_space::{GradedLinearMap, GradedVectorSpace},
-    grading::{Grading, UniGrading},
-    tensor::TensorMap,
+    basiselement::kBasisElement, comodule::traits::Coalgebra, graded_space::{GradedLinearMap, GradedVectorSpace}, grading::{Grading, UniGrading}, tensor::TensorMap
 };
 
 use serde::{Deserialize, Serialize};
@@ -23,6 +20,8 @@ pub struct kCoalgebra<G: Grading, F: Field, M: Matrix<F>> {
     pub coaction: GradedLinearMap<G, F, M>,
     pub tensor: TensorMap<G>,
 }
+
+impl<G: Grading, F: Field, M: Matrix<F>> Coalgebra for kCoalgebra<G,F,M> {}
 
 impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
     pub fn set_primitives(&mut self) {

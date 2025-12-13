@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 
 use ahash::HashMap;
 use algebra::{abelian::Abelian, field::Field, matrix::Matrix};
@@ -6,7 +6,7 @@ use deepsize::DeepSizeOf;
 
 use crate::{
     basiselement::kBasisElement,
-    comodule::traits::CofreeComodule,
+    comodule::traits::{Coalgebra, CofreeComodule},
     graded_space::{BasisIndex, GradedLinearMap, GradedVectorSpace},
     grading::Grading,
     helper::hashmap_add_restrict,
@@ -17,8 +17,7 @@ use super::{kcoalgebra::kCoalgebra, kmorphism::kComoduleMorphism, traits::Comodu
 
 #[derive(Clone, PartialEq, DeepSizeOf)]
 #[allow(non_camel_case_types)]
-pub struct kComodule<G: Grading, F: Field, M: Matrix<F>> {
-    pub coalgebra: Arc<kCoalgebra<G, F, M>>,
+pub struct kComodule<G: Grading, F: Field, M: Abelian<F>> {
     pub space: GradedVectorSpace<G, ()>,
     pub coaction: GradedLinearMap<G, F, M>,
     pub tensor: TensorMap<G>,
@@ -26,21 +25,21 @@ pub struct kComodule<G: Grading, F: Field, M: Matrix<F>> {
 
 #[derive(Debug, Clone, PartialEq, DeepSizeOf)]
 #[allow(non_camel_case_types)]
-pub struct kCofreeComodule<G: Grading, F: Field, M: Matrix<F>> {
-    pub coalgebra: Arc<kCoalgebra<G, F, M>>,
+pub struct kCofreeComodule<G: Grading, F: Field, M: Abelian<F>> {
     pub space: GradedVectorSpace<G, ((BasisIndex<G>, u16), ())>,
     pub gen_id_gr: Vec<G>, // TODO : Unnecessaery ?
+    __phantomdata: PhantomData<(F, M)>
 }
 
-pub type Original<G> = (BasisIndex<G>, u16);
+pub type CoalgebraBasis<G> = (BasisIndex<G>, u16);
 
-impl<G: Grading, F: Field, M: Matrix<F>> std::fmt::Debug for kComodule<G, F, M> {
+impl<G: Grading, F: Field, M: Abelian<F>> std::fmt::Debug for kComodule<G, F, M> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.space.0)
     }
 }
 
-impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
+impl<G: Grading, F: Field, M: Abelian<F>> kComodule<G, F, M> {
     pub fn verify(&self) -> bool {
         for (&(m_gr, m_id), map) in &self.tensor.construct {
             let &(t_gr, t_id) = map.get(&(G::zero(), 0)).unwrap();
@@ -57,13 +56,11 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
     }
 
     pub fn new(
-        coalgebra: Arc<kCoalgebra<G, F, M>>,
         space: GradedVectorSpace<G, ()>,
         coaction: GradedLinearMap<G, F, M>,
         tensor: TensorMap<G>,
     ) -> Self {
         let com = Self {
-            coalgebra,
             space,
             coaction,
             tensor,
@@ -99,8 +96,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
     // }
 }
 
-impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G> for kCofreeComodule<G, F, M> {
-    type Coalgebra = kCoalgebra<G, F, M>;
+impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G, kCoalgebra<G,F,M>> for kCofreeComodule<G, F, M> {
     type Generator = ();
 
     fn get_generators(&self) -> Vec<(usize, G, Option<String>)> {
@@ -134,7 +130,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G> for kCofreeComodule<
     }
 
     fn cofree_comodule(
-        coalgebra: Arc<Self::Coalgebra>,
+        coalgebra: &kCoalgebra<G,F,M>,
         index: usize,
         grade: G,
         limit: G,
@@ -186,28 +182,28 @@ impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G> for kCofreeComodule<
         // }
 
         Self {
-            coalgebra,
             space: GradedVectorSpace::from(space),
             gen_id_gr: vec![grade],
+            __phantomdata: PhantomData
         }
     }
 
-    fn zero_comodule(coalgebra: Arc<Self::Coalgebra>) -> Self {
+    fn zero_comodule() -> Self {
         Self {
-            coalgebra: coalgebra,
             space: GradedVectorSpace::new(),
             gen_id_gr: vec![],
+            __phantomdata: PhantomData,
         }
     }
 }
 
-impl<G: Grading, F: Field, M: Abelian<F>> Comodule<G, F> for kComodule<G, F, M> {
-    type Coalgebra = kCoalgebra<G, F, M>;
+impl<G: Grading, F: Field, M: Abelian<F>> Comodule<G, kCoalgebra<G,F,M>> for kComodule<G, F, M> {
+    
     // type Morphism = kComoduleMorphism<G, F, M>;
     // type Generator = ();
     // type BaseRing = F;
 
-    fn fp_comodule(coalgebra: Arc<Self::Coalgebra>, degree: G) -> Self {
+    fn fp_comodule(coalgebra: &kCoalgebra<G,F,M>, degree: G) -> Self {
         let zero = G::zero();
 
         let space_map: HashMap<G, Vec<_>> = [(degree, vec![()])].into_iter().collect();
@@ -246,7 +242,6 @@ impl<G: Grading, F: Field, M: Abelian<F>> Comodule<G, F> for kComodule<G, F, M> 
         };
 
         Self {
-            coalgebra,
             space,
             coaction,
             tensor,

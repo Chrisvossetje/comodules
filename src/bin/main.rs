@@ -237,7 +237,7 @@ use std::time::Instant;
 fn main() {
     
     let input = include_str!("../../examples/polynomial/A.txt");
-    let coalgebra = kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input, UniGrading(60))
+    let coalgebra = kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input, UniGrading(70))
     .unwrap()
     .0;
 
@@ -247,22 +247,21 @@ fn main() {
                     deepsize::DeepSizeOf::deep_size_of(&coalgebra.space),
                     deepsize::DeepSizeOf::deep_size_of(&coalgebra.tensor),
                     deepsize::DeepSizeOf::deep_size_of(&coalgebra.coaction),);
-    let coalgebra = Arc::new(coalgebra);
+    let coalgebra = coalgebra;
 
 
-    let kt = kComodule::fp_comodule(coalgebra, UniGrading(0));
+    let fp = kComodule::fp_comodule(&coalgebra, UniGrading::zero());
 
-    let mut res: Resolution<UniGrading, kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>> =
-    Resolution::new(kt);
+    let mut res: Resolution<UniGrading, kCoalgebra<UniGrading, F2, FlatMatrix<F2>>, kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>> =
+        Resolution::new(coalgebra, fp);
 
     let start = Instant::now();
-    res.resolve_to_s_with_print(20, UniGrading(60));
+    res.resolve_to_s_with_print(40, UniGrading(70));
 
         for s in &res.resolution {
             
-            println!("Size of map: {:?}\nSize of codomain:{:?}\nSize of coalg:{:?}\nnSize of space:{:?}\nnSize of vec:{:?}\n",         deepsize::DeepSizeOf::deep_size_of(&s.0),
+            println!("Size of map: {:?}\nSize of codomain:{:?}\nSize of space:{:?}\nSize of vec:{:?}\n",         deepsize::DeepSizeOf::deep_size_of(&s.0),
                     deepsize::DeepSizeOf::deep_size_of(&s.1),
-                    deepsize::DeepSizeOf::deep_size_of(&s.1.coalgebra),
                     deepsize::DeepSizeOf::deep_size_of(&s.1.space),
                     deepsize::DeepSizeOf::deep_size_of(&s.1.gen_id_gr),);
         }

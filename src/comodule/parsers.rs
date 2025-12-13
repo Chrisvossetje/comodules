@@ -1,7 +1,7 @@
 use std::{ops::AddAssign, sync::Arc};
 
 use ahash::HashMap;
-use algebra::{field::Field, matrix::Matrix};
+use algebra::{abelian::Abelian, field::Field, matrix::Matrix};
 use itertools::Itertools;
 
 use crate::{
@@ -699,10 +699,10 @@ fn multiply_coaction_elements<F: Field>(
     result
 }
 
-impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
+impl<G: Grading + OrderedGrading, F: Field, M: Abelian<F>> kComodule<G, F, M> {
     pub fn parse(
         input: &str,
-        coalgebra: Arc<kCoalgebra<G, F, M>>,
+        coalgebra: &kCoalgebra<G, F, M>,
         coalgebra_translate: &HashMap<String, BasisIndex<G>>,
         max_grading: G,
     ) -> Result<kComodule<G, F, M>, String> {
@@ -715,7 +715,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
 
     fn parse_direct(
         input: &str,
-        coalgebra: Arc<kCoalgebra<G, F, M>>,
+        coalgebra: &kCoalgebra<G, F, M>,
         coalgebra_translate: &HashMap<String, BasisIndex<G>>,
     ) -> Result<kComodule<G, F, M>, String> {
         #[derive(Debug, Clone, PartialEq)]
@@ -889,7 +889,6 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
         }
 
         Ok(kComodule::new(
-            coalgebra,
             graded_space,
             GradedLinearMap::from(coaction),
             tensor,
@@ -898,7 +897,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
 
     fn parse_polynomial(
         input: &str,
-        coalgebra: Arc<kCoalgebra<G, F, M>>,
+        coalgebra: &kCoalgebra<G, F, M>,
         coalgebra_translate: &HashMap<String, BasisIndex<G>>,
         max_grading: G,
     ) -> Result<kComodule<G, F, M>, String> {
@@ -1174,7 +1173,6 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
         }
 
         Ok(kComodule::new(
-            coalgebra,
             comodule_vector_space,
             GradedLinearMap::from(coaction),
             tensor,

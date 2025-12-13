@@ -21,12 +21,12 @@ mod tests {
     #[test]
     fn test_inject_codomain_to_cofree() {
         let coalgebra = Arc::new(A0_coalgebra());
-        let comodule = kComodule::fp_comodule(coalgebra.clone(), UniGrading::zero());
+        let comodule = kComodule::fp_comodule(&coalgebra, UniGrading::zero());
 
         let (_cofree_morphism, cofree_comod) =
-            kComoduleMorphism::inject_codomain_to_cofree(&comodule, UniGrading(5));
+            kComoduleMorphism::inject_codomain_to_cofree(&coalgebra, &comodule, UniGrading(5));
 
-        let comp = kCofreeComodule::cofree_comodule(coalgebra, 0, UniGrading(0), UniGrading(5), ());
+        let comp = kCofreeComodule::cofree_comodule(&coalgebra, 0, UniGrading(0), UniGrading(5), ());
 
         // Assertions
         assert_eq!(cofree_comod, comp);
@@ -36,10 +36,10 @@ mod tests {
     fn test_cokernel() {
         let coalgebra = Arc::new(A0_coalgebra());
 
-        let domain = kComodule::fp_comodule(coalgebra.clone(), UniGrading::zero());
+        let domain = kComodule::fp_comodule(&coalgebra, UniGrading::zero());
 
         let codomain =
-            kCofreeComodule::cofree_comodule(coalgebra, 0, UniGrading(0), UniGrading(5), ());
+            kCofreeComodule::cofree_comodule(&coalgebra, 0, UniGrading(0), UniGrading(5), ());
 
         // Manually create a zero map
         let mut maps = HashMap::default();
@@ -57,7 +57,7 @@ mod tests {
 
         let morphism = kComoduleMorphism { map };
 
-        let (cokernel_morphism, _cokernel_comodule) = morphism.cokernel(&codomain);
+        let (cokernel_morphism, _cokernel_comodule) = morphism.cokernel(&coalgebra, &codomain);
 
         // Assertions - test that cokernel morphism is created
         assert!(cokernel_morphism.map.maps.len() > 0);
@@ -68,7 +68,7 @@ mod tests {
         let coalgebra = Arc::new(A0_coalgebra());
 
         let domain = kCofreeComodule::cofree_comodule(
-            coalgebra.clone(),
+            &coalgebra,
             0,
             UniGrading(0),
             UniGrading(5),
@@ -76,7 +76,7 @@ mod tests {
         );
 
         let codomain =
-            kCofreeComodule::cofree_comodule(coalgebra, 0, UniGrading(1), UniGrading(5), ());
+            kCofreeComodule::cofree_comodule(&coalgebra, 0, UniGrading(1), UniGrading(5), ());
 
         // Manually create a zero map
         let mut maps = HashMap::default();
@@ -98,7 +98,7 @@ mod tests {
 
         let morphism = kComoduleMorphism { map };
 
-        let lines = morphism.get_structure_lines(&domain, &codomain);
+        let lines = morphism.get_structure_lines(&coalgebra, &domain, &codomain);
 
         // Just test that we can call the function without error
         assert!(lines.is_empty() || !lines.is_empty());
@@ -107,7 +107,7 @@ mod tests {
     #[test]
     fn test_zero_morphism() {
         let coalgebra = Arc::new(A0_coalgebra());
-        let comodule = kComodule::fp_comodule(coalgebra, UniGrading::zero());
+        let comodule = kComodule::fp_comodule(&coalgebra, UniGrading::zero());
 
         let zero_morphism = kComoduleMorphism::zero_morphism(&comodule);
 

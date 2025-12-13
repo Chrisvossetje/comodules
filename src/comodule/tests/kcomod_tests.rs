@@ -28,13 +28,13 @@ mod tests {
         // Create empty comodule manually
         let empty_space = GradedVectorSpace::new();
         let empty_coaction_maps = HashMap::default();
-        let empty_coaction = GradedLinearMap::from(empty_coaction_maps);
+        let empty_coaction = GradedLinearMap::<UniGrading, F2, FlatMatrix<F2>>::from(empty_coaction_maps);
         let empty_tensor = TensorMap::default();
 
-        let comodule = kComodule::new(coalgebra.clone(), empty_space, empty_coaction, empty_tensor);
+        let comodule = kComodule::new(empty_space, empty_coaction, empty_tensor);
 
         assert_eq!(
-            comodule.coalgebra.clone().as_ref(),
+            coalgebra.clone().as_ref(),
             coalgebra.clone().as_ref()
         );
         assert!(comodule.space.0.is_empty());
@@ -45,7 +45,7 @@ mod tests {
     #[test]
     fn test_fp_comodule() {
         let coalgebra = Arc::new(A0_coalgebra());
-        let comodule = kComodule::fp_comodule(coalgebra.clone(), UniGrading::zero());
+        let comodule = kComodule::fp_comodule(&coalgebra, UniGrading::zero());
 
         assert_eq!(comodule.space.0.len(), 1);
         assert!(comodule.space.0.contains_key(&UniGrading(0)));
@@ -66,8 +66,8 @@ mod tests {
     #[test]
     fn test_direct_sum_basic() {
         let coalgebra = Arc::new(A0_coalgebra());
-        let comodule1 = kComodule::fp_comodule(coalgebra.clone(), UniGrading::zero());
-        let comodule2 = kComodule::fp_comodule(coalgebra, UniGrading(1));
+        let comodule1 = kComodule::fp_comodule(&coalgebra, UniGrading::zero());
+        let comodule2 = kComodule::fp_comodule(&coalgebra, UniGrading(1));
 
         // Test basic properties of the comodules
         assert_eq!(comodule1.space.0.len(), 1);
@@ -90,12 +90,11 @@ mod tests {
         // Create simple coaction and tensor maps
         let mut coaction_maps = HashMap::default();
         coaction_maps.insert(UniGrading(0), FlatMatrix::identity(1));
-        let coaction = GradedLinearMap::from(coaction_maps);
+        let coaction = GradedLinearMap::<UniGrading,F2,FlatMatrix<F2>>::from(coaction_maps);
 
         let tensor = TensorMap::default();
 
         let comodule = kComodule::new(
-            coalgebra,
             GradedVectorSpace::from(space_map),
             coaction,
             tensor,
@@ -118,7 +117,7 @@ mod tests {
 
         match kComodule::<UniGrading, F2, FlatMatrix<F2>>::parse(
             input_comod,
-            Arc::new(kcoalg),
+            &kcoalg,
             &translator,
             UniGrading::infty(),
         ) {
@@ -145,7 +144,7 @@ mod tests {
 
         match kComodule::<UniGrading, F2, FlatMatrix<F2>>::parse(
             input_comod,
-            Arc::new(kcoalg),
+            &kcoalg,
             &translator,
             UniGrading::infty(),
         ) {
@@ -169,7 +168,7 @@ mod tests {
                 .unwrap();
         match kComodule::<UniGrading, Fp<3>, FlatMatrix<Fp<3>>>::parse(
             input_comod,
-            Arc::new(kcoalg),
+            &kcoalg,
             &translator,
             UniGrading(6),
         ) {
@@ -193,7 +192,7 @@ mod tests {
         let coalgebra = Arc::new(coalgebra);
         let input = include_str!("../../../examples/comodule/A(0).txt");
 
-        let comod = kComodule::parse(input, coalgebra, &translate, MAX_GRADING).unwrap();
+        let comod = kComodule::parse(input, &coalgebra, &translate, MAX_GRADING).unwrap();
 
         // Just test that the parsing worked correctly
         assert!(comod.space.0.len() > 0);
@@ -207,10 +206,10 @@ mod tests {
         let (coalgebra, translate) =
             kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input, MAX_GRADING).unwrap();
 
-        let coalgebra = Arc::new(coalgebra);
+        let coalgebra = coalgebra;
         let input = include_str!("../../../examples/comodule/A(1).txt");
 
-        let comod = kComodule::parse(input, coalgebra, &translate, MAX_GRADING).unwrap();
+        let comod = kComodule::parse(input, &coalgebra, &translate, MAX_GRADING).unwrap();
 
         // Just test that the parsing worked correctly
         assert!(comod.space.0.len() > 0);

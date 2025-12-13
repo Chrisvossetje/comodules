@@ -1,26 +1,26 @@
 use std::sync::Arc;
 
+use ahash::HashMap;
 use algebra::ring::CRing;
 use deepsize::DeepSizeOf;
 
 use crate::grading::{Grading, OrderedGrading};
 
-pub trait Comodule<G: Grading, R: CRing>: DeepSizeOf + Clone {
-    type Coalgebra;
+pub trait Coalgebra: DeepSizeOf + Clone {}
 
-    fn fp_comodule(coalgebra: Arc<Self::Coalgebra>, degree: G) -> Self;
+pub trait Comodule<G: Grading, C: Coalgebra>: DeepSizeOf + Clone {
+    fn fp_comodule(coalgebra: &C, degree: G) -> Self;
 }
 
-pub trait CofreeComodule<G: Grading>: DeepSizeOf + Clone {
-    type Coalgebra;
+pub trait CofreeComodule<G: Grading, C: Coalgebra>: DeepSizeOf + Clone {
     type Generator: Default;
 
     // This is not the correct type yet ???
-    fn zero_comodule(coalgebra: Arc<Self::Coalgebra>) -> Self;
+    fn zero_comodule() -> Self;
     fn get_generators(&self) -> Vec<(usize, G, Option<String>)>;
     fn direct_sum(&mut self, other: &mut Self);
     fn cofree_comodule(
-        coalgebra: Arc<Self::Coalgebra>,
+        coalgebra: &C,
         index: usize,
         grade: G,
         limit: G,
@@ -32,14 +32,15 @@ pub trait CofreeComodule<G: Grading>: DeepSizeOf + Clone {
 
 // }
 
-pub trait ComoduleMorphism<G: Grading>: Sized + DeepSizeOf {
-    type CofreeComodule: CofreeComodule<G>;
-    type Comodule: Comodule<G, Self::BaseRing>;
+pub trait ComoduleMorphism<G: Grading, C: Coalgebra>: Sized + DeepSizeOf {
+    type CofreeComodule: CofreeComodule<G, C>;
+    type Comodule: Comodule<G, C>;
     type BaseRing: CRing;
 
-    fn cokernel(&self, codomain: &Self::CofreeComodule) -> (Self, Self::Comodule);
+    fn cokernel(&self, coalgebra: &C, codomain: &Self::CofreeComodule) -> (Self, Self::Comodule);
 
     fn inject_codomain_to_cofree(
+        coalgebra: &C,
         comodule: &Self::Comodule,
         limit: G,
     ) -> (Self, Self::CofreeComodule)
@@ -66,6 +67,7 @@ pub trait ComoduleMorphism<G: Grading>: Sized + DeepSizeOf {
     /// (from_dot, to_dot, value, line_type)
     fn get_structure_lines(
         &self,
+        coalgebra: &C,
         domain: &Self::CofreeComodule,
         codomain: &Self::CofreeComodule,
     ) -> Vec<((usize, G, usize), (usize, G, usize), Self::BaseRing, String)>;
