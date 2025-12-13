@@ -39,11 +39,11 @@ pub trait Grading:
 {
     fn degree_names() -> Vec<char>;
     fn default_formulas() -> (String, String);
-    fn export_grade(self) -> Vec<i32>;
+    fn export_grade(self) -> Vec<i64>;
 
     fn zero() -> Self;
 
-    fn integer_multiplication(self, other: i32) -> Self;
+    fn integer_multiplication(self, other: i16) -> Self;
 
     fn infty() -> Self;
 }
@@ -78,12 +78,12 @@ impl PolyGrading for BiGrading {
 #[derive(
     Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize, DeepSizeOf,
 )]
-pub struct UniGrading(pub i32);
+pub struct UniGrading(pub i16);
 
 #[derive(
     Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord, Default, Serialize, Deserialize, DeepSizeOf,
 )]
-pub struct BiGrading(pub i32, pub i32);
+pub struct BiGrading(pub i16, pub i16);
 
 impl Add for UniGrading {
     type Output = Self;
@@ -143,7 +143,7 @@ impl OrderedGrading for UniGrading {
 
 impl Parse for UniGrading {
     fn parse(s: &str) -> Result<Self, String> {
-        Ok(UniGrading(i32::from_str(s).map_err(|_| {
+        Ok(UniGrading(i16::from_str(s).map_err(|_| {
             format!("Grade: {} could not be parsed", s)
         })?))
     }
@@ -158,20 +158,20 @@ impl Grading for UniGrading {
         ("t-s".to_string(), "s".to_string())
     }
 
-    fn export_grade(self) -> Vec<i32> {
-        vec![self.0]
+    fn export_grade(self) -> Vec<i64> {
+        vec![self.0 as i64]
     }
 
     fn zero() -> Self {
         UniGrading(0)
     }
 
-    fn integer_multiplication(self, other: i32) -> Self {
+    fn integer_multiplication(self, other: i16) -> Self {
         UniGrading(self.0 * other)
     }
 
     fn infty() -> Self {
-        UniGrading(i32::MAX)
+        UniGrading(i16::MAX)
     }
 }
 
@@ -231,9 +231,9 @@ impl Parse for BiGrading {
         if parts.len() != 2 {
             return Err(format!("Grade: {} could not be parsed", s));
         }
-        let t = i32::from_str(parts[0].trim())
+        let t = i16::from_str(parts[0].trim())
             .map_err(|_| format!("Grade: {} could not be parsed", s))?;
-        let s_val = i32::from_str(parts[1].trim())
+        let s_val = i16::from_str(parts[1].trim())
             .map_err(|_| format!("Grade: {} could not be parsed", s))?;
         Ok(BiGrading(t, s_val))
     }
@@ -264,19 +264,19 @@ impl Grading for BiGrading {
         ("t-s".to_string(), "s".to_string())
     }
 
-    fn export_grade(self) -> Vec<i32> {
-        vec![self.0, self.1]
+    fn export_grade(self) -> Vec<i64> {
+        vec![self.0 as i64, self.1 as i64]
     }
 
     fn zero() -> Self {
         BiGrading(0, 0)
     }
 
-    fn integer_multiplication(self, other: i32) -> Self {
+    fn integer_multiplication(self, other: i16) -> Self {
         BiGrading(self.0 * other, self.1 * other)
     }
 
     fn infty() -> Self {
-        BiGrading(i32::MAX, i32::MAX)
+        BiGrading(i16::MAX, i16::MAX)
     }
 }

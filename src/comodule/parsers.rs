@@ -24,7 +24,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                     el.name
                 );
                 assert_eq!(comp.unwrap().0, *gr, "Grades do not coincide");
-                assert_eq!(comp.unwrap().1, index, "Indices do not coincide");
+                assert_eq!(comp.unwrap().1, index as u32, "Indices do not coincide");
             }
         }
         return true;
@@ -180,7 +180,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
 
         for (name, (el, gr)) in basis_dict.iter().sorted_by_key(|(name, _)| *name) {
             transformed.entry(*gr).or_insert(vec![]).push(el.clone());
-            basis_translate.insert(name.clone(), (*gr, transformed[&gr].len() - 1));
+            basis_translate.insert(name.clone(), (*gr, (transformed[&gr].len() - 1) as u32));
         }
 
         let graded_space = GradedVectorSpace(transformed);
@@ -224,8 +224,8 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                     .get_mut(&gr)
                     .ok_or(format!("Expected coaction to exist in grade {}", gr))?
                     .set(
-                        *id,
-                        t_id.1,
+                        *id as usize,
+                        t_id.1 as usize,
                         F::parse(&scalar).map_err(|e| {
                             format!("Invalid scalar '{}' for coaction of '{}': {}", scalar, b, e)
                         })?,
@@ -469,7 +469,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
         }
         // Construct the basis structure
         let mut basis: HashMap<G, Vec<kBasisElement>> = HashMap::default();
-        let mut monomial_to_grade_index: HashMap<Monomial, (G, usize)> = HashMap::default();
+        let mut monomial_to_grade_index: HashMap<Monomial, BasisIndex<G>> = HashMap::default();
 
         for monomial in monomial_coaction.keys().sorted() {
             let grade = monomial_to_grade(monomial, &generators);
@@ -483,10 +483,10 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
             };
 
             let index = basis.entry(grade).or_insert_with(Vec::new).len();
-            monomial_to_grade_index.insert(monomial.clone(), (grade, index));
+            monomial_to_grade_index.insert(monomial.clone(), (grade, index as u32));
 
             let index = basis.get(&grade).map_or(0, |el| el.len());
-            basis_translate.insert(label, (grade, index));
+            basis_translate.insert(label, (grade, index as u32));
             basis.entry(grade).or_insert_with(Vec::new).push(element);
         }
 
@@ -525,7 +525,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                 ))?;
                 let (_, tensor_index) = tensor.construct[&b_grade_index][&a_grade_index];
 
-                map.set(*basis_index, tensor_index, *coeff);
+                map.set(*basis_index as usize, tensor_index as usize, *coeff);
             }
         }
 
@@ -628,7 +628,7 @@ fn reduce_monomial(m: &Monomial, relations: &Vec<Monomial>) -> Option<Monomial> 
 fn monomial_to_grade<G: Grading>(m: &Monomial, generators: &Vec<(String, G)>) -> G {
     m.iter()
         .zip(generators.iter())
-        .map(|(x, (_, g))| g.integer_multiplication(*x as i32))
+        .map(|(x, (_, g))| g.integer_multiplication(*x as i16))
         .sum::<G>()
 }
 
@@ -832,7 +832,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
 
         for (name, (el, gr)) in basis_dict.iter().sorted_by_key(|(name, _)| *name) {
             transformed.entry(*gr).or_insert(vec![]).push(());
-            basis_translate.insert(name.clone(), (*gr, transformed[&gr].len() - 1));
+            basis_translate.insert(name.clone(), (*gr, (transformed[&gr].len() - 1) as u32));
         }
 
         let graded_space = GradedVectorSpace(transformed);
@@ -879,8 +879,8 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
                     .get_mut(&gr)
                     .ok_or(format!("Expected coaction to exist in grade {}", gr))?
                     .set(
-                        *id,
-                        t_id.1,
+                        *id as usize,
+                        t_id.1 as usize,
                         F::parse(&scalar).map_err(|e| {
                             format!("Invalid scalar '{}' for coaction of '{}': {}", scalar, b, e)
                         })?,
@@ -1090,7 +1090,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
 
         // Construct the basis structure
         let mut basis: HashMap<G, Vec<()>> = HashMap::default();
-        let mut monomial_to_grade_index: HashMap<Monomial, (G, usize)> = HashMap::default();
+        let mut monomial_to_grade_index: HashMap<Monomial, BasisIndex<G>> = HashMap::default();
 
         for monomial in monomial_coaction.keys().sorted() {
             let grade = monomial_to_grade(monomial, &generators);
@@ -1104,7 +1104,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
             };
 
             let index = basis.entry(grade).or_insert_with(Vec::new).len();
-            monomial_to_grade_index.insert(monomial.clone(), (grade, index));
+            monomial_to_grade_index.insert(monomial.clone(), (grade, index as u32));
             basis.entry(grade).or_insert_with(Vec::new).push(());
         }
 
@@ -1164,7 +1164,7 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
                             .get(coalg_index)
                             .ok_or("Algebra BasisIndex not found in tensor construction")?;
 
-                        map.set(*basis_index, *tensor_index, *coeff);
+                        map.set(*basis_index as usize, *tensor_index as usize, *coeff);
                     }
                     None => {
                         continue;

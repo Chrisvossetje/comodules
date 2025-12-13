@@ -8,7 +8,7 @@ use rayon::prelude::*;
 use crate::{basiselement::BasisElement, grading::Grading};
 use serde::{Deserialize, Serialize};
 
-pub type BasisIndex<G> = (G, usize);
+pub type BasisIndex<G> = (G, u32);
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, DeepSizeOf)]
 pub struct GradedVectorSpace<G: Grading, B>(pub HashMap<G, Vec<B>>);

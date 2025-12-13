@@ -98,7 +98,7 @@ mod tests {
         let sseq = res.generate_sseq("A0");
         let page = sseq.pages[0].clone();
 
-        let sorted_gens: Vec<(usize, usize, Vec<i32>)> = page
+        let sorted_gens: Vec<(usize, usize, Vec<i64>)> = page
             .generators
             .iter()
             .map(|x| (x.0, x.1, x.2.clone()))

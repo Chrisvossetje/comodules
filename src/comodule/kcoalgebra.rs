@@ -190,8 +190,8 @@ pub fn reduce_helper<G: Grading, F: Field, M: Matrix<F>>(
         .deconstruct
         .iter()
         .filter_map(
-            |((grade, old_tid), &target)| match mapping.get(grade).unwrap().0[*old_tid] {
-                Some(new_id) => Some(((*grade, new_id), target)),
+            |((grade, old_tid), &target)| match mapping.get(grade).unwrap().0[*old_tid as usize] {
+                Some(new_id) => Some(((*grade, new_id as u32), target)),
                 None => None,
             },
         )
@@ -205,8 +205,8 @@ pub fn reduce_helper<G: Grading, F: Field, M: Matrix<F>>(
             let new_map = map
                 .iter()
                 .filter_map(|((a_gr, a_id), (t_gr, old_t_id))| {
-                    match mapping.get(t_gr).unwrap().0[*old_t_id] {
-                        Some(new_tid) => Some(((*a_gr, *a_id), (*t_gr, new_tid))),
+                    match mapping.get(t_gr).unwrap().0[*old_t_id as usize] {
+                        Some(new_tid) => Some(((*a_gr, *a_id), (*t_gr, new_tid as u32))),
                         None => None,
                     }
                 })

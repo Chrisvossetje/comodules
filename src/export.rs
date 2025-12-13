@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Page {
     pub id: usize,
-    pub generators: Vec<(usize, usize, Vec<i32>, Option<String>)>,
+    pub generators: Vec<(usize, usize, Vec<i64>, Option<String>)>,
     pub structure_lines: Vec<((usize, usize), (usize, usize), String, String)>,
 }
 

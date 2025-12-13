@@ -8,7 +8,7 @@ use rayon::prelude::*;
 
 use crate::{
     basiselement::kBasisElement,
-    comodule::{kcomodule::kCofreeComodule, traits::CofreeComodule},
+    comodule::{kcomodule::{Original, kCofreeComodule}, traits::CofreeComodule},
     graded_space::{BasisIndex, GradedLinearMap},
     grading::{Grading, OrderedGrading},
     tensor::TensorMap,
@@ -86,7 +86,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G> for kComoduleMorph
 
         // The upcoming should be a "solve commutative square thingy ?"
 
-        let m_lut: HashMap<BasisIndex<G>, Vec<(usize, F)>> = codomain
+        let m_lut: HashMap<BasisIndex<G>, Vec<(u32, F)>> = codomain
             .space
             .0
             .par_iter()
@@ -102,19 +102,19 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G> for kComoduleMorph
                             let val = cokernel_map.maps.get(f_gr).unwrap().get(f_id, q_index);
                             match val.is_zero() {
                                 true => None,
-                                false => Some((q_index, val)),
+                                false => Some((q_index as u32, val)),
                             }
                         })
                         .collect();
-                    ((*f_gr, f_id), v)
+                    ((*f_gr, f_id as u32), v)
                 })
             })
             .collect();
 
-        let mut find: HashMap<(BasisIndex<G>, usize), BasisIndex<G>> = HashMap::new();
+        let mut find: HashMap<Original<G>, BasisIndex<G>> = HashMap::new();
         for (gr, v) in &codomain.space.0 {
             for (id, (el, _)) in v.iter().enumerate() {
-                find.insert(*el, (*gr, id));
+                find.insert(*el, (*gr, id as u32));
             }
         }
 
@@ -134,9 +134,9 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G> for kComoduleMorph
                     let (((alg_gr, alg_id), gen_id), _) = space[*codom_id];
 
                     let coact_size = codomain.coalgebra.tensor.dimensions[&alg_gr];
-                    for codom_coact_id in 0..coact_size {
+                    for codom_coact_id in 0..coact_size as u32 {
                         let coact_val =
-                            codomain.coalgebra.coaction.maps[&alg_gr].get(alg_id, codom_coact_id);
+                            codomain.coalgebra.coaction.maps[&alg_gr].get(alg_id as usize, codom_coact_id as usize);
 
                         if !coact_val.is_zero() {
                             let ((alg_l_gr, alg_l_id), (alg_r_gr, alg_r_id)) =
@@ -153,7 +153,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G> for kComoduleMorph
                                 // TODO : This is not reallly generic, and depends on the underlying implementation
                                 // This probably breaks for a F2 matrix implementation.
                                 unsafe {
-                                    (**(a.as_ptr())).add_at(*coker_id, final_id, coact_val * *val);
+                                    (**(a.as_ptr())).add_at(*coker_id, final_id as usize, coact_val * *val);
                                 }
                             }
                         }
@@ -226,13 +226,13 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G> for kComoduleMorph
             let alg_to_tens = comodule
                 .tensor
                 .construct
-                .get(&(pivot_grade, pivot))
+                .get(&(pivot_grade, pivot as u32))
                 .expect("The tensor should exist on the codomain in this grade");
 
             let coalg_space = &comodule.coalgebra.space;
 
             // TODO: Verify is this parallel iterator is faster or not for big(ger) coalgebras
-            let cofree_map: HashMap<G,M> = coalg_space.0.par_iter().filter_map(|(alg_gr, alg_gr_space)| {
+            let cofree_map: HashMap<G,M> = coalg_space.0.iter().filter_map(|(alg_gr, alg_gr_space)| {
                 let t_gr = *alg_gr + pivot_grade;
 
                 if t_gr > fixed_limit {
@@ -254,13 +254,13 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G> for kComoduleMorph
                 let mut map = M::zero(codomain_len, coalg_len);
 
                 for a_id in 0..coalg_len {
-                    let (t_gr, t_id) = alg_to_tens.get(&(*alg_gr,a_id)).expect("This BasisIndex should exist on the tensor object in the to inject comodule");
+                    let (t_gr, t_id) = alg_to_tens.get(&(*alg_gr, a_id as u32)).expect("This BasisIndex should exist on the tensor object in the to inject comodule");
                     let slice = comodule
                         .coaction
                         .maps
                         .get(t_gr)
                         .expect("This grade should exist on the coaction of the injecting comodule")
-                        .get_row(*t_id);
+                        .get_row(*t_id as usize);
 
                     map.set_row(a_id, slice);
                 }
@@ -324,19 +324,19 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G> for kComoduleMorph
             for el_id in 0..domain.space.dimension_in_grade(gr) {
                 let els = domain.space.0.get(gr).unwrap();
                 let (((alg_gr, alg_id), gen_id), _) = els[el_id];
-                let alg_el = &c_space[&alg_gr][alg_id];
+                let alg_el = &c_space[&alg_gr][alg_id as usize];
                 match alg_el.primitive {
                     Some(prim_id) => {
                         for t_id in 0..gr_map.codomain() {
                             let (((codom_alg_gr, codom_alg_id), codom_gen_id), _) = codomain.space.0.get(gr).expect("As codomain of the map is non-zero this vector space should contain an element in this grade.")[t_id];
 
-                            let alg_el = &c_space[&codom_alg_gr][codom_alg_id];
+                            let alg_el = &c_space[&codom_alg_gr][codom_alg_id as usize];
                             if alg_el.generator {
                                 if !gr_map.get(el_id, t_id).is_zero() {
                                     lines.push((
                                         // TODO
-                                        (gen_id, G::zero(), 0),
-                                        (codom_gen_id, G::zero(), 0),
+                                        (gen_id as usize, G::zero(), 0),
+                                        (codom_gen_id as usize, G::zero(), 0),
                                         gr_map.get(el_id, t_id),
                                         "h_".to_string() + &prim_id.to_string(),
                                     ));

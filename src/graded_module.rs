@@ -33,9 +33,9 @@ impl<G: Grading, B: BasisElement> GradedModule<G, B> {
             map.insert(gr, vec![(B::default(), UniGrading(0), None); *dim]);
         }
         for (&(t_gr, t_id), &((a_gr, a_id), (m_gr, m_id))) in &tensor.deconstruct {
-            let module = &mut map.get_mut(&t_gr).unwrap()[t_id];
-            let a_unigrade = coalgebra.0.get(&a_gr).unwrap()[a_id].1;
-            let (_, m_unigrade, m_quotient) = self.0.get(&m_gr).unwrap()[m_id];
+            let module = &mut map.get_mut(&t_gr).unwrap()[t_id as usize];
+            let a_unigrade = coalgebra.0.get(&a_gr).unwrap()[a_id as usize].1;
+            let (_, m_unigrade, m_quotient) = self.0.get(&m_gr).unwrap()[m_id as usize];
             module.1 = a_unigrade + m_unigrade;
             module.2 = m_quotient;
         }

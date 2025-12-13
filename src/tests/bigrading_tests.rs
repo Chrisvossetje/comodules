@@ -77,6 +77,6 @@ mod tests {
         assert_eq!(a.export_grade(), vec![1, 2]);
         assert_eq!(a.incr(), BiGrading(2, 3));
         assert_eq!(BiGrading::zero(), BiGrading(0, 0));
-        assert_eq!(BiGrading::infty(), BiGrading(i32::MAX, i32::MAX));
+        assert_eq!(BiGrading::infty(), BiGrading(i16::MAX, i16::MAX));
     }
 }

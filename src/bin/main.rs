@@ -242,7 +242,13 @@ fn main() {
     .0;
 
 
+    println!("Size of coalgebra: {:?}\nSize of space:{:?}\nSize of tensor:{:?}\nSize of coaction:{:?}\n",
+                    deepsize::DeepSizeOf::deep_size_of(&coalgebra),
+                    deepsize::DeepSizeOf::deep_size_of(&coalgebra.space),
+                    deepsize::DeepSizeOf::deep_size_of(&coalgebra.tensor),
+                    deepsize::DeepSizeOf::deep_size_of(&coalgebra.coaction),);
     let coalgebra = Arc::new(coalgebra);
+
 
     let kt = kComodule::fp_comodule(coalgebra, UniGrading(0));
 
@@ -253,9 +259,12 @@ fn main() {
     res.resolve_to_s_with_print(20, UniGrading(60));
 
         for s in &res.resolution {
-            println!("Size of map: {:?}\nSize of codomain:{:?}\n",         deepsize::DeepSizeOf::deep_size_of(&s.0)
-            ,         deepsize::DeepSizeOf::deep_size_of(&s.1),
-    )       ;
+            
+            println!("Size of map: {:?}\nSize of codomain:{:?}\nSize of coalg:{:?}\nnSize of space:{:?}\nnSize of vec:{:?}\n",         deepsize::DeepSizeOf::deep_size_of(&s.0),
+                    deepsize::DeepSizeOf::deep_size_of(&s.1),
+                    deepsize::DeepSizeOf::deep_size_of(&s.1.coalgebra),
+                    deepsize::DeepSizeOf::deep_size_of(&s.1.space),
+                    deepsize::DeepSizeOf::deep_size_of(&s.1.gen_id_gr),);
         }
 
     println!(

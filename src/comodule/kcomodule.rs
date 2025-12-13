@@ -28,9 +28,11 @@ pub struct kComodule<G: Grading, F: Field, M: Matrix<F>> {
 #[allow(non_camel_case_types)]
 pub struct kCofreeComodule<G: Grading, F: Field, M: Matrix<F>> {
     pub coalgebra: Arc<kCoalgebra<G, F, M>>,
-    pub space: GradedVectorSpace<G, ((BasisIndex<G>, usize), ())>,
+    pub space: GradedVectorSpace<G, ((BasisIndex<G>, u16), ())>,
     pub gen_id_gr: Vec<G>, // TODO : Unnecessaery ?
 }
+
+pub type Original<G> = (BasisIndex<G>, u16);
 
 impl<G: Grading, F: Field, M: Matrix<F>> std::fmt::Debug for kComodule<G, F, M> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -46,7 +48,7 @@ impl<G: Grading, F: Field, M: Matrix<F>> kComodule<G, F, M> {
                 return false;
             };
 
-            let val = self.coaction.maps.get(&t_gr).unwrap().get(m_id, t_id);
+            let val = self.coaction.maps.get(&t_gr).unwrap().get(m_id as usize, t_id as usize);
             if val != F::one() {
                 return false;
             };
@@ -108,7 +110,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G> for kCofreeComodule<
             .flat_map(|(k, v)| {
                 v.iter().filter_map(|b| {
                     if b.0.0.0 == G::zero() {
-                        Some((b.0.1, *k, None))
+                        Some((b.0.1 as usize, *k, None))
                     } else {
                         None
                     }
@@ -146,7 +148,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G> for kCofreeComodule<
                 let sum = *g + grade;
                 if sum <= limit {
                     let k_basis: Vec<_> = (0..v.len())
-                        .map(|j| (((*g, j), index), generator))
+                        .map(|j| (((*g, j as u32), index as u16), generator))
                         .collect();
                     Some((*g + grade, k_basis))
                 } else {
