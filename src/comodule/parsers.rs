@@ -233,10 +233,19 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
             }
         }
 
+        let coaction = GradedLinearMap::from(coaction);
+        let mut coact_alt = HashMap::default();
+
+        for (g, v) in &graded_space.0 {
+            for id in 0..v.len() {
+                coact_alt.insert((*g,id as u32), get_list(&coaction, &tensor, (*g,id as u32)));
+            }
+        }
+
         let mut coalg = kCoalgebra {
             space: graded_space,
-            tensor: tensor,
-            coaction: GradedLinearMap::from(coaction),
+            coaction: coact_alt,
+            _p: std::marker::PhantomData,
         };
 
         coalg.set_primitives();
@@ -527,11 +536,19 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                 map.set(*basis_index as usize, tensor_index as usize, *coeff);
             }
         }
+        let coaction = GradedLinearMap::from(coaction);
+        let mut coact_alt = HashMap::default();
+
+        for (g, v) in &coalg_vector_space.0 {
+            for id in 0..v.len() {
+                coact_alt.insert((*g,id as u32), get_list(&coaction, &tensor, (*g,id as u32)));
+            }
+        }
 
         let mut coalg = kCoalgebra {
             space: coalg_vector_space,
-            tensor: tensor,
-            coaction: GradedLinearMap::from(coaction),
+            coaction: coact_alt,
+            _p: std::marker::PhantomData,
         };
 
         coalg.set_primitives();
@@ -696,6 +713,19 @@ fn multiply_coaction_elements<F: Field>(
 
     result.retain(|(coeff, _, _)| *coeff != F::zero());
     result
+}
+
+fn get_list<G: OrderedGrading, F: Field, M: Matrix<F>>(map: &GradedLinearMap<G,F,M>, tensor: &TensorMap<G>, i: BasisIndex<G>) -> Vec<(BasisIndex<G>, BasisIndex<G>, F)> {
+    let m = &map.maps[&i.0];
+    let mut v = vec![];
+    for t_id in 0..tensor.get_dimension(&i.0) {
+        let val = m.get(i.1 as usize, t_id);
+        if !val.is_zero() {
+            let (l_alg,r_alg) = tensor.deconstruct[&(i.0, t_id as u32)];
+            v.push((l_alg, r_alg, val)); 
+        }
+    }     
+    v
 }
 
 impl<G: Grading + OrderedGrading, F: Field, M: Abelian<F>> kComodule<G, F, M> {

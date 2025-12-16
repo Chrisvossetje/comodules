@@ -17,7 +17,7 @@ pub trait Coalgebra<G: Grading>: DeepSizeOf + Clone + Sync + Send + Debug {
 
     fn size_in_degree(&self, g: G) -> usize;
     // TODO: to slice
-    fn coaction(&self, i: BasisIndex<G>) -> Vec<(BasisIndex<G>, BasisIndex<G>, Self::BaseRing)>;
+    fn coaction(&self, i: BasisIndex<G>) -> &[(BasisIndex<G>, BasisIndex<G>, Self::BaseRing)];
 }
 
 pub trait Comodule<G: Grading, C: Coalgebra<G>>: DeepSizeOf + Clone {

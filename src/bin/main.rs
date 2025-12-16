@@ -293,11 +293,10 @@ fn main() {
     .0;
 
 
-    println!("Elements in coalgebra: {:?}\nSize of coalgebra: {:?}\nSize of space:{:?}\nSize of tensor:{:?}\nSize of coaction:{:?}\n",
+    println!("Elements in coalgebra: {:?}\nSize of coalgebra: {:?}\nSize of space:{:?}\nSize of coaction:{:?}\n",
                     coalgebra.space.0.iter().fold(0, |count, g| count + g.1.len()),
                     deepsize::DeepSizeOf::deep_size_of(&coalgebra),
                     deepsize::DeepSizeOf::deep_size_of(&coalgebra.space),
-                    deepsize::DeepSizeOf::deep_size_of(&coalgebra.tensor),
                     deepsize::DeepSizeOf::deep_size_of(&coalgebra.coaction),);
     let coalgebra = coalgebra;
 

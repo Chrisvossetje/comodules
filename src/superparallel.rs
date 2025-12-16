@@ -165,7 +165,7 @@ impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
                 // these are \sum b_j \otimes c_j \otimes v_k
                 for (alg_l, alg_r, coact_val) in coalgebra.coaction((alg_gr, alg_id)) {
                     // I want to know if there is a c_j \otimes v_k mapping to some_i q_i which generates an A
-                    match reduced_to_coker.get(&(alg_r, gen_id)) {
+                    match reduced_to_coker.get(&(*alg_r, gen_id)) {
                         Some(targets) => {
                             debug_assert!(targets.len() > 0);
                             debug_assert!(targets.len() < 2);
@@ -176,13 +176,13 @@ impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
 
                                 // THIS IS IN MY LUT !
                                 // This is the tagret index in r_gens
-                                let target_id = lut[&(alg_l, *a_generator)];
+                                let target_id = lut[&(*alg_l, *a_generator)];
 
                                 // As coker_id is seperate across parallel instances
                                 // This unsafe code is fine, AS LONG as the matrix is FlatMatrix :)
                                 // TODO : This is not reallly generic, and depends on the underlying implementation
                                 // This probably breaks for a F2 matrix implementation.
-                                let final_val = value * coact_val * *v_i_value;
+                                let final_val = value * *coact_val * *v_i_value;
                                 small_to_cofree.add_at(coker_id, target_id as usize, final_val);
                                 // unsafe {
                                 //     (**(map_ref.as_ptr())).add_at(
