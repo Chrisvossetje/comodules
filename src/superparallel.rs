@@ -133,13 +133,18 @@ impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
         // Compute Cokernel of prev_s
         // Get all previous A generators and generate corresponding r_gens and lut for this degree
         // The only elements missing from r_gens and lut are the new a generators found later
-        let (
-            (to_cokernel, repr_vectors, cokernel),
-            (gs_a_gens, mut r_gens, mut lut, reduced_to_coker),
-        ) = rayon::join(
-            || DataCell::cokernel(prev_s),
-            || DataCell::luts(gs, prev_s_gs, degree, coalgebra),
-        );
+
+        let (to_cokernel, repr_vectors, cokernel) =  DataCell::cokernel(prev_s);
+        let (gs_a_gens, mut r_gens, mut lut, reduced_to_coker) = DataCell::luts(gs, prev_s_gs, degree, coalgebra);
+
+        // TODO : 
+        // let (
+        //     (to_cokernel, repr_vectors, cokernel),
+        //     (gs_a_gens, mut r_gens, mut lut, reduced_to_coker),
+        // ) = rayon::join(
+        //     || DataCell::cokernel(prev_s),
+        //     || DataCell::luts(gs, prev_s_gs, degree, coalgebra),
+        // );
 
         let mut small_to_cofree =
             <C::RingMorph as Matrix<C::BaseRing>>::zero(cokernel.len(), r_gens.len());

@@ -284,7 +284,7 @@ use std::time::Instant;
 
 
 fn main() {
-    const MAX_GRADING: UniGrading = UniGrading(50);
+    const MAX_GRADING: UniGrading = UniGrading(60);
     const S: usize = 30;
 
     let input = include_str!("../../examples/polynomial/A.txt");
