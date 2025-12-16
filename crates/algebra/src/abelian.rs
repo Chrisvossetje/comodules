@@ -1,15 +1,21 @@
 use std::fmt::Debug;
+use deepsize::DeepSizeOf;
+
 use crate::{matrix::Matrix, ring::CRing};
 
 pub trait Abelian<R: CRing>: Matrix<R> + Clone + Send + Sync + PartialEq + Debug {
-    type Module: Default + Send + Sync;
+    /// Default should represents a free generator!
+    type Generator: Default + Send + Sync + Copy + Clone + Ord + Debug + DeepSizeOf;
 
-    fn kernel(&self, domain: &Self::Module, codomain: &Self::Module) -> (Self, Self::Module);
-    fn cokernel(&self, codomain: &Self::Module) -> (Self, Self, Self::Module);
+    fn kernel(&self, domain: &Vec<Self::Generator>, codomain: &Vec<Self::Generator>) -> (Self, Vec<Self::Generator>);
+    fn cokernel(&self, codomain: &Vec<Self::Generator>) -> (Self, Self, Vec<Self::Generator>);
     
-    fn cohomology(f: &Self, g: &Self, n: &Self::Module, q: &Self::Module) -> (Self, Self::Module);
+    fn cohomology(f: &Self, g: &Self, n: &Vec<Self::Generator>, q: &Vec<Self::Generator>) -> (Self, Vec<Self::Generator>);
 
-    fn kernel_generators(&self, domain: &Self::Module, codomain: &Self::Module) -> Vec<usize>;
+    // TODO :
+    // ASSUME THIS RETURNS Q_INDEX's WHICH ARE ORDERED WRT DOMAIN!!
+    // SIMPLE CHECK HERE IS THAT RETURN VEC IS SORTED
+    fn kernel_destroyers(&self, domain: &Vec<Self::Generator>, codomain: &Vec<Self::Generator>) -> Vec<usize>;
 
-    fn compose(f: &Self, g: &Self, g_codomain: &Self::Module) -> Self;
+    fn compose(f: &Self, g: &Self, g_codomain: &Vec<Self::Generator>) -> Self;
 }

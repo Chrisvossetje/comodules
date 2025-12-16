@@ -13,7 +13,9 @@ use comodules::comodule::kcoalgebra::kCoalgebra;
 use comodules::comodule::kcomodule::kComodule;
 use comodules::comodule::kmorphism::kComoduleMorphism;
 use comodules::comodule::traits::ComoduleMorphism;
+use comodules::export::{Page, SSeq};
 use comodules::grading::Grading;
+use comodules::superparallel::ParallelResolution;
 use comodules::{comodule::traits::Comodule, grading::UniGrading, resolution::Resolution};
 use itertools::Itertools;
 use std::time::Instant;
@@ -234,45 +236,129 @@ use std::time::Instant;
 //     println!("\nProgram took: {:.2?}", start.elapsed());
 // }
 
-fn main() {
+
+
+// fn main() {
     
+//     let input = include_str!("../../examples/polynomial/A.txt");
+//     let coalgebra = kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input, UniGrading(60))
+//     .unwrap()
+//     .0;
+
+
+//     println!("Size of coalgebra: {:?}\nSize of space:{:?}\nSize of tensor:{:?}\nSize of coaction:{:?}\n",
+//                     deepsize::DeepSizeOf::deep_size_of(&coalgebra),
+//                     deepsize::DeepSizeOf::deep_size_of(&coalgebra.space),
+//                     deepsize::DeepSizeOf::deep_size_of(&coalgebra.tensor),
+//                     deepsize::DeepSizeOf::deep_size_of(&coalgebra.coaction),);
+//     let coalgebra = coalgebra;
+
+
+//     let fp = kComodule::fp_comodule(&coalgebra, UniGrading::zero());
+
+//     let mut res: Resolution<UniGrading, kCoalgebra<UniGrading, F2, FlatMatrix<F2>>, kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>> =
+//         Resolution::new(coalgebra, fp);
+
+//     let start = Instant::now();
+//     res.resolve_to_s_with_print(40, UniGrading(60));
+
+//         for s in &res.resolution {
+            
+//             println!("Size of map: {:?}\nSize of codomain:{:?}\nSize of space:{:?}\nSize of vec:{:?}\n",         deepsize::DeepSizeOf::deep_size_of(&s.0),
+//                     deepsize::DeepSizeOf::deep_size_of(&s.1),
+//                     deepsize::DeepSizeOf::deep_size_of(&s.1.space),
+//                     deepsize::DeepSizeOf::deep_size_of(&s.1.gen_id_gr),);
+//         }
+
+//     println!(
+//         "Size of resolution: {:?}",
+//         deepsize::DeepSizeOf::deep_size_of(&res)
+//     );
+
+//     let sseq = res.generate_sseq("");
+//     sseq.save_to_json("A.json").unwrap();
+
+//     println!("\nProgram took: {:.2?}", start.elapsed());
+// }
+
+
+
+fn main() {
+    const MAX_GRADING: UniGrading = UniGrading(50);
+    const S: usize = 30;
+
     let input = include_str!("../../examples/polynomial/A.txt");
-    let coalgebra = kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input, UniGrading(70))
+    let coalgebra = kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input, MAX_GRADING)
     .unwrap()
     .0;
 
 
-    println!("Size of coalgebra: {:?}\nSize of space:{:?}\nSize of tensor:{:?}\nSize of coaction:{:?}\n",
+    println!("Elements in coalgebra: {:?}\nSize of coalgebra: {:?}\nSize of space:{:?}\nSize of tensor:{:?}\nSize of coaction:{:?}\n",
+                    coalgebra.space.0.iter().fold(0, |count, g| count + g.1.len()),
                     deepsize::DeepSizeOf::deep_size_of(&coalgebra),
                     deepsize::DeepSizeOf::deep_size_of(&coalgebra.space),
                     deepsize::DeepSizeOf::deep_size_of(&coalgebra.tensor),
                     deepsize::DeepSizeOf::deep_size_of(&coalgebra.coaction),);
     let coalgebra = coalgebra;
 
-
     let fp = kComodule::fp_comodule(&coalgebra, UniGrading::zero());
-
-    let mut res: Resolution<UniGrading, kCoalgebra<UniGrading, F2, FlatMatrix<F2>>, kComoduleMorphism<UniGrading, F2, FlatMatrix<F2>>> =
-        Resolution::new(coalgebra, fp);
-
+    let res = ParallelResolution::init(coalgebra, fp, S, MAX_GRADING);
+    res.init_with_fp(MAX_GRADING);
+    
     let start = Instant::now();
-    res.resolve_to_s_with_print(40, UniGrading(70));
 
-        for s in &res.resolution {
-            
-            println!("Size of map: {:?}\nSize of codomain:{:?}\nSize of space:{:?}\nSize of vec:{:?}\n",         deepsize::DeepSizeOf::deep_size_of(&s.0),
-                    deepsize::DeepSizeOf::deep_size_of(&s.1),
-                    deepsize::DeepSizeOf::deep_size_of(&s.1.space),
-                    deepsize::DeepSizeOf::deep_size_of(&s.1.gen_id_gr),);
+
+    // Non Parallal executor
+    for g in MAX_GRADING.iterator_from_zero(true) {
+        for s in 1..=S {
+            if s==2 && g == UniGrading(5) {
+                println!("S:{}, G:{}", s, g);
+            }
+            res.resolve_at_s_g(s, g);
         }
+    }
+    
+    
+    // for s in 0..=S {
+    //     for g in MAX_GRADING.iterator_from_zero(true) {
+    //         println!("S:{}, G:{}", s, g);
+    //         let a = &res.data[s][g.to_index()].get().unwrap();
+    //         println!("Lut2: {:?}\ncokernel: {:?}\na_gens: {:?}\nto_cokernel:\n{:?}", a.lut2, a.cokernel, a.a_gens, a.to_cokernel);
+    //     }
+    // }
+    
+    // println!(
+    //     "Size of resolution: {:?}",
+    //     deepsize::DeepSizeOf::deep_size_of(&res)
+    // );
 
-    println!(
-        "Size of resolution: {:?}",
-        deepsize::DeepSizeOf::deep_size_of(&res)
-    );
+    let mut gens = vec![];
 
-    let sseq = res.generate_sseq("");
-    sseq.save_to_json("A.json").unwrap();
+    for s in 0..=S {
+        for g in MAX_GRADING.iterator_from_zero(true) {
+            let mut a_gens = res.data[s].get(g.to_index()).unwrap().get_or_init(|| unreachable!()).a_gens.iter().map(|x| (s, x.1 as usize, g.export_grade(), None)).collect();
+            gens.append(&mut a_gens);
+        }
+    }
+
+    let page = Page {
+        id: 2,
+        generators: gens,
+        structure_lines: vec![],
+    };
+
+    let (x_formula, y_formula) = UniGrading::default_formulas();
+    
+    let sseq = SSeq {
+        name: "A".to_owned(),
+        degrees: UniGrading::degree_names(),
+        x_formula,
+        y_formula,
+        pages: vec![page],
+        differentials: vec![],
+    };
+
+    sseq.save_to_json("A_par.json").unwrap();
 
     println!("\nProgram took: {:.2?}", start.elapsed());
 }

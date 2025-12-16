@@ -6,29 +6,28 @@ use itertools::Itertools;
 use crate::{abelian::Abelian, field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::univariate_polynomial_ring::UniPolRing, snf::SmithNormalForm, unipol::{UniPolMap, UniPolModule, cohomology::internal_cohomology}};
 
 impl<F: Field> Abelian<UniPolRing<F>> for UniPolMap<F> {
-    type Module = UniPolModule;
-
+    type Generator = Option<u16>;
     
-    fn kernel(&self, _domain: &Self::Module, _codomain: &Self::Module) -> (Self, Self::Module) {
+    fn kernel(&self, _domain: &Vec<Self::Generator>, _codomain: &Vec<Self::Generator>) -> (Self, Vec<Self::Generator>) {
         todo!()
     }
     
-    fn cokernel(&self, codomain: &Self::Module) -> (Self, Self, Self::Module) {
+    fn cokernel(&self, codomain: &Vec<Self::Generator>) -> (Self, Self, Vec<Self::Generator>) {
         self.internal_cokernel(codomain)
     }
     
-    fn cohomology(f: &Self, g: &Self, n: &Self::Module, q: &Self::Module) -> (Self, Self::Module) {
+    fn cohomology(f: &Self, g: &Self, n: &Vec<Self::Generator>, q: &Vec<Self::Generator>) -> (Self, Vec<Self::Generator>) {
         internal_cohomology(f,g,n,q)
     }
 
 
-    fn compose(f: &Self, g: &Self, g_codomain: &Self::Module) -> Self {
+    fn compose(f: &Self, g: &Self, g_codomain: &Vec<Self::Generator>) -> Self {
         let mut comp = f.compose(g);
         comp.reduce(g_codomain);
         comp
     }
     
-    fn kernel_generators(&self, domain: &Self::Module, codomain: &Self::Module) -> Vec<usize> {
+    fn kernel_destroyers(&self, domain: &Vec<Self::Generator>, codomain: &Vec<Self::Generator>) -> Vec<usize> {
         let mut pivots = vec![];
         let mut mat = self.clone();
         let mut codomain = codomain.clone();

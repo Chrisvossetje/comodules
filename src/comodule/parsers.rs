@@ -385,7 +385,6 @@ impl<G: Grading + OrderedGrading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                                     &generator_translate,
                                     generators.len(),
                                 ).map_err(|e| format!("Line {}: Invalid left monomial '{}' - {}", line_num, l.trim(), e))?;
-                                // TODO: RHS can only be monomial ?
                                 let right = parse_monomial(
                                     r.trim(),
                                     &generator_translate,
@@ -1009,8 +1008,6 @@ impl<G: Grading + OrderedGrading, F: Field, M: Abelian<F>> kComodule<G, F, M> {
                                     }).filter_ok(|e| {
                                         e.is_some()
                                     }).map_ok(|e| {e.unwrap()}).try_collect()?;
-
-                                // TODO: RHS can only be monomial ?
                                 let right = parse_monomial(
                                     r.trim(),
                                     &generator_translate,

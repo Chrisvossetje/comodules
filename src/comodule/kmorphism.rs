@@ -70,11 +70,9 @@ impl<G: Grading, F: Field, M: Abelian<F>> kComoduleMorphism<G, F, M> {
 }
 
 impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kCoalgebra<G,F,M>> for kComoduleMorphism<G, F, M> {
-    type CofreeComodule = kCofreeComodule<G, F, M>;
-    type Comodule = kComodule<G, F, M>;
     type BaseRing = F;
 
-    fn cokernel(&self, coalgebra: &kCoalgebra<G,F,M>, codomain: &Self::CofreeComodule) -> (Self, Self::Comodule) {
+    fn cokernel(&self, coalgebra: &kCoalgebra<G,F,M>, codomain: &kCofreeComodule<G,F,M>) -> (Self, kComodule<G,F,M>) {
         let cokernel_map = self.map.get_cokernel();
 
         let coker_space = cokernel_map.codomain_space(());
@@ -125,7 +123,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kCoalgebra<G,F,M>>
                 let mut g_coaction = M::zero(v.len(), g_tensor_dimen);
 
                 let coact_ref = &mut g_coaction as *mut M;
-                let a = AtomicPtr::new(coact_ref);
+                let map_ref = AtomicPtr::new(coact_ref);
 
                 let space = &codomain.space.0[g];
 
@@ -152,7 +150,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kCoalgebra<G,F,M>>
                                 // TODO : This is not reallly generic, and depends on the underlying implementation
                                 // This probably breaks for a F2 matrix implementation.
                                 unsafe {
-                                    (**(a.as_ptr())).add_at(*coker_id, final_id as usize, coact_val * *val);
+                                    (**(map_ref.as_ptr())).add_at(*coker_id, final_id as usize, coact_val * *val);
                                 }
                             }
                         }
@@ -173,9 +171,9 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kCoalgebra<G,F,M>>
 
     fn inject_codomain_to_cofree(
         coalgebra: &kCoalgebra<G,F,M>,
-        comodule: &Self::Comodule,
+        comodule: &kComodule<G,F,M>,
         limit: G,
-    ) -> (Self, Self::CofreeComodule)
+    ) -> (Self, kCofreeComodule<G,F,M>)
     where
         G: OrderedGrading,
     {
@@ -204,7 +202,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kCoalgebra<G,F,M>>
                     .maps
                     .get(&grade)
                     .expect("This should exist")
-                    .kernel_generators(&M::Module::default(), &M::Module::default());
+                    .kernel_destroyers(&vec![], &vec![]);
 
                 match kernel.first() {
                     Some(loc) => {
@@ -288,7 +286,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kCoalgebra<G,F,M>>
         (m, growing_comodule)
     }
 
-    fn zero_morphism(comodule: &Self::Comodule) -> Self {
+    fn zero_morphism(comodule: &kComodule<G,F,M>) -> Self {
         // Verify how we want to handle this zero map
         let mut zero_map = GradedLinearMap::empty();
 
@@ -300,7 +298,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kCoalgebra<G,F,M>>
     }
 
     // domain l == codomain r, l \circ r
-    fn compose(l: &Self, r: &Self, _codomain: &Self::CofreeComodule) -> Self {
+    fn compose(l: &Self, r: &Self, _codomain: &kCofreeComodule<G,F,M>) -> Self {
         let map = GradedLinearMap::<G, F, M>::compose(&l.map, &r.map);
 
         Self { map }
@@ -313,8 +311,8 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kCoalgebra<G,F,M>>
     fn get_structure_lines(
         &self,
         coalgebra: &kCoalgebra<G,F,M>,
-        domain: &Self::CofreeComodule,
-        codomain: &Self::CofreeComodule,
+        domain: &kCofreeComodule<G,F,M>,
+        codomain: &kCofreeComodule<G,F,M>,
     ) -> Vec<((usize, G, usize), (usize, G, usize), Self::BaseRing, String)> {
         let mut lines = vec![];
 
@@ -355,8 +353,8 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kCoalgebra<G,F,M>>
     fn direct_sum(
         a: &mut Self,
         b: &mut Self,
-        a_codom: &mut Self::CofreeComodule,
-        b_codom: &mut Self::CofreeComodule,
+        a_codom: &mut kCofreeComodule<G,F,M>,
+        b_codom: &mut kCofreeComodule<G,F,M>,
     ) {
         todo!()
     }

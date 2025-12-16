@@ -4,14 +4,20 @@ use std::{
     hash::Hash,
     iter::Sum,
     ops::{Add, AddAssign, Sub, SubAssign},
-    str::FromStr,
+    str::FromStr, sync::OnceLock,
 };
 
 use deepsize::DeepSizeOf;
+use rayon::iter::Once;
 use serde::{Deserialize, Serialize};
 
 pub trait Parse: Sized {
     fn parse(s: &str) -> Result<Self, String>;
+}
+
+pub trait GradedIndexing<A, I> {
+    fn get(&self, index: I) -> &A;
+    fn set(&mut self, index: I, a: A);
 }
 
 pub trait Grading:
@@ -37,6 +43,14 @@ pub trait Grading:
     + Ord
     + DeepSizeOf
 {
+    type ContiguousIndex: Send + Sync;
+    type ContiguousMemory<A: Send + Sync>: GradedIndexing<A, Self::ContiguousIndex> + Send + Sync + Default;
+
+
+    fn iterator_from_zero(&self, include_self: bool) -> Vec<Self>;
+    fn init_memory<A: Send + Sync>(&self) -> Self::ContiguousMemory<OnceLock<A>>;
+    fn set_cell<A: Send + Sync + Debug>(&self, mem: &Self::ContiguousMemory<OnceLock<A>>, a: A); 
+
     fn degree_names() -> Vec<char>;
     fn default_formulas() -> (String, String);
     fn export_grade(self) -> Vec<i64>;
@@ -46,6 +60,8 @@ pub trait Grading:
     fn integer_multiplication(self, other: i16) -> Self;
 
     fn infty() -> Self;
+
+    fn to_index(&self) -> Self::ContiguousIndex;
 }
 
 pub trait OrderedGrading: 'static + Grading {
@@ -149,7 +165,24 @@ impl Parse for UniGrading {
     }
 }
 
+impl<A> GradedIndexing<A, usize> for Vec<A> {
+    fn get(&self, index: usize) -> &A {
+        &self[index]
+    }
+
+    fn set(&mut self, index: usize, a: A) {
+        self[index] = a;
+    }
+}
+
 impl Grading for UniGrading {
+    type ContiguousMemory<A: Send + Sync> = Vec<A>;
+    type ContiguousIndex = usize;
+    
+    fn to_index(&self) -> Self::ContiguousIndex {
+        self.0 as usize
+    }
+
     fn degree_names() -> Vec<char> {
         vec!['t']
     }
@@ -172,6 +205,26 @@ impl Grading for UniGrading {
 
     fn infty() -> Self {
         UniGrading(i16::MAX)
+    }
+    
+    fn iterator_from_zero(&self, include_self: bool) -> Vec<Self> {
+        if include_self {
+            (0..=self.0).map(|x| UniGrading(x)).collect()
+        } else {
+            (0..self.0).map(|x| UniGrading(x)).collect()
+        }
+    }
+    
+    fn init_memory<A: Send+ Sync>(&self) -> Self::ContiguousMemory<OnceLock<A>> {
+        let mut v = vec![];
+        for _ in 0..=self.0 {
+            v.push(OnceLock::new());
+        }
+        v
+    }
+    
+    fn set_cell<A: Send + Sync + Debug>(&self, mem: &Self::ContiguousMemory<OnceLock<A>>, a: A) {
+        mem[self.to_index()].set(a).unwrap()
     }
 }
 
@@ -255,7 +308,25 @@ impl OrderedGrading for BiGrading {
     }
 }
 
+impl<A> GradedIndexing<A, (usize,usize)> for Vec<Vec<A>> {
+    fn get(&self, index: (usize,usize)) -> &A {
+        &self[index.0][index.1]
+    }
+
+    fn set(&mut self, index: (usize,usize), a: A) {
+        self[index.0][index.1] = a;
+    }
+}
+
+
 impl Grading for BiGrading {
+    type ContiguousMemory<A: Send + Sync> = Vec<Vec<A>>;
+    type ContiguousIndex = (usize, usize);
+    
+    fn to_index(&self) -> Self::ContiguousIndex {
+        (self.0 as usize, self.1 as usize)
+    }
+
     fn degree_names() -> Vec<char> {
         vec!['t', 's']
     }
@@ -278,5 +349,26 @@ impl Grading for BiGrading {
 
     fn infty() -> Self {
         BiGrading(i16::MAX, i16::MAX)
+    }
+    
+    fn iterator_from_zero(&self, include_self: bool) -> Vec<Self> {
+        if include_self {
+            (0..=self.0)
+                .flat_map(|x| (0..=self.1).map(move |y| BiGrading(x, y)))
+                .collect()
+        } else {
+            (0..=self.0)
+                .flat_map(|x| (0..=self.1).map(move |y| BiGrading(x, y)))
+                .filter(|&BiGrading(x, y)| !(x == self.0 && y == self.1))
+                .collect()
+        }
+    }
+    
+    fn init_memory<A: Send+ Sync>(&self) -> Self::ContiguousMemory<OnceLock<A>> {
+        todo!()
+    }
+    
+    fn set_cell<A: Send + Sync + Debug>(&self, mem: &Self::ContiguousMemory<OnceLock<A>>, a: A) {
+        todo!()
     }
 }

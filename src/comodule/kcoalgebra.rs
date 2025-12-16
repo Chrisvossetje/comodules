@@ -1,14 +1,13 @@
 use ahash::HashMap;
 use algebra::{
-    field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing,
-    rings::finite_fields::F2,
+    abelian::Abelian, field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::finite_fields::F2
 };
 use deepsize::DeepSizeOf;
 use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
-    basiselement::kBasisElement, comodule::traits::Coalgebra, graded_space::{GradedLinearMap, GradedVectorSpace}, grading::{Grading, UniGrading}, tensor::TensorMap
+    basiselement::kBasisElement, comodule::{kcomodule::{kCofreeComodule, kComodule}, kmorphism::kComoduleMorphism, traits::Coalgebra}, graded_space::{BasisIndex, GradedLinearMap, GradedVectorSpace}, grading::{Grading, UniGrading}, tensor::TensorMap
 };
 
 use serde::{Deserialize, Serialize};
@@ -21,7 +20,32 @@ pub struct kCoalgebra<G: Grading, F: Field, M: Matrix<F>> {
     pub tensor: TensorMap<G>,
 }
 
-impl<G: Grading, F: Field, M: Matrix<F>> Coalgebra for kCoalgebra<G,F,M> {}
+impl<G: Grading, F: Field, M: Abelian<F>> Coalgebra<G> for kCoalgebra<G,F,M> {
+    type BaseRing = F;
+    type RingMorph = M;
+    type Comod = kComodule<G,F,M>; 
+    type CofMod = kCofreeComodule<G,F,M>;
+    type ComodMorph = kComoduleMorphism<G,F,M>;
+    
+    fn size_in_degree(&self, g: G) -> usize {
+        self.space.dimension_in_grade(&g)
+    }
+    
+    fn coaction(&self, i: BasisIndex<G>) -> Vec<(BasisIndex<G>, BasisIndex<G>, Self::BaseRing)> {
+        let m = &self.coaction.maps[&i.0];
+        let mut v = vec![];
+        for t_id in 0..self.tensor.get_dimension(&i.0) {
+            let val = m.get(i.1 as usize, t_id);
+            if !val.is_zero() {
+                let (l_alg,r_alg) = self.tensor.deconstruct[&(i.0, t_id as u32)];
+                v.push((l_alg, r_alg, val)); 
+            }
+        }     
+        v
+    }
+    
+    
+}
 
 impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
     pub fn set_primitives(&mut self) {

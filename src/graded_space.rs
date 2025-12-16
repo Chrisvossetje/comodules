@@ -57,7 +57,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> GradedLinearMap<G, F, M> {
         let cokernel = self
             .maps
             .par_iter()
-            .map(|(k, v)| (*k, v.cokernel(&M::Module::default()).0))
+            .map(|(k, v)| (*k, v.cokernel(&vec![]).0))
             .collect();
         GradedLinearMap {
             maps: cokernel,
@@ -69,7 +69,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> GradedLinearMap<G, F, M> {
         let kernel = self
             .maps
             .par_iter()
-            .map(|(k, v)| (*k, v.kernel(&M::Module::default(), &M::Module::default()).0))
+            .map(|(k, v)| (*k, v.kernel(&vec![], &vec![]).0))
             .collect();
         GradedLinearMap {
             maps: kernel,

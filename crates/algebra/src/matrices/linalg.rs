@@ -2,32 +2,41 @@ use crate::{abelian::Abelian, field::Field, matrices::flat_matrix::FlatMatrix, m
 
 
 impl<F: Field> Abelian<F> for FlatMatrix<F> {
-    // TODO: Should i make this usize ???
-    type Module = ();
+    type Generator = ();
 
-    fn kernel(&self, _domain: &Self::Module, _codomain: &Self::Module) -> (Self, Self::Module) {
+    // TODO: WTF am i doing here ?
+    fn kernel(&self, _domain: &Vec<Self::Generator>, _codomain: &Vec<Self::Generator>) -> (Self, Vec<Self::Generator>) {
         let mut clone = self.clone();
         clone.rref();
         let mut kernel = clone.rref_kernel();
         kernel.rref();
-        (kernel, ())
+        let len = kernel.codomain();
+        (kernel, vec![(); len])
     }
     
-    fn cokernel(&self, _codomain: &Self::Module) -> (Self, Self, Self::Module) {
-        // TODO : This cokernel should do something with pivots
-        let (coker, module) = self.transpose().kernel(&(), &());
-        (coker, FlatMatrix::zero(0, 0), module)
+    fn cokernel(&self, _codomain: &Vec<Self::Generator>) -> (Self, Self, Vec<Self::Generator>) {
+        let (coker, module) = self.transpose().kernel(&vec![], &vec![]);
+        let p = coker.pivots(); // TODO: Make it clear wtf pivots returns
+
+        let mut repr_vecs = FlatMatrix::zero(coker.codomain, coker.domain);
+        for (domain, codomain) in p {
+            repr_vecs.set(codomain, domain, F::one());
+        }
+
+        debug_assert!(coker.compose(&repr_vecs).is_unit().is_ok());
+
+        (coker, repr_vecs, module)
     }
     
-    fn cohomology(_f: &Self, _g: &Self, _n: &Self::Module, _q: &Self::Module) -> (Self, Self::Module) {
+    fn cohomology(_f: &Self, _g: &Self, _n: &Vec<Self::Generator>, _q: &Vec<Self::Generator>) -> (Self, Vec<Self::Generator>) {
         unimplemented!()
     }
     
-    fn compose(f: &Self, g: &Self, _g_codomain: &Self::Module) -> Self {
+    fn compose(f: &Self, g: &Self, _g_codomain: &Vec<Self::Generator>) -> Self {
         f.compose(g)
     }
     
-    fn kernel_generators(&self, _domain: &Self::Module, _codomain: &Self::Module) -> Vec<usize> {
+    fn kernel_destroyers(&self, _domain: &Vec<Self::Generator>, _codomain: &Vec<Self::Generator>) -> Vec<usize> {
         // TODO : This could prob be smarter 
         let mut pivots = vec![];
         let mut mat = self.clone();
@@ -43,7 +52,7 @@ impl<F: Field> Abelian<F> for FlatMatrix<F> {
 
 impl<F: Field> FlatMatrix<F> {
     pub(crate) fn kernel_find_single_generator(&self) -> Option<usize> {
-        let (kernel, _) = self.kernel(&(), &());
+        let (kernel, _) = self.kernel(&vec![], &vec![]);
         kernel.first_non_zero_entry().map(|(_, y)| y)
     } 
 
