@@ -20,7 +20,7 @@ pub trait Coalgebra<G: Grading>: DeepSizeOf + Clone + Sync + Send + Debug {
     fn coaction(&self, i: BasisIndex<G>) -> &[(BasisIndex<G>, BasisIndex<G>, Self::BaseRing)];
 }
 
-pub trait Comodule<G: Grading, C: Coalgebra<G>>: DeepSizeOf + Clone {
+pub trait Comodule<G: Grading, C: Coalgebra<G>>: DeepSizeOf + Clone + Send + Sync {
     fn fp_comodule(coalgebra: &C, degree: G) -> Self;
 }
 

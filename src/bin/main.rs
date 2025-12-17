@@ -284,8 +284,8 @@ use std::time::Instant;
 
 
 fn main() {
-    const MAX_GRADING: UniGrading = UniGrading(60);
-    const S: usize = 30;
+    const MAX_GRADING: UniGrading = UniGrading(40);
+    const S: usize = 10;
 
     let input = include_str!("../../examples/polynomial/A.txt");
     let coalgebra = kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input, MAX_GRADING)
@@ -302,27 +302,40 @@ fn main() {
 
     let fp = kComodule::fp_comodule(&coalgebra, UniGrading::zero());
     let res = ParallelResolution::init(coalgebra, fp, S, MAX_GRADING);
-    res.init_with_fp(MAX_GRADING);
+    res.populate_with_basering();
     
     let start = Instant::now();
 
 
-    // Non Parallal executor
-    for g in MAX_GRADING.iterator_from_zero(true) {
-        for s in 1..=S {
-            if s==2 && g == UniGrading(5) {
-                println!("S:{}, G:{}", s, g);
-            }
-            res.resolve_at_s_g(s, g);
+
+    // Parallal Executor
+    rayon::scope(|_| {
+        res.resolve_at_s_g(1, UniGrading::zero());
+    });
+
+    for s in 0..=S {
+        for g in MAX_GRADING.iterator_from_zero(true) {
+                debug_assert!(&res.data[s][g.to_index()].1.get().is_some());
         }
     }
+
+    // // Non Parallal executor
+    // for g in MAX_GRADING.iterator_from_zero(true) {
+    //     for s in 1..=S {
+    //         if s==2 && g == UniGrading(5) {
+    //             println!("S:{}, G:{}", s, g);
+    //         }
+    //         res.data.resolve_at_s_g(s, g);
+    //     }
+    // }
     
     
     // for s in 0..=S {
     //     for g in MAX_GRADING.iterator_from_zero(true) {
     //         println!("S:{}, G:{}", s, g);
-    //         let a = &res.data[s][g.to_index()].get().unwrap();
-    //         println!("Lut2: {:?}\ncokernel: {:?}\na_gens: {:?}\nto_cokernel:\n{:?}", a.lut2, a.cokernel, a.a_gens, a.to_cokernel);
+    //         let a = &res.data[s][g.to_index()].0.lock().unwrap();
+    //         // println!("Lut2: {:?}\ncokernel: {:?}\na_gens: {:?}\nto_cokernel:\n{:?}", a.lut2, a.cokernel, a.a_gens, a.to_cokernel);
+    //         println!("{:?}", a)
     //     }
     // }
     
@@ -335,7 +348,7 @@ fn main() {
 
     for s in 0..=S {
         for g in MAX_GRADING.iterator_from_zero(true) {
-            let mut a_gens = res.data[s].get(g.to_index()).unwrap().get_or_init(|| unreachable!()).a_gens.iter().map(|x| (s, x.1 as usize, g.export_grade(), None)).collect();
+            let mut a_gens = res.get_data_cell(s, g).a_gens.iter().map(|x| (s, x.1 as usize, g.export_grade(), None)).collect();
             gens.append(&mut a_gens);
         }
     }

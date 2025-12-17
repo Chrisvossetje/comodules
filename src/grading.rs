@@ -4,7 +4,7 @@ use std::{
     hash::Hash,
     iter::Sum,
     ops::{Add, AddAssign, Sub, SubAssign},
-    str::FromStr, sync::OnceLock,
+    str::FromStr, sync::{Mutex, OnceLock},
 };
 
 use deepsize::DeepSizeOf;
@@ -17,7 +17,8 @@ pub trait Parse: Sized {
 
 pub trait GradedIndexing<A, I> {
     fn get(&self, index: I) -> &A;
-    fn set(&mut self, index: I, a: A);
+    fn mut_get(&mut self, index: I) -> &mut A;
+    // fn set<T: FnMut(A)>(&mut self, index: I, map: T);
 }
 
 pub trait Grading:
@@ -48,8 +49,7 @@ pub trait Grading:
 
 
     fn iterator_from_zero(&self, include_self: bool) -> Vec<Self>;
-    fn init_memory<A: Send + Sync>(&self) -> Self::ContiguousMemory<OnceLock<A>>;
-    fn set_cell<A: Send + Sync + Debug>(&self, mem: &Self::ContiguousMemory<OnceLock<A>>, a: A); 
+    fn init_memory<A: Send + Sync, T: Fn() -> A>(&self, map: T) -> Self::ContiguousMemory<A>;
 
     fn degree_names() -> Vec<char>;
     fn default_formulas() -> (String, String);
@@ -170,8 +170,8 @@ impl<A> GradedIndexing<A, usize> for Vec<A> {
         &self[index]
     }
 
-    fn set(&mut self, index: usize, a: A) {
-        self[index] = a;
+    fn mut_get(&mut self, index: usize) -> &mut A {
+        &mut self[index]
     }
 }
 
@@ -215,16 +215,12 @@ impl Grading for UniGrading {
         }
     }
     
-    fn init_memory<A: Send+ Sync>(&self) -> Self::ContiguousMemory<OnceLock<A>> {
+    fn init_memory<A: Send + Sync, T: Fn() -> A>(&self, map: T) -> Self::ContiguousMemory<A> {
         let mut v = vec![];
         for _ in 0..=self.0 {
-            v.push(OnceLock::new());
+            v.push(map());
         }
         v
-    }
-    
-    fn set_cell<A: Send + Sync + Debug>(&self, mem: &Self::ContiguousMemory<OnceLock<A>>, a: A) {
-        mem[self.to_index()].set(a).unwrap()
     }
 }
 
@@ -313,8 +309,8 @@ impl<A> GradedIndexing<A, (usize,usize)> for Vec<Vec<A>> {
         &self[index.0][index.1]
     }
 
-    fn set(&mut self, index: (usize,usize), a: A) {
-        self[index.0][index.1] = a;
+    fn mut_get(&mut self, index: (usize,usize)) -> &mut A {
+        &mut self[index.0][index.1]
     }
 }
 
@@ -364,11 +360,7 @@ impl Grading for BiGrading {
         }
     }
     
-    fn init_memory<A: Send+ Sync>(&self) -> Self::ContiguousMemory<OnceLock<A>> {
-        todo!()
-    }
-    
-    fn set_cell<A: Send + Sync + Debug>(&self, mem: &Self::ContiguousMemory<OnceLock<A>>, a: A) {
+    fn init_memory<A: Send + Sync, T: Fn() -> A>(&self, map: T) -> Self::ContiguousMemory<A> {
         todo!()
     }
 }
