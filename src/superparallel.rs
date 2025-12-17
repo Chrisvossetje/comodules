@@ -370,7 +370,7 @@ impl<G: OrderedGrading, C: Coalgebra<G>> ParallelResolution<G, C> {
         self.data[s].get(g.to_index()).1.get().unwrap()
     }
 
-    pub fn resolve_at_s_g(&self, s: usize, degree: G) {
+    pub fn resolve_at_s_g<'a>(&'a self, i: &Scope<'a>, s: usize, degree: G) {
         if s == 0 {
             return;
         }
@@ -378,7 +378,7 @@ impl<G: OrderedGrading, C: Coalgebra<G>> ParallelResolution<G, C> {
 
         let prev_s = self.data[s - 1]
             .get(degree.to_index()).1
-            .get_or_init(|| unreachable!());
+            .get_or_init(|| { unreachable!(); });
         let a = DataCell::resolve(
             &self.data[s],
             &self.data[s - 1],
@@ -388,25 +388,27 @@ impl<G: OrderedGrading, C: Coalgebra<G>> ParallelResolution<G, C> {
         );
     
         self.data[s].get(degree.to_index()).1.set(a).unwrap();
-        self.spawn_next_tasks(s, degree);
+        self.spawn_next_tasks(i, s, degree);
 
         println!("Ended with {s} | {degree}");
     }
 
-    pub fn spawn_next_tasks<'a>(&self, s: usize, degree: G) {
+    pub fn spawn_next_tasks<'a>(&'a self, i: &Scope<'a>, s: usize, degree: G) {
         if s + 1 <= self.max_s {
             let mut l = self.data[s+1].get(degree.to_index()).0.lock().unwrap();
             match *l {
                 ResolveState::Nothing => {
-                    *l = ResolveState::CokernelAvailable
+                    *l = ResolveState::CokernelAvailable;
+                    drop(l);
                 },
                 ResolveState::CokernelAvailable => {
                     panic!("Cokernel should not have been available yet :(")
                 },
                 ResolveState::GsAvailable => {
                     *l = ResolveState::Ready;
-                    rayon::scope(|_| {
-                        self.resolve_at_s_g(s+1, degree);
+                    drop(l);
+                    i.spawn(move |i| {
+                        self.resolve_at_s_g(i, s+1, degree);
                     });
                 },
                 ResolveState::Ready => {
@@ -419,12 +421,14 @@ impl<G: OrderedGrading, C: Coalgebra<G>> ParallelResolution<G, C> {
             let mut m = self.data[s].get(degree.incr().to_index()).0.lock().unwrap();
             match *m {
                 ResolveState::Nothing => {
-                    *m = ResolveState::GsAvailable // TODO : This only works for Unigrading
+                    *m = ResolveState::GsAvailable; // TODO : This only works for Unigrading
+                    drop(m);
                 },
                 ResolveState::CokernelAvailable => {
                     *m = ResolveState::Ready;
-                    rayon::scope(|_| {
-                        self.resolve_at_s_g(s, degree.incr());
+                    drop(m);
+                    i.spawn(move |i| {
+                        self.resolve_at_s_g(i, s, degree.incr());
                     });
                 },
                 ResolveState::GsAvailable => {

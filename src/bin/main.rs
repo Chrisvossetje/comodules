@@ -284,7 +284,7 @@ use std::time::Instant;
 
 
 fn main() {
-    const MAX_GRADING: UniGrading = UniGrading(40);
+    const MAX_GRADING: UniGrading = UniGrading(80);
     const S: usize = 10;
 
     let input = include_str!("../../examples/polynomial/A.txt");
@@ -306,16 +306,26 @@ fn main() {
     
     let start = Instant::now();
 
-
+    for s in 0..=S {
+        for g in MAX_GRADING.iterator_from_zero(true) {
+            println!("S:{}, G:{}", s, g);
+            let a = &res.data[s][g.to_index()].0.lock().unwrap();
+            // println!("Lut2: {:?}\ncokernel: {:?}\na_gens: {:?}\nto_cokernel:\n{:?}", a.lut2, a.cokernel, a.a_gens, a.to_cokernel);
+            println!("{:?}", a);
+        }
+        println!("");
+        println!("");
+    }
+    
 
     // Parallal Executor
-    rayon::scope(|_| {
-        res.resolve_at_s_g(1, UniGrading::zero());
+    rayon::scope(|i| {
+        res.resolve_at_s_g(i, 1, UniGrading::zero());
     });
 
     for s in 0..=S {
         for g in MAX_GRADING.iterator_from_zero(true) {
-                debug_assert!(&res.data[s][g.to_index()].1.get().is_some());
+            debug_assert!(&res.data[s][g.to_index()].1.get().is_some());
         }
     }
 
