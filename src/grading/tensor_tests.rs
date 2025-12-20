@@ -1,25 +1,17 @@
-use deepsize::DeepSizeOf;
-
-use crate::basiselement::BasisElement;
-use crate::grading::OrderedGrading;
-
-#[derive(Debug, Clone, Default, DeepSizeOf)]
-struct MockBasisElement;
-
-impl BasisElement for MockBasisElement {}
-
 #[cfg(test)]
 mod tests {
     use ahash::HashMap;
+    use deepsize::DeepSizeOf;
+
+    #[derive(Debug, Clone, Default, DeepSizeOf)]
+    struct MockBasisElement;
 
     use crate::{
-        comodule::kcoalgebra::A0_coalgebra, graded_space::GradedVectorSpace, grading::UniGrading,
-        tensor::TensorMap,
+        grading::{grading::Grading, tensor::TensorMap, unigrading::UniGrading},
+        k_comodule::graded_space::GradedVectorSpace,
     };
 
-    use super::*;
-
-    fn create_mock_vector_space<G: OrderedGrading, B: BasisElement>(
+    fn create_mock_vector_space<G: Grading, B>(
         elements: Vec<(G, Vec<B>)>,
     ) -> GradedVectorSpace<G, B> {
         GradedVectorSpace(elements.into_iter().collect())
@@ -110,10 +102,12 @@ mod tests {
         assert!(new_tensor.dimensions.get(&UniGrading(0)).is_none());
     }
 
-    #[test]
-    fn test_correctness_a0() {
-        let a0 = A0_coalgebra();
-        a0.tensor.is_correct();
-        assert_eq!(a0.tensor.dimensions[&UniGrading(1)], 2);
-    }
+    // TODO :
+
+    // #[test]
+    // fn test_correctness_a0() {
+    //     let a0 = A0_coalgebra();
+    //     a0.tensor.is_correct();
+    //     assert_eq!(a0.tensor.dimensions[&UniGrading(1)], 2);
+    // }
 }

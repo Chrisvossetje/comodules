@@ -3,39 +3,37 @@
 use std::sync::{Mutex, OnceLock, atomic::AtomicPtr};
 
 use ahash::HashMap;
-use algebra::{
-    abelian::Abelian, field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing,
-};
+use algebra::{abelian::Abelian, field::Field, matrix::Matrix, ring::CRing};
 use deepsize::DeepSizeOf;
 use itertools::Itertools;
-use rayon::{Scope, iter::{IntoParallelIterator, Once, ParallelBridge, ParallelIterator}};
-
-use crate::{
-    comodule::{
-        kcoalgebra::kCoalgebra,
-        kcomodule::CoalgebraBasis,
-        kmorphism::kComoduleMorphism,
-        traits::{Coalgebra, ComoduleMorphism},
-    },
-    graded_space::BasisIndex,
-    grading::{GradedIndexing, Grading, OrderedGrading},
+use rayon::{
+    Scope,
+    iter::{ParallelBridge, ParallelIterator},
 };
 
-type AGeneratorIndex = u16;
-type CokernelIndex = u32;
+use crate::{
+    grading::grading::{GradedIndexing, Grading},
+    k_comodule::kcoalgebra::kCoalgebra,
+    traits::Coalgebra,
+    types::{AGeneratorIndex, CoalgebraIndexType, CofreeBasis, ComoduleIndexType},
+};
 
+#[allow(type_alias_bounds)]
 type AGen<G, C: Coalgebra<G>> = (
     <C::RingMorph as Abelian<C::BaseRing>>::Generator,
     AGeneratorIndex,
-    CokernelIndex,
+    ComoduleIndexType,
 );
+#[allow(type_alias_bounds)]
 type RGen<G, C: Coalgebra<G>> = (
-    CoalgebraBasis<G>,
+    CofreeBasis<G>,
     <C::RingMorph as Abelian<C::BaseRing>>::Generator,
 );
-type LUT<G> = HashMap<CoalgebraBasis<G>, u32>;
+type LUT<G> = HashMap<CofreeBasis<G>, u32>;
+#[allow(type_alias_bounds)]
 type Module<G, C: Coalgebra<G>> = Vec<<C::RingMorph as Abelian<C::BaseRing>>::Generator>;
-type ToViLUT<G, C: Coalgebra<G>> = HashMap<CoalgebraBasis<G>, Vec<(C::BaseRing, AGeneratorIndex)>>;
+#[allow(type_alias_bounds)]
+type ToViLUT<G, C: Coalgebra<G>> = HashMap<CofreeBasis<G>, Vec<(C::BaseRing, AGeneratorIndex)>>;
 
 /// Everything below is wrt. some degree g
 ///
@@ -53,10 +51,9 @@ type ToViLUT<G, C: Coalgebra<G>> = HashMap<CoalgebraBasis<G>, Vec<(C::BaseRing, 
 ///
 /// lut: A \otimes V_i -> to its index in r_gens  
 ///
-/// lut2: For each basis element in A \otimes V_i-1 (with r_gens index)
+/// lut2: For each basis element in  A \otimes V_i-1 wrt (alg_gr, alg_id), v_i index (so not r_gens basis!)
 ///         gives a list of elements in V_i \subset Q_i to which it maps to
 ///
-///         Probably want to do: A\otimes V_i-1 wrt (alg_gr, alg_id), v_i index
 #[derive(Debug, DeepSizeOf)]
 pub struct DataCell<G: Grading, C: Coalgebra<G>> {
     pub to_cokernel: C::RingMorph,
@@ -74,15 +71,11 @@ impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
         prev_s.to_cofree.cokernel(&codom_module)
     }
 
-    // fn generate_correct_luts
-
     fn luts<A: Send + Sync>(
         gs: &G::ContiguousMemory<(A, OnceLock<DataCell<G, C>>)>,
-        prev_s_gs: &G::ContiguousMemory<(A, OnceLock<DataCell<G, C>>)>,
         degree: G,
         coalgebra: &C,
     ) -> (Vec<(AGen<G, C>, G)>, Vec<RGen<G, C>>, LUT<G>, ToViLUT<G, C>) {
-        
         // a_gens (without the a_gen found this cycle)
         let a_gens: Vec<(AGen<G, C>, G)> = degree
             .iterator_from_zero(false)
@@ -101,8 +94,8 @@ impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
         for ((a_module_gen, a_generator, _), g) in a_gens.iter().sorted_by_key(|a| a.0.0) {
             let a_g = degree - *g;
             for i in 0..coalgebra.size_in_degree(a_g) {
-                let coalg_basis = ((a_g, i as u32), *a_generator);
-                lut.insert(coalg_basis, r_gens.len() as u32);
+                let coalg_basis = ((a_g, i as CoalgebraIndexType), *a_generator);
+                lut.insert(coalg_basis, r_gens.len() as ComoduleIndexType);
                 r_gens.push((coalg_basis, a_module_gen.clone()));
             }
         }
@@ -119,13 +112,8 @@ impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
         (a_gens, r_gens, lut, reduced_to_coker)
     }
 
-    fn map_to_vi_from_gs() {
-        todo!()
-    }
-
     pub fn resolve<A: Send + Sync>(
         gs: &G::ContiguousMemory<(A, OnceLock<DataCell<G, C>>)>,
-        prev_s_gs: &G::ContiguousMemory<(A,OnceLock<DataCell<G, C>>)>,
         prev_s: &DataCell<G, C>,
         degree: G,
         coalgebra: &C,
@@ -134,10 +122,11 @@ impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
         // Get all previous A generators and generate corresponding r_gens and lut for this degree
         // The only elements missing from r_gens and lut are the new a generators found later
 
-        let (to_cokernel, repr_vectors, cokernel) =  DataCell::cokernel(prev_s);
-        let (gs_a_gens, mut r_gens, mut lut, reduced_to_coker) = DataCell::luts(gs, prev_s_gs, degree, coalgebra);
+        let (to_cokernel, repr_vectors, cokernel) = DataCell::cokernel(prev_s);
+        let (gs_a_gens, mut r_gens, mut lut, reduced_to_coker) =
+            DataCell::luts(gs, degree, coalgebra);
 
-        // TODO : 
+        // TODO :
         // let (
         //     (to_cokernel, repr_vectors, cokernel),
         //     (gs_a_gens, mut r_gens, mut lut, reduced_to_coker),
@@ -149,11 +138,11 @@ impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
         let mut small_to_cofree =
             <C::RingMorph as Matrix<C::BaseRing>>::zero(cokernel.len(), r_gens.len());
         // let coact_ref = &mut small_to_cofree as *mut C::RingMorph;
-        // let map_ref = AtomicPtr::new(coact_ref);        
+        // let map_ref = AtomicPtr::new(coact_ref);
 
         // (0..cokernel.len()).into_iter().collect::<Vec<_>>().into_par_iter().with_min_len(32).for_each(|coker_id| {
         (0..cokernel.len()).into_iter().for_each(|coker_id| {
-            // TODO : PAR Iter
+            // TODO : PAR Iter < might not want this ! as the function is "to light"
             for codom_id in 0..repr_vectors.codomain() {
                 let value = repr_vectors.get(coker_id, codom_id);
                 if value.is_zero() {
@@ -164,7 +153,6 @@ impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
                 // can be seen as a_k \otimes v_k (in A \otimes V_i-1)
                 // where a_k = alg_gr, alg_id and v_k = gen_id
                 let (((alg_gr, alg_id), gen_id), _) = prev_s.r_gens[codom_id];
-                let gen_id_g = degree - alg_gr;
 
                 // Get all coactions
                 // these are \sum b_j \otimes c_j \otimes v_k
@@ -173,13 +161,7 @@ impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
                     match reduced_to_coker.get(&(*alg_r, gen_id)) {
                         Some(targets) => {
                             debug_assert!(targets.len() > 0);
-                            debug_assert!(targets.len() < 2);
                             for (v_i_value, a_generator) in targets {
-                                // debug_assert_eq!(*a_generator, gen_id);
-                                // let mod_gr = alg_r.0 + gen_id_g;
-                                // let mod_id = prev_s_gs.get(mod_gr.to_index()).get_or_init(|| unreachable!()).lut[&(alg_r, gen_id)];
-
-                                // THIS IS IN MY LUT !
                                 // This is the tagret index in r_gens
                                 let target_id = lut[&(*alg_l, *a_generator)];
 
@@ -193,7 +175,7 @@ impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
                                 //     (**(map_ref.as_ptr())).add_at(
                                 //         coker_id,
                                 //         target_id as usize,
-                                        
+
                                 //     );
                                 // }
                             }
@@ -351,7 +333,7 @@ pub struct ParallelResolution<G: Grading, C: Coalgebra<G>> {
     pub data: Vec<G::ContiguousMemory<(Mutex<ResolveState>, OnceLock<DataCell<G, C>>)>>,
 }
 
-impl<G: OrderedGrading, C: Coalgebra<G>> ParallelResolution<G, C> {
+impl<G: Grading, C: Coalgebra<G>> ParallelResolution<G, C> {
     pub fn init(coalgebra: C, comodule: C::Comod, s: usize, degree: G) -> Self {
         let mut data = vec![];
         for _ in 0..=s {
@@ -366,7 +348,7 @@ impl<G: OrderedGrading, C: Coalgebra<G>> ParallelResolution<G, C> {
         }
     }
 
-    pub fn get_data_cell(&self, s: usize, g: G) -> &DataCell<G,C> {
+    pub fn get_data_cell(&self, s: usize, g: G) -> &DataCell<G, C> {
         self.data[s].get(g.to_index()).1.get().unwrap()
     }
 
@@ -376,17 +358,11 @@ impl<G: OrderedGrading, C: Coalgebra<G>> ParallelResolution<G, C> {
         }
         println!("Started with {s} | {degree}");
 
-        let prev_s = self.data[s - 1]
-            .get(degree.to_index()).1
-            .get_or_init(|| { unreachable!(); });
-        let a = DataCell::resolve(
-            &self.data[s],
-            &self.data[s - 1],
-            prev_s,
-            degree,
-            &self.coalgebra,
-        );
-    
+        let prev_s = self.data[s - 1].get(degree.to_index()).1.get_or_init(|| {
+            unreachable!();
+        });
+        let a = DataCell::resolve(&self.data[s], prev_s, degree, &self.coalgebra);
+
         self.data[s].get(degree.to_index()).1.set(a).unwrap();
         self.spawn_next_tasks(i, s, degree);
 
@@ -394,58 +370,57 @@ impl<G: OrderedGrading, C: Coalgebra<G>> ParallelResolution<G, C> {
     }
 
     pub fn spawn_next_tasks<'a>(&'a self, i: &Scope<'a>, s: usize, degree: G) {
-        if s + 1 <= self.max_s {
-            let mut l = self.data[s+1].get(degree.to_index()).0.lock().unwrap();
-            match *l {
-                ResolveState::Nothing => {
-                    *l = ResolveState::CokernelAvailable;
-                    drop(l);
-                },
-                ResolveState::CokernelAvailable => {
-                    panic!("Cokernel should not have been available yet :(")
-                },
-                ResolveState::GsAvailable => {
-                    *l = ResolveState::Ready;
-                    drop(l);
-                    i.spawn(move |i| {
-                        self.resolve_at_s_g(i, s+1, degree);
-                    });
-                },
-                ResolveState::Ready => {
-                    panic!("I could not have finished this yet ??")
-                },
-            }
-        }
-
         if degree.incr() <= self.max_degree {
             let mut m = self.data[s].get(degree.incr().to_index()).0.lock().unwrap();
             match *m {
                 ResolveState::Nothing => {
                     *m = ResolveState::GsAvailable; // TODO : This only works for Unigrading
                     drop(m);
-                },
+                }
                 ResolveState::CokernelAvailable => {
                     *m = ResolveState::Ready;
                     drop(m);
                     i.spawn(move |i| {
                         self.resolve_at_s_g(i, s, degree.incr());
                     });
-                },
+                }
                 ResolveState::GsAvailable => {
                     panic!("Gs should not have been available yet :(")
-                },
+                }
                 ResolveState::Ready => {
                     panic!("I could not have finished this yet ??")
-                },
+                }
+            }
+        }
+        if s + 1 <= self.max_s {
+            let mut l = self.data[s + 1].get(degree.to_index()).0.lock().unwrap();
+            match *l {
+                ResolveState::Nothing => {
+                    *l = ResolveState::CokernelAvailable;
+                    drop(l);
+                }
+                ResolveState::CokernelAvailable => {
+                    panic!("Cokernel should not have been available yet :(")
+                }
+                ResolveState::GsAvailable => {
+                    *l = ResolveState::Ready;
+                    drop(l);
+                    i.spawn(move |i| {
+                        self.resolve_at_s_g(i, s + 1, degree);
+                    });
+                }
+                ResolveState::Ready => {
+                    panic!("I could not have finished this yet ??")
+                }
             }
         }
     }
 }
 
-impl<G: OrderedGrading, F: Field, M: Abelian<F>> ParallelResolution<G, kCoalgebra<G, F, M>> {
+impl<G: Grading, F: Field, M: Abelian<F>> ParallelResolution<G, kCoalgebra<G, F, M>> {
     pub fn populate_with_basering(&self) {
         // s = 0 should be the coalgebra itself
-        // Non zero grade is just the 
+        // Non zero grade is just the
         for g in self.max_degree.iterator_from_zero(true) {
             if g == G::zero() {
                 continue;
@@ -453,7 +428,7 @@ impl<G: OrderedGrading, F: Field, M: Abelian<F>> ParallelResolution<G, kCoalgebr
             let r_size = kCoalgebra::size_in_degree(&self.coalgebra, g);
 
             let r_gens: Vec<_> = (0..r_size)
-                .map(|x| (((g, x as u32), 0), M::Generator::default()))
+                .map(|x| (((g, x as CoalgebraIndexType), 0), M::Generator::default()))
                 .collect();
 
             let to_cokernel = M::zero(0, 0);
@@ -461,7 +436,7 @@ impl<G: OrderedGrading, F: Field, M: Abelian<F>> ParallelResolution<G, kCoalgebr
 
             let mut lut = HashMap::default();
             for (r_id, r) in r_gens.iter().enumerate() {
-                lut.insert(r.0, r_id as u32);
+                lut.insert(r.0, r_id as ComoduleIndexType);
             }
 
             let a = DataCell {
@@ -473,7 +448,7 @@ impl<G: OrderedGrading, F: Field, M: Abelian<F>> ParallelResolution<G, kCoalgebr
                 lut,
                 lut2: HashMap::default(),
             };
-            self.data[0].get(g.to_index()).1.set(a);
+            self.data[0].get(g.to_index()).1.set(a).unwrap();
             let mut data = self.data[0].get(g.to_index()).0.lock().unwrap();
             *data = ResolveState::Ready;
         }
@@ -499,22 +474,21 @@ impl<G: OrderedGrading, F: Field, M: Abelian<F>> ParallelResolution<G, kCoalgebr
             lut,
             lut2: HashMap::default(),
         };
-        self.data[0].get(G::zero().to_index()).1.set(a);
+        self.data[0].get(G::zero().to_index()).1.set(a).unwrap();
         let mut data = self.data[0].get(G::zero().to_index()).0.lock().unwrap();
         *data = ResolveState::Ready;
 
         for i in 1..=self.max_s {
             let mut data = self.data[i].get(G::zero().to_index()).0.lock().unwrap();
             *data = ResolveState::GsAvailable;
-        } 
+        }
 
         for h in self.max_degree.iterator_from_zero(true) {
             let mut data = self.data[1].get(h.to_index()).0.lock().unwrap();
             *data = ResolveState::CokernelAvailable;
-        } 
+        }
 
         let mut data = self.data[1].get(G::zero().to_index()).0.lock().unwrap();
         *data = ResolveState::Ready;
-
     }
 }

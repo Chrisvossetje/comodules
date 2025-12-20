@@ -40,45 +40,11 @@ impl<R: CRing> FlatMatrix<R> {
     pub(crate) fn set_element(&mut self, row: usize, col: usize, value: R) {
         self.data[row * self.domain + col] = value;
     }
-
-    // TODO : Remove
-    // pub(crate) fn extensive_pivots(&self) -> Vec<usize> {
-    //     let mut v = vec![None; self.codomain];
-    //     for codom_id in 0..self.domain {
-    //         let column = self.get_column(codom_id);
-    //         let mut units = 0;
-    //         let mut final_id = usize::MAX;
-    //         for (id,a) in column.iter().enumerate() {
-    //             if !a.is_zero() {
-    //                 if a.is_unit() {
-    //                     units += 1;
-    //                     final_id = id;
-    //                 } else {
-    //                     units += 2;
-    //                 }
-    //             }
-    //         }
-    //         if units == 1 {
-    //             v[final_id] = Some(codom_id);
-    //         }
-    //     }
-
-    //     if cfg!(debug_assertions) {
-    //         for a in &v {
-    //             if a.is_none() {
-    //                 println!("{:?}", self);
-    //                 panic!("Matrix does not contain all pivots");
-    //             }
-    //         }
-    //     }
-
-    //     v.iter().map(|f|
-    //         f.unwrap()
-    //     ).collect()
-    // }
 }
 
 impl<R: CRing> Matrix<R> for FlatMatrix<R> {
+    type UnderlyingRowType = R;
+    
     fn transpose(&self) -> Self {
         let mut new_matrix = vec![R::zero(); self.data.len()];
         for i in 0..self.codomain {
@@ -227,5 +193,9 @@ impl<R: CRing> Matrix<R> for FlatMatrix<R> {
             let b = self.get_index(col2, i);
             self.data.swap(a, b);
         }
+    }
+    
+    fn eval_vector(&self, _vector: &[R]) -> Vec<R> {
+        todo!()
     }
 }

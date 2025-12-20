@@ -1,78 +1,115 @@
 use std::marker::PhantomData;
 
 use ahash::HashMap;
-use algebra::{
-    abelian::Abelian, field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::finite_fields::F2
-};
+use algebra::{abelian::Abelian, field::Field, matrix::Matrix};
 use deepsize::DeepSizeOf;
-use itertools::Itertools;
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
-
-use crate::{
-    basiselement::kBasisElement, comodule::{kcomodule::{kCofreeComodule, kComodule}, kmorphism::kComoduleMorphism, traits::Coalgebra}, graded_space::{BasisIndex, GradedLinearMap, GradedVectorSpace}, grading::{Grading, UniGrading}, tensor::TensorMap
-};
 
 use serde::{Deserialize, Serialize};
 
-// #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, DeepSizeOf)]
-// #[allow(non_camel_case_types)]
-// pub struct kCoalgebra<G: Grading, F: Field, M: Matrix<F>> {
-//     pub space: GradedVectorSpace<G, kBasisElement>,
-//     pub coaction: GradedLinearMap<G, F, M>,
-//     // pub coaction: HashMap<BasisIndex<G>, Vec<(BasisIndex<G>,BasisIndex<G>, F)>>,
-//     pub tensor: TensorMap<G>,
-// }
+use crate::{
+    grading::{grading::Grading, tensor::TensorMap},
+    k_comodule::{
+        graded_space::{GradedLinearMap, GradedVectorSpace},
+        kcomodule::{kCofreeComodule, kComodule},
+        kmorphism::kComoduleMorphism,
+    },
+    traits::Coalgebra,
+    types::CoalgebraIndex,
+};
+
+#[derive(Debug, Clone, PartialEq, Default, Deserialize, Serialize, DeepSizeOf)]
+#[allow(non_camel_case_types)]
+pub struct kBasisElement {
+    pub name: String,
+    pub excess: usize,
+}
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, DeepSizeOf)]
 #[allow(non_camel_case_types)]
 pub struct kCoalgebra<G: Grading, F: Field, M: Matrix<F>> {
     pub space: GradedVectorSpace<G, kBasisElement>,
-    pub coaction: HashMap<BasisIndex<G>, Vec<(BasisIndex<G>,BasisIndex<G>, F)>>,
+    pub coaction: HashMap<CoalgebraIndex<G>, Vec<(CoalgebraIndex<G>, CoalgebraIndex<G>, F)>>,
     pub(crate) _p: PhantomData<M>,
 }
 
-impl<G: Grading, F: Field, M: Abelian<F>> Coalgebra<G> for kCoalgebra<G,F,M> {
+impl<G: Grading, F: Field, M: Abelian<F>> Coalgebra<G> for kCoalgebra<G, F, M> {
     type BaseRing = F;
     type RingMorph = M;
-    type Comod = kComodule<G,F,M>; 
-    type CofMod = kCofreeComodule<G,F,M>;
-    type ComodMorph = kComoduleMorphism<G,F,M>;
-    
+    type Comod = kComodule<G, F, M>;
+    type CofMod = kCofreeComodule<G, F, M>;
+    type ComodMorph = kComoduleMorphism<G, F, M>;
+
     fn size_in_degree(&self, g: G) -> usize {
         self.space.dimension_in_grade(&g)
     }
-    
-    fn coaction(&self, i: BasisIndex<G>) -> &[(BasisIndex<G>, BasisIndex<G>, Self::BaseRing)] {
+
+    fn coaction(
+        &self,
+        i: CoalgebraIndex<G>,
+    ) -> &[(CoalgebraIndex<G>, CoalgebraIndex<G>, Self::BaseRing)] {
         self.coaction.get(&i).unwrap().as_slice()
+    }
+
+    fn basering_comodule(&self, shift: G) -> Self::Comod {
+        let zero = G::zero();
+
+        let space_map: HashMap<G, Vec<_>> = [(shift, vec![()])].into_iter().collect();
+        let space = GradedVectorSpace::from(space_map);
+
+        let coact_map: HashMap<G, M> = [(shift, M::identity(1))].into_iter().collect();
+        let coaction = GradedLinearMap::from(coact_map);
+
+        let mut dimensions = HashMap::default();
+        dimensions.insert(shift, 1);
+
+        let mut construct = HashMap::default();
+        let mut first_entry = HashMap::default();
+        first_entry.insert((zero, 0), (shift, 0));
+        construct.insert((shift, 0), first_entry);
+
+        let mut deconstruct = HashMap::default();
+        deconstruct.insert((shift, 0), ((zero, 0), (shift, 0)));
+
+        let tensor = TensorMap {
+            construct,
+            deconstruct,
+            dimensions,
+        };
+
+        Self::Comod {
+            space,
+            coaction,
+            tensor,
+        }
     }
 }
 
 impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
     pub fn set_primitives(&mut self) {
-        let mut primitive_index = 0;
+        // let mut primitive_index = 0;
 
-        for (id, c) in &self.coaction {
-            if c.len() == 2 {
-                let el = self.space.0.get_mut(&id.0).unwrap().get_mut(id.1 as usize).unwrap();
-                el.primitive = Some(primitive_index);
-                primitive_index += 1;
-            }
-        }
+        // for (id, c) in &self.coaction {
+        //     if c.len() == 2 {
+        //         let el = self.space.0.get_mut(&id.0).unwrap().get_mut(id.1 as usize).unwrap();
+        //         el.primitive = Some(primitive_index);
+        //         primitive_index += 1;
+        //     }
+        // }
     }
 
     pub fn set_generator(&mut self) -> Result<(), &str> {
-        let grade_zero = self.space.0.get_mut(&G::zero());
-        if let Some(basis) = grade_zero {
-            if basis.len() == 1 {
-                if let Some(basis_element) = basis.first_mut() {
-                    basis_element.generator = true;
-                }
-            } else {
-                Err("Coalgebra is not connected, no unique generator found in grade 0")?;
-            }
-        } else {
-            Err("Grade 0 not found in space")?;
-        }
+        // let grade_zero = self.space.0.get_mut(&G::zero());
+        // if let Some(basis) = grade_zero {
+        //     if basis.len() == 1 {
+        //         if let Some(basis_element) = basis.first_mut() {
+        //             basis_element.generator = true;
+        //         }
+        //     } else {
+        //         Err("Coalgebra is not connected, no unique generator found in grade 0")?;
+        //     }
+        // } else {
+        //     Err("Grade 0 not found in space")?;
+        // }
         Ok(())
     }
 

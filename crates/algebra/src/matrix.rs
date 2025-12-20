@@ -7,15 +7,23 @@ use std::fmt::Debug;
 /// This represents a map between (free) R-modules
 /// (or represents vectors inside an R-module)
 pub trait Matrix<R: CRing>: Clone + Send + Sync + PartialEq + Debug + DeepSizeOf {
+    type UnderlyingRowType;
+
     fn zero(domain: usize, codomain: usize) -> Self;
-    fn identity(d: usize) -> Self;
+    fn identity(d: usize) -> Self {
+        let mut a = Self::zero(d, d);
+        for i in 0..d {
+            a.set(i, i, R::one());
+        }
+        a
+    }
 
     fn get(&self, domain: usize, codomain: usize) -> R;
     fn set(&mut self, domain: usize, codomain: usize, r: R);
     fn add_at(&mut self, domain: usize, codomain: usize, r: R);
 
-    fn get_row(&self, codomain: usize) -> &[R];
-    fn set_row(&mut self, codomain: usize, row: &[R]);
+    fn get_row(&self, codomain: usize) -> &[Self::UnderlyingRowType];
+    fn set_row(&mut self, codomain: usize, row: &[Self::UnderlyingRowType]);
     
     fn scalar_multiply_row(&mut self, codomain: usize, r: R) {
         for domain in 0..self.domain() {
@@ -24,16 +32,7 @@ pub trait Matrix<R: CRing>: Clone + Send + Sync + PartialEq + Debug + DeepSizeOf
         }
     }
 
-    fn eval_vector(&self, vector: &[R]) -> Vec<R> {
-        debug_assert_eq!(self.domain(), vector.len());
-        (0..self.codomain()).map(|y| {
-            let r_1 = self.get_row(y);
-            let el: R = r_1.iter().zip(vector).map(|(x, y)| {
-                *x * *y
-            }).sum();
-            el
-        }).collect()
-    }
+    fn eval_vector(&self, vector: &[R]) -> Vec<R>;
 
     fn scalar_multiply_column(&mut self, domain: usize, r: R) {
         for codomain in 0..self.codomain() {

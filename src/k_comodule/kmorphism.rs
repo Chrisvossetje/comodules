@@ -1,22 +1,14 @@
-use std::sync::{Arc, atomic::AtomicPtr};
-
-use ahash::{HashMap, HashMapExt};
-use algebra::{abelian::Abelian, field::Field, matrix::Matrix};
+use algebra::{abelian::Abelian, field::Field};
 use deepsize::DeepSizeOf;
-use itertools::Itertools;
-use rayon::prelude::*;
 
 use crate::{
-    basiselement::kBasisElement,
-    comodule::{kcoalgebra::kCoalgebra, kcomodule::{CoalgebraBasis, kCofreeComodule}, traits::CofreeComodule},
-    graded_space::{BasisIndex, GradedLinearMap},
-    grading::{Grading, OrderedGrading},
-    tensor::TensorMap,
-};
-
-use super::{
-    kcomodule::kComodule,
-    traits::{Comodule, ComoduleMorphism},
+    grading::grading::Grading,
+    k_comodule::{
+        graded_space::GradedLinearMap,
+        kcoalgebra::kCoalgebra,
+        kcomodule::{kCofreeComodule, kComodule},
+    },
+    traits::ComoduleMorphism,
 };
 
 #[derive(Debug, Clone, DeepSizeOf)]
@@ -26,10 +18,11 @@ pub struct kComoduleMorphism<G: Grading, F: Field, M: Abelian<F>> {
 }
 
 impl<G: Grading, F: Field, M: Abelian<F>> kComoduleMorphism<G, F, M> {
-    fn verify_dimensions(
+    fn _verify_dimensions(
+        // TODO
         &self,
         domain: &kComodule<G, F, M>,
-        codomain: &kCofreeComodule<G,F,M>,
+        codomain: &kCofreeComodule<G, F, M>,
     ) -> bool {
         for k in domain.space.0.keys() {
             if !self.map.maps.contains_key(k) {
@@ -69,10 +62,16 @@ impl<G: Grading, F: Field, M: Abelian<F>> kComoduleMorphism<G, F, M> {
     }
 }
 
-impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kCoalgebra<G,F,M>> for kComoduleMorphism<G, F, M> {
+impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kCoalgebra<G, F, M>>
+    for kComoduleMorphism<G, F, M>
+{
     type BaseRing = F;
 
-    fn cokernel(&self, coalgebra: &kCoalgebra<G,F,M>, codomain: &kCofreeComodule<G,F,M>) -> (Self, kComodule<G,F,M>) {
+    fn cokernel(
+        &self,
+        _coalgebra: &kCoalgebra<G, F, M>,
+        _codomain: &kCofreeComodule<G, F, M>,
+    ) -> (Self, kComodule<G, F, M>) {
         todo!()
         // let cokernel_map = self.map.get_cokernel();
 
@@ -171,13 +170,10 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kCoalgebra<G,F,M>>
     }
 
     fn inject_codomain_to_cofree(
-        coalgebra: &kCoalgebra<G,F,M>,
-        comodule: &kComodule<G,F,M>,
-        limit: G,
-    ) -> (Self, kCofreeComodule<G,F,M>)
-    where
-        G: OrderedGrading,
-    {
+        _coalgebra: &kCoalgebra<G, F, M>,
+        _comodule: &kComodule<G, F, M>,
+        _limit: G,
+    ) -> (Self, kCofreeComodule<G, F, M>) {
         todo!()
         // let mut growing_map: GradedLinearMap<G, F, M> =
         //     GradedLinearMap::zero_codomain(&comodule.space);
@@ -288,7 +284,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kCoalgebra<G,F,M>>
         // (m, growing_comodule)
     }
 
-    fn zero_morphism(comodule: &kComodule<G,F,M>) -> Self {
+    fn zero_morphism(comodule: &kComodule<G, F, M>) -> Self {
         // Verify how we want to handle this zero map
         let mut zero_map = GradedLinearMap::empty();
 
@@ -300,7 +296,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kCoalgebra<G,F,M>>
     }
 
     // domain l == codomain r, l \circ r
-    fn compose(l: &Self, r: &Self, _codomain: &kCofreeComodule<G,F,M>) -> Self {
+    fn compose(l: &Self, r: &Self, _codomain: &kCofreeComodule<G, F, M>) -> Self {
         let map = GradedLinearMap::<G, F, M>::compose(&l.map, &r.map);
 
         Self { map }
@@ -312,51 +308,52 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kCoalgebra<G,F,M>>
     /// (from_dot, to_dot, value, line_type)
     fn get_structure_lines(
         &self,
-        coalgebra: &kCoalgebra<G,F,M>,
-        domain: &kCofreeComodule<G,F,M>,
-        codomain: &kCofreeComodule<G,F,M>,
+        _coalgebra: &kCoalgebra<G, F, M>,
+        _domain: &kCofreeComodule<G, F, M>,
+        _codomain: &kCofreeComodule<G, F, M>,
     ) -> Vec<((usize, G, usize), (usize, G, usize), Self::BaseRing, String)> {
-        let mut lines = vec![];
+        todo!()
+        // let lines = vec![];
 
-        let c_space = &coalgebra.space.0;
+        // let c_space = &coalgebra.space.0;
 
-        for (gr, gr_map) in self.map.maps.iter() {
-            for el_id in 0..domain.space.dimension_in_grade(gr) {
-                let els = domain.space.0.get(gr).unwrap();
-                let (((alg_gr, alg_id), gen_id), _) = els[el_id];
-                let alg_el = &c_space[&alg_gr][alg_id as usize];
-                match alg_el.primitive {
-                    Some(prim_id) => {
-                        for t_id in 0..gr_map.codomain() {
-                            let (((codom_alg_gr, codom_alg_id), codom_gen_id), _) = codomain.space.0.get(gr).expect("As codomain of the map is non-zero this vector space should contain an element in this grade.")[t_id];
+        // for (gr, gr_map) in self.map.maps.iter() {
+        //     for el_id in 0..domain.space.dimension_in_grade(gr) {
+        //         let els = domain.space.0.get(gr).unwrap();
+        //         let (((alg_gr, alg_id), gen_id), _) = els[el_id];
+        //         let alg_el = &c_space[&alg_gr][alg_id as usize];
+        //         // match alg_el.primitive {
+        //         //     Some(prim_id) => {
+        //         //         for t_id in 0..gr_map.codomain() {
+        //         //             let (((codom_alg_gr, codom_alg_id), codom_gen_id), _) = codomain.space.0.get(gr).expect("As codomain of the map is non-zero this vector space should contain an element in this grade.")[t_id];
 
-                            let alg_el = &c_space[&codom_alg_gr][codom_alg_id as usize];
-                            if alg_el.generator {
-                                if !gr_map.get(el_id, t_id).is_zero() {
-                                    lines.push((
-                                        // TODO
-                                        (gen_id as usize, G::zero(), 0),
-                                        (codom_gen_id as usize, G::zero(), 0),
-                                        gr_map.get(el_id, t_id),
-                                        "h_".to_string() + &prim_id.to_string(),
-                                    ));
-                                }
-                            }
-                        }
-                    }
-                    None => {}
-                }
-            }
-        }
+        //         //             let alg_el = &c_space[&codom_alg_gr][codom_alg_id as usize];
+        //         //             if alg_el.generator {
+        //         //                 if !gr_map.get(el_id, t_id).is_zero() {
+        //         //                     lines.push((
+        //         //                         // TODO
+        //         //                         (gen_id as usize, G::zero(), 0),
+        //         //                         (codom_gen_id as usize, G::zero(), 0),
+        //         //                         gr_map.get(el_id, t_id),
+        //         //                         "h_".to_string() + &prim_id.to_string(),
+        //         //                     ));
+        //         //                 }
+        //         //             }
+        //         //         }
+        //         //     }
+        //         //     None => {}
+        //         // }
+        //     }
+        // }
 
-        lines
+        // lines
     }
 
     fn direct_sum(
-        a: &mut Self,
-        b: &mut Self,
-        a_codom: &mut kCofreeComodule<G,F,M>,
-        b_codom: &mut kCofreeComodule<G,F,M>,
+        _a: &mut Self,
+        _b: &mut Self,
+        _a_codom: &mut kCofreeComodule<G, F, M>,
+        _b_codom: &mut kCofreeComodule<G, F, M>,
     ) {
         todo!()
     }

@@ -52,7 +52,7 @@
 //         {
 //             let input = include_str!("../examples/polynomial/A(2).txt");
 
-//             let coalgebra = 
+//             let coalgebra =
 //                 kCoalgebra::parse(input, UniGrading::infty() - UniGrading(10))
 //                     .unwrap()
 //                     .0;

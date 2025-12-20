@@ -50,6 +50,8 @@ impl<F: Field> Abelian<F> for FlatMatrix<F> {
     }
 }
 
+
+
 impl<F: Field> FlatMatrix<F> {
     pub(crate) fn kernel_find_single_generator(&self) -> Option<usize> {
         let (kernel, _) = self.kernel(&vec![], &vec![]);

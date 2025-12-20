@@ -1,19 +1,17 @@
-use std::{marker::PhantomData, sync::Arc};
+use std::marker::PhantomData;
 
 use ahash::HashMap;
-use algebra::{abelian::Abelian, field::Field, matrix::Matrix};
+use algebra::{abelian::Abelian, field::Field};
 use deepsize::DeepSizeOf;
 
 use crate::{
-    basiselement::kBasisElement,
-    comodule::traits::{Coalgebra, CofreeComodule},
-    graded_space::{BasisIndex, GradedLinearMap, GradedVectorSpace},
-    grading::Grading,
-    helper::hashmap_add_restrict,
-    tensor::TensorMap,
+    grading::{grading::Grading, tensor::TensorMap},
+    k_comodule::graded_space::{GradedLinearMap, GradedVectorSpace},
+    traits::{CofreeComodule, Comodule},
+    types::ComoduleIndex,
 };
 
-use super::{kcoalgebra::kCoalgebra, kmorphism::kComoduleMorphism, traits::Comodule};
+use super::kcoalgebra::kCoalgebra;
 
 #[derive(Clone, PartialEq, DeepSizeOf)]
 #[allow(non_camel_case_types)]
@@ -26,12 +24,10 @@ pub struct kComodule<G: Grading, F: Field, M: Abelian<F>> {
 #[derive(Debug, Clone, PartialEq, DeepSizeOf)]
 #[allow(non_camel_case_types)]
 pub struct kCofreeComodule<G: Grading, F: Field, M: Abelian<F>> {
-    pub space: GradedVectorSpace<G, ((BasisIndex<G>, u16), ())>,
+    pub space: GradedVectorSpace<G, ((ComoduleIndex<G>, u16), ())>,
     pub gen_id_gr: Vec<G>, // TODO : Unnecessaery ?
-    __phantomdata: PhantomData<(F, M)>
+    __phantomdata: PhantomData<(F, M)>,
 }
-
-pub type CoalgebraBasis<G> = (BasisIndex<G>, u16);
 
 impl<G: Grading, F: Field, M: Abelian<F>> std::fmt::Debug for kComodule<G, F, M> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -47,7 +43,12 @@ impl<G: Grading, F: Field, M: Abelian<F>> kComodule<G, F, M> {
                 return false;
             };
 
-            let val = self.coaction.maps.get(&t_gr).unwrap().get(m_id as usize, t_id as usize);
+            let val = self
+                .coaction
+                .maps
+                .get(&t_gr)
+                .unwrap()
+                .get(m_id as usize, t_id as usize);
             if val != F::one() {
                 return false;
             };
@@ -96,7 +97,9 @@ impl<G: Grading, F: Field, M: Abelian<F>> kComodule<G, F, M> {
     // }
 }
 
-impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G, kCoalgebra<G,F,M>> for kCofreeComodule<G, F, M> {
+impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G, kCoalgebra<G, F, M>>
+    for kCofreeComodule<G, F, M>
+{
     type Generator = ();
 
     fn get_generators(&self) -> Vec<(usize, G, Option<String>)> {
@@ -130,7 +133,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G, kCoalgebra<G,F,M>> f
     }
 
     fn cofree_comodule(
-        coalgebra: &kCoalgebra<G,F,M>,
+        coalgebra: &kCoalgebra<G, F, M>,
         index: usize,
         grade: G,
         limit: G,
@@ -184,7 +187,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G, kCoalgebra<G,F,M>> f
         Self {
             space: GradedVectorSpace::from(space),
             gen_id_gr: vec![grade],
-            __phantomdata: PhantomData
+            __phantomdata: PhantomData,
         }
     }
 
@@ -197,54 +200,4 @@ impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G, kCoalgebra<G,F,M>> f
     }
 }
 
-impl<G: Grading, F: Field, M: Abelian<F>> Comodule<G, kCoalgebra<G,F,M>> for kComodule<G, F, M> {
-    
-    // type Morphism = kComoduleMorphism<G, F, M>;
-    // type Generator = ();
-    // type BaseRing = F;
-
-    fn fp_comodule(coalgebra: &kCoalgebra<G,F,M>, degree: G) -> Self {
-        let zero = G::zero();
-
-        let space_map: HashMap<G, Vec<_>> = [(degree, vec![()])].into_iter().collect();
-        let space = GradedVectorSpace::from(space_map);
-
-        let coact_map: HashMap<G, M> = [(degree, M::identity(1))].into_iter().collect();
-        let coaction = GradedLinearMap::from(coact_map);
-
-        // CONNECTED ASSUMPTION
-        debug_assert_eq!(
-            coalgebra
-                .space
-                .0
-                .get(&zero)
-                .expect("Coalgebra has no element in grade zero")
-                .len(),
-            1,
-            "Coalgebra is not a connected coalgebra"
-        );
-
-        let mut dimensions = HashMap::default();
-        dimensions.insert(degree, 1);
-
-        let mut construct = HashMap::default();
-        let mut first_entry = HashMap::default();
-        first_entry.insert((zero, 0), (degree, 0));
-        construct.insert((degree, 0), first_entry);
-
-        let mut deconstruct = HashMap::default();
-        deconstruct.insert((degree, 0), ((zero, 0), (degree, 0)));
-
-        let tensor = TensorMap {
-            construct,
-            deconstruct,
-            dimensions,
-        };
-
-        Self {
-            space,
-            coaction,
-            tensor,
-        }
-    }
-}
+impl<G: Grading, F: Field, M: Abelian<F>> Comodule<G, kCoalgebra<G, F, M>> for kComodule<G, F, M> {}

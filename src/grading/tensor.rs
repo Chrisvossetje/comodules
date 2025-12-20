@@ -6,14 +6,12 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 use crate::{
-    basiselement::BasisElement,
-    graded_module::GradedModule,
-    graded_space::{BasisIndex, GradedVectorSpace},
-    grading::Grading,
+    grading::grading::Grading, k_comodule::graded_space::GradedVectorSpace, types::ComoduleIndex,
 };
 
-pub type TensorConstruct<G> = HashMap<BasisIndex<G>, HashMap<BasisIndex<G>, BasisIndex<G>>>;
-pub type TensorDeconstruct<G> = HashMap<BasisIndex<G>, (BasisIndex<G>, BasisIndex<G>)>;
+pub type TensorConstruct<G> =
+    HashMap<ComoduleIndex<G>, HashMap<ComoduleIndex<G>, ComoduleIndex<G>>>;
+pub type TensorDeconstruct<G> = HashMap<ComoduleIndex<G>, (ComoduleIndex<G>, ComoduleIndex<G>)>;
 pub type TensorDimension<G> = HashMap<G, usize>;
 
 pub trait ObjectGenerator<G: Grading> {
@@ -29,7 +27,6 @@ pub struct TensorMap<G: Grading> {
 
     // # Tensor Grade + Index -> (Algebra Grading + index, Module Grading + index)
     pub deconstruct: TensorDeconstruct<G>,
-
     pub dimensions: TensorDimension<G>,
 }
 
@@ -51,23 +48,25 @@ impl<G: Grading, B> ObjectGenerator<G> for GradedVectorSpace<G, B> {
     }
 }
 
-impl<G: Grading, B: BasisElement> ObjectGenerator<G> for GradedModule<G, B> {
-    fn contains_grade(&self, grade: &G) -> bool {
-        self.0.contains_key(grade)
-    }
+// TODO :
 
-    fn els(&self, grade: &G) -> usize {
-        self.0.get(grade).map_or(0, |x| x.len())
-    }
+// impl<G: Grading> ObjectGenerator<G> for GradedModule<G> {
+//     fn contains_grade(&self, grade: &G) -> bool {
+//         self.0.contains_key(grade)
+//     }
 
-    fn sorted_els(&self) -> Vec<(G, usize)> {
-        self.0
-            .iter()
-            .sorted_by_key(|(g, _)| **g)
-            .map(|(&g, l)| (g, l.len()))
-            .collect()
-    }
-}
+//     fn els(&self, grade: &G) -> usize {
+//         self.0.get(grade).map_or(0, |x| x.len())
+//     }
+
+//     fn sorted_els(&self) -> Vec<(G, usize)> {
+//         self.0
+//             .iter()
+//             .sorted_by_key(|(g, _)| **g)
+//             .map(|(&g, l)| (g, l.len()))
+//             .collect()
+//     }
+// }
 
 impl<G: Grading> TensorMap<G> {
     pub fn default() -> Self {
@@ -107,7 +106,8 @@ impl<G: Grading> TensorMap<G> {
                             .or_insert(HashMap::default())
                             .insert((l_grade, l_id), (t_grade, *t_id as u32));
 
-                        deconstruct.insert((t_grade, *t_id as u32), ((l_grade, l_id), (r_grade, r_id)));
+                        deconstruct
+                            .insert((t_grade, *t_id as u32), ((l_grade, l_id), (r_grade, r_id)));
                         *t_id = *t_id + 1;
                     }
                 }

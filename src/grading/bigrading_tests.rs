@@ -1,6 +1,9 @@
 #[cfg(test)]
 mod tests {
-    use crate::grading::{BiGrading, Grading, OrderedGrading, Parse};
+    use crate::grading::{
+        bigrading::BiGrading,
+        grading::{Grading, Parse},
+    };
 
     #[test]
     fn test_add() {

@@ -1,28 +1,27 @@
-use std::sync::Arc;
 use std::fmt::Debug;
 
-use ahash::HashMap;
 use algebra::{abelian::Abelian, ring::CRing};
 use deepsize::DeepSizeOf;
 
-use crate::{graded_space::BasisIndex, grading::{Grading, OrderedGrading}, tensor::ObjectGenerator};
+use crate::{grading::grading::Grading, types::CoalgebraIndex};
 
 pub trait Coalgebra<G: Grading>: DeepSizeOf + Clone + Sync + Send + Debug {
     type BaseRing: CRing;
     type RingMorph: Abelian<Self::BaseRing>;
 
-    type Comod: Comodule<G,Self>;
-    type CofMod: CofreeComodule<G,Self>;
+    type Comod: Comodule<G, Self>;
+    type CofMod: CofreeComodule<G, Self>;
     type ComodMorph: ComoduleMorphism<G, Self>;
 
     fn size_in_degree(&self, g: G) -> usize;
-    // TODO: to slice
-    fn coaction(&self, i: BasisIndex<G>) -> &[(BasisIndex<G>, BasisIndex<G>, Self::BaseRing)];
+    fn coaction(
+        &self,
+        i: CoalgebraIndex<G>,
+    ) -> &[(CoalgebraIndex<G>, CoalgebraIndex<G>, Self::BaseRing)];
+    fn basering_comodule(&self, shift: G) -> Self::Comod;
 }
 
-pub trait Comodule<G: Grading, C: Coalgebra<G>>: DeepSizeOf + Clone + Send + Sync {
-    fn fp_comodule(coalgebra: &C, degree: G) -> Self;
-}
+pub trait Comodule<G: Grading, C: Coalgebra<G>>: DeepSizeOf + Clone + Send + Sync {}
 
 pub trait CofreeComodule<G: Grading, C: Coalgebra<G>>: DeepSizeOf + Clone {
     type Generator: Default;
@@ -49,25 +48,15 @@ pub trait ComoduleMorphism<G: Grading, C: Coalgebra<G>>: Sized + DeepSizeOf + Se
 
     fn cokernel(&self, coalgebra: &C, codomain: &C::CofMod) -> (Self, C::Comod);
 
-    fn inject_codomain_to_cofree(
-        coalgebra: &C,
-        comodule: &C::Comod,
-        limit: G,
-    ) -> (Self, C::CofMod)
-    where
-        G: OrderedGrading;
+    fn inject_codomain_to_cofree(coalgebra: &C, comodule: &C::Comod, limit: G)
+    -> (Self, C::CofMod);
 
     fn zero_morphism(comodule: &C::Comod) -> Self;
 
     // domain l == codomain r, l \circ r
     fn compose(l: &Self, r: &Self, codomain: &C::CofMod) -> Self;
 
-    fn direct_sum(
-        a: &mut Self,
-        b: &mut Self,
-        a_codom: &mut C::CofMod,
-        b_codom: &mut C::CofMod,
-    );
+    fn direct_sum(a: &mut Self, b: &mut Self, a_codom: &mut C::CofMod, b_codom: &mut C::CofMod);
 
     // fn get_codomain(&self) -> Arc<M>;
 
