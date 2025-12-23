@@ -195,7 +195,11 @@ impl<R: CRing> Matrix<R> for FlatMatrix<R> {
         }
     }
     
-    fn eval_vector(&self, _vector: &[R]) -> Vec<R> {
-        todo!()
+    fn eval_vector(&self, vector: &[R]) -> Vec<R> {
+        let mut m = FlatMatrix::zero(1, vector.len());
+        for (id,v) in vector.iter().enumerate() {
+            m.set(0, id, *v);
+        }
+        self.compose(&m).data
     }
 }

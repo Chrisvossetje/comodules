@@ -1,3 +1,4 @@
+use algebra::matrices::f2_matrix::F2Matrix;
 use algebra::matrices::flat_matrix::FlatMatrix;
 use algebra::rings::finite_fields::F2;
 use comodules::export::{Page, SSeq};
@@ -266,14 +267,14 @@ use std::time::Instant;
 // }
 
 fn main() {
-    const MAX_GRADING: UniGrading = UniGrading(60);
-    const S: usize = 40;
+    const MAX_GRADING: UniGrading = UniGrading(90);
+    const S: usize = 30;
 
     let start = Instant::now();
 
     println!("Started processing coalgebra");
     let input = include_str!("../../examples/polynomial/A.txt");
-    let coalgebra = kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input, MAX_GRADING)
+    let coalgebra = kCoalgebra::<UniGrading, F2, F2Matrix>::parse(input, MAX_GRADING)
         .unwrap()
         .0;
     println!("Ended processing coalgebra");
@@ -297,26 +298,28 @@ fn main() {
 
     let resolution_time = Instant::now();
 
-    // Parallal Executor
-    rayon::scope(|i| {
-        res.resolve_at_s_g(i, 1, UniGrading::zero());
-    });
+    // // Parallal Executor
+    // rayon::scope(|i| {
+    //     res.recursion_solve(i, 1, UniGrading::zero());
+    // });
+
+
+    // Non Parallal executor
+    for g in MAX_GRADING.iterator_from_zero(true) {
+        for s in 1..=S {
+            if s==2 && g == UniGrading(5) {
+                println!("S:{}, G:{}", s, g);
+            }
+            res.resolve_at_s_g(s, g);
+        }
+    }
+
 
     for s in 0..=S {
         for g in MAX_GRADING.iterator_from_zero(true) {
             debug_assert!(&res.data[s][g.to_index()].1.get().is_some());
         }
     }
-
-    // // Non Parallal executor
-    // for g in MAX_GRADING.iterator_from_zero(true) {
-    //     for s in 1..=S {
-    //         if s==2 && g == UniGrading(5) {
-    //             println!("S:{}, G:{}", s, g);
-    //         }
-    //         res.data.resolve_at_s_g(s, g);
-    //     }
-    // }
 
     let mut gens = vec![];
 

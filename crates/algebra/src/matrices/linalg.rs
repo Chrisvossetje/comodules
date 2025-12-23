@@ -1,7 +1,8 @@
-use crate::{abelian::Abelian, field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix};
+use crate::{abelian::Abelian, field::Field, matrices::{f2_matrix::F2Matrix, flat_matrix::FlatMatrix}, matrix::Matrix, ring::CRing, rings::finite_fields::F2};
 
-
-impl<F: Field> Abelian<F> for FlatMatrix<F> {
+// TODO:
+// impl<F: Field> Abelian<F> for FlatMatrix<F> {
+impl Abelian<F2> for FlatMatrix<F2> {
     type Generator = ();
 
     // TODO: WTF am i doing here ?
@@ -11,16 +12,17 @@ impl<F: Field> Abelian<F> for FlatMatrix<F> {
         let mut kernel = clone.rref_kernel();
         kernel.rref();
         let len = kernel.codomain();
+
         (kernel, vec![(); len])
     }
     
-    fn cokernel(&self, _codomain: &Vec<Self::Generator>) -> (Self, Self, Vec<Self::Generator>) {
+    fn cokernel(&self, _codomain: &Vec<Self::Generator>) -> (Self, Self, Vec<Self::Generator>) {                
         let (coker, module) = self.transpose().kernel(&vec![], &vec![]);
         let p = coker.pivots(); // TODO: Make it clear wtf pivots returns
 
         let mut repr_vecs = FlatMatrix::zero(coker.codomain, coker.domain);
         for (domain, codomain) in p {
-            repr_vecs.set(codomain, domain, F::one());
+            repr_vecs.set(codomain, domain, F2::one());
         }
 
         debug_assert!(coker.compose(&repr_vecs).is_unit().is_ok());
@@ -44,7 +46,7 @@ impl<F: Field> Abelian<F> for FlatMatrix<F> {
             pivots.push(pivot);
             let codom = mat.codomain;
             mat.extend_one_row();
-            mat.set(pivot, codom, F::one());
+            mat.set(pivot, codom, F2::one());
         }
         pivots
     }
@@ -52,7 +54,8 @@ impl<F: Field> Abelian<F> for FlatMatrix<F> {
 
 
 
-impl<F: Field> FlatMatrix<F> {
+// impl<F: Field> FlatMatrix<F> {
+impl FlatMatrix<F2> {
     pub(crate) fn kernel_find_single_generator(&self) -> Option<usize> {
         let (kernel, _) = self.kernel(&vec![], &vec![]);
         kernel.first_non_zero_entry().map(|(_, y)| y)
@@ -145,11 +148,11 @@ impl<F: Field> FlatMatrix<F> {
             }
         }
 
-        let mut kernel = vec![F::zero(); free_vars.len() * self.domain];
+        let mut kernel = vec![F2::zero(); free_vars.len() * self.domain];
 
         for (i, &free_var) in free_vars.iter().enumerate() {
             let row_idx = i * self.domain;
-            kernel[row_idx + free_var] = F::one();
+            kernel[row_idx + free_var] = F2::one();
 
             for (row, &pivot_col) in pivot_cols.iter().enumerate() {
                 kernel[row_idx + pivot_col] = -self.get_element(row, free_var);

@@ -1,6 +1,6 @@
 // TODO : implement an F2_matrix thing, where we compress the data of our matrices
 
-use crate::{matrix::Matrix, rings::finite_fields::F2, ring::CRing};
+use crate::{matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::finite_fields::F2};
 use serde::{Deserialize, Serialize};
 use deepsize::DeepSizeOf;
 
@@ -10,6 +10,9 @@ pub struct F2Matrix {
     pub data: Vec<u64>,
     pub(crate) domain: usize,
     pub(crate) codomain: usize,
+    pub(crate) words_per_row: usize,
+
+    pub(crate) pivots: Vec<Option<u32>>,
 }
 
 impl F2Matrix {
@@ -17,8 +20,7 @@ impl F2Matrix {
         let word_idx = domain >> 6; // Which 64-bit word
         let bit_idx = domain & 0b111111; // Which bit in that word (0-63)
         
-        let words_per_row = (self.domain + 63) >> 6; // Ceiling division by 64
-        let base_word = codomain * words_per_row;
+        let base_word = codomain * self.words_per_row;
          
         (base_word + word_idx, bit_idx)
     }
@@ -32,6 +34,26 @@ impl F2Matrix {
         let (idx, shift) = self.index(domain, codomain);
         self.data[idx] = (self.data[idx] & (!(1u64 << shift))) | ((el.0 as u64) << shift);
     }
+
+    pub fn from_flat(flat: FlatMatrix<F2>) -> Self {
+        let mut z = Self::zero(flat.domain, flat.codomain);
+        for i in 0..flat.domain() {
+            for j in 0..flat.codomain {
+                z.set(i,j,flat.get(i, j));
+            } 
+        }
+        z
+    }
+
+    pub fn to_flat(self) -> FlatMatrix<F2> {
+        let mut z = FlatMatrix::zero(self.domain, self.codomain);
+        for i in 0..self.domain() {
+            for j in 0..self.codomain {
+                z.set(i,j,self.get(i, j));
+            } 
+        }
+        z
+    }
 }
 
 impl Matrix<F2> for F2Matrix {
@@ -39,7 +61,7 @@ impl Matrix<F2> for F2Matrix {
 
     fn zero(domain: usize, codomain: usize) -> Self {
         let words_per_row = (domain + 63) >> 6; // Ceiling division by 64
-        Self { data: vec![0; words_per_row * codomain], domain, codomain }
+        Self { data: vec![0; words_per_row * codomain], domain, codomain, words_per_row, pivots: vec![] }
     }
 
     fn get(&self, domain: usize, codomain: usize) -> F2 {
@@ -56,17 +78,15 @@ impl Matrix<F2> for F2Matrix {
     }
 
     fn get_row(&self, codomain: usize) -> &[u64] {
-        let words_per_row = (self.domain + 63) >> 6; // Ceiling division by 64
-        let start = words_per_row * codomain;
-        let end = start + words_per_row;
+        let start = self.words_per_row * codomain;
+        let end = start + self.words_per_row;
 
         &self.data[start..end]
     }
     
     fn set_row(&mut self, codomain: usize, row: &[u64]) {
-        let words_per_row = (self.domain + 63) >> 6; // Ceiling division by 64
-        let start = words_per_row * codomain;
-        let end = start + words_per_row;
+        let start = self.words_per_row * codomain;
+        let end = start + self.words_per_row;
 
         self.data[start..end].copy_from_slice(row);
     }
@@ -118,6 +138,7 @@ impl Matrix<F2> for F2Matrix {
         self.codomain = new_codomain;
     }
 
+    // TODO : This is NOT correct !!!!
     fn block_sum(&mut self, other: &Self) {
         let old_domain = self.domain;
         let old_codomain = self.codomain;
@@ -156,12 +177,11 @@ impl Matrix<F2> for F2Matrix {
         self.data = new_data;
         self.domain = new_domain;
         self.codomain = new_codomain;
+        self.words_per_row = words_per_new_row;
     }
 
     fn extend_one_row(&mut self) {
-        let words_per_row = (self.domain + 63) >> 6;
-
-        for _ in 0..words_per_row {
+        for _ in 0..self.words_per_row {
             self.data.push(0);
         }
         
@@ -170,5 +190,19 @@ impl Matrix<F2> for F2Matrix {
     
     fn eval_vector(&self, _vector: &[F2]) -> Vec<F2> {
         todo!()
+    }
+
+    fn swap_rows(&mut self, row1: usize, row2: usize) {
+        if row1 == row2 {
+            return;
+        }
+        
+        let words_per_row = (self.domain() + 63) >> 6;
+        let start1 = row1 * words_per_row;
+        let start2 = row2 * words_per_row;
+        
+        for i in 0..words_per_row {
+            self.data.swap(start1 + i, start2 + i);
+        }
     }
 }

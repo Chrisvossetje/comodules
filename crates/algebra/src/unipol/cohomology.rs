@@ -141,6 +141,8 @@ pub(super) fn internal_cohomology<F: Field>(f: &UniPolMap<F>, g: &UniPolMap<F>, 
         for a in 0..real_g_ker.domain {
             let column = real_g_ker.get_column(a);
             let eval = g.eval_vector(&column);
+
+            println!("{:?}{:?}", eval, column);
             
             for (id,r) in eval.iter().enumerate() {
                 let power = match q[id] {

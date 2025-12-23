@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::{matrices::f2_matrix::F2Matrix, matrix::Matrix, ring::CRing, rings::finite_fields::F2};
+    use crate::{matrices::f2_matrix::F2Matrix, matrix::{self, Matrix}, ring::CRing, rings::finite_fields::F2};
 
     #[test]
     fn test_vstack_1() {
@@ -8,6 +8,8 @@ mod tests {
             data: vec![0b10], // F2(1), F2(0)
             domain: 2,
             codomain: 1,
+            words_per_row: 1,
+            pivots: vec![],
         };
         matrix1.set_element(0, 0, F2::one());
         matrix1.set_element(1, 0, F2::zero());
@@ -146,8 +148,8 @@ mod tests {
     fn test_set_row() {
         let mut matrix = F2Matrix::zero(2, 2);
 
-        let new_row = vec![F2::one(), F2::zero()];
-        matrix.set_row(0, &new_row);
+        let new_row = vec![0b01];
+        matrix.set_row(0, &new_row[..]);
 
         assert_eq!(matrix.get(0, 0), F2::one());
         assert_eq!(matrix.get(1, 0), F2::zero());
@@ -175,15 +177,16 @@ mod tests {
         matrix_b.set_element(0, 0, F2::one());
         matrix_b.set_element(1, 0, F2::one());
 
-        // Compute A * B
-        let result = matrix_a.compose(&matrix_b);
+        // Compute B * A
+        let result = matrix_b.compose(&matrix_a);
+
+        println!("{:?}{:?}", matrix_a, matrix_b);
+        println!("{:?}", result);
 
         assert_eq!(result.domain(), 2);
-        assert_eq!(result.codomain(), 2);
-        // First row: [1, 0] * [1, 1]^T = 1*1 + 0*1 = 1
-        assert_eq!(result.get_element(0, 0), F2::one());
-        // Second row: [1, 1] * [1, 1]^T = 1*1 + 1*1 = 0 (in F2)
-        assert_eq!(result.get_element(1, 0), F2::zero());
+        assert_eq!(result.codomain(), 1);
+        assert_eq!(result.get_element(0, 0), F2::zero());
+        assert_eq!(result.get_element(1, 0), F2::one());
     }
 
     #[test]

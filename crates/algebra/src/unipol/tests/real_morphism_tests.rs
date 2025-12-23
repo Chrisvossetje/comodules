@@ -146,7 +146,7 @@ mod tests {
         let domain = vec![None, None];
         let codomain = vec![None, None];
 
-        let kernel = matrix.kernel_generators(&domain, &codomain);
+        let kernel = matrix.kernel_destroyers(&domain, &codomain);
         assert_eq!(kernel, vec![1]);
     }
 
@@ -163,7 +163,7 @@ mod tests {
         let domain = vec![None];
         let codomain = vec![None];
 
-        let kernel = matrix.kernel_generators(&domain, &codomain);
+        let kernel = matrix.kernel_destroyers(&domain, &codomain);
         assert_eq!(kernel, vec![]);
     }
 
@@ -180,7 +180,7 @@ mod tests {
         let domain = vec![Some(1)];
         let codomain = vec![Some(1)];
 
-        let kernel = matrix.kernel_generators(&domain, &codomain);
+        let kernel = matrix.kernel_destroyers(&domain, &codomain);
         assert_eq!(kernel, vec![]);
     }
 
@@ -195,7 +195,7 @@ mod tests {
         let domain = vec![None];
         let codomain = vec![];
 
-        let kernel = matrix.kernel_generators(&domain, &codomain);
+        let kernel = matrix.kernel_destroyers(&domain, &codomain);
         assert_eq!(kernel, vec![0]);
     }
 }

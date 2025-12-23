@@ -352,7 +352,7 @@ impl<G: Grading, C: Coalgebra<G>> ParallelResolution<G, C> {
         self.data[s].get(g.to_index()).1.get().unwrap()
     }
 
-    pub fn resolve_at_s_g<'a>(&'a self, i: &Scope<'a>, s: usize, degree: G) {
+    pub fn resolve_at_s_g(&self, s: usize, degree: G) {
         if s == 0 {
             return;
         }
@@ -364,9 +364,16 @@ impl<G: Grading, C: Coalgebra<G>> ParallelResolution<G, C> {
         let a = DataCell::resolve(&self.data[s], prev_s, degree, &self.coalgebra);
 
         self.data[s].get(degree.to_index()).1.set(a).unwrap();
-        self.spawn_next_tasks(i, s, degree);
 
         println!("Ended with {s} | {degree}");
+    }
+
+    pub fn recursion_solve<'a>(&'a self, i: &Scope<'a>, s: usize, degree: G) {
+        if s == 0 {
+            return;
+        }
+        self.resolve_at_s_g(s, degree);
+        self.spawn_next_tasks(i, s, degree);
     }
 
     pub fn spawn_next_tasks<'a>(&'a self, i: &Scope<'a>, s: usize, degree: G) {
@@ -381,7 +388,7 @@ impl<G: Grading, C: Coalgebra<G>> ParallelResolution<G, C> {
                     *m = ResolveState::Ready;
                     drop(m);
                     i.spawn(move |i| {
-                        self.resolve_at_s_g(i, s, degree.incr());
+                        self.recursion_solve(i, s, degree.incr());
                     });
                 }
                 ResolveState::GsAvailable => {
@@ -406,7 +413,7 @@ impl<G: Grading, C: Coalgebra<G>> ParallelResolution<G, C> {
                     *l = ResolveState::Ready;
                     drop(l);
                     i.spawn(move |i| {
-                        self.resolve_at_s_g(i, s + 1, degree);
+                        self.recursion_solve(i, s + 1, degree);
                     });
                 }
                 ResolveState::Ready => {
