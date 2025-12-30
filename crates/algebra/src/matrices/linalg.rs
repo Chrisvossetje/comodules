@@ -1,11 +1,8 @@
-use crate::{abelian::Abelian, field::Field, matrices::{f2_matrix::F2Matrix, flat_matrix::FlatMatrix}, matrix::Matrix, ring::CRing, rings::finite_fields::F2};
+use crate::{abelian::Abelian, field::Field, matrices::{flat_matrix::FlatMatrix}, matrix::Matrix, ring::CRing};
 
-// TODO:
-// impl<F: Field> Abelian<F> for FlatMatrix<F> {
-impl Abelian<F2> for FlatMatrix<F2> {
+impl<F: Field> Abelian<F> for FlatMatrix<F> {
     type Generator = ();
 
-    // TODO: WTF am i doing here ?
     fn kernel(&self, _domain: &Vec<Self::Generator>, _codomain: &Vec<Self::Generator>) -> (Self, Vec<Self::Generator>) {
         let mut clone = self.clone();
         clone.rref();
@@ -18,11 +15,11 @@ impl Abelian<F2> for FlatMatrix<F2> {
     
     fn cokernel(&self, _codomain: &Vec<Self::Generator>) -> (Self, Self, Vec<Self::Generator>) {                
         let (coker, module) = self.transpose().kernel(&vec![], &vec![]);
-        let p = coker.pivots(); // TODO: Make it clear wtf pivots returns
+        let p = coker.pivots();
 
         let mut repr_vecs = FlatMatrix::zero(coker.codomain, coker.domain);
         for (domain, codomain) in p {
-            repr_vecs.set(codomain, domain, F2::one());
+            repr_vecs.set(codomain, domain, F::one());
         }
 
         debug_assert!(coker.compose(&repr_vecs).is_unit().is_ok());
@@ -46,7 +43,7 @@ impl Abelian<F2> for FlatMatrix<F2> {
             pivots.push(pivot);
             let codom = mat.codomain;
             mat.extend_one_row();
-            mat.set(pivot, codom, F2::one());
+            mat.set(pivot, codom, F::one());
         }
         pivots
     }
@@ -54,11 +51,10 @@ impl Abelian<F2> for FlatMatrix<F2> {
 
 
 
-// impl<F: Field> FlatMatrix<F> {
-impl FlatMatrix<F2> {
+impl<F: Field> FlatMatrix<F> {
     pub(crate) fn kernel_find_single_generator(&self) -> Option<usize> {
         let (kernel, _) = self.kernel(&vec![], &vec![]);
-        kernel.first_non_zero_entry().map(|(_, y)| y)
+        kernel.first_non_zero_entry().map(|(x, _)| x)
     } 
 
     pub(crate) fn rref(&mut self) {
@@ -70,7 +66,7 @@ impl FlatMatrix<F2> {
             }
 
             let mut i = r;
-            while self.get_element(i, lead).is_zero() {
+            while self.get_element(lead, i).is_zero() {
                 i += 1;
                 if i == self.codomain {
                     i = r;
@@ -85,7 +81,7 @@ impl FlatMatrix<F2> {
                 self.data.swap(r * self.domain + j, i * self.domain + j);
             }
 
-            let pivot = self.get_element(r, lead);
+            let pivot = self.get_element(lead, r);
             if !pivot.is_zero() {
                 let pivot_inv = pivot.inv().expect("Pivot should be invertible");
                 for j in 0..self.domain {
@@ -96,10 +92,10 @@ impl FlatMatrix<F2> {
 
             for i in 0..self.codomain {
                 if i != r {
-                    let factor = self.get_element(i, lead);
+                    let factor = self.get_element(lead, i);
                     for j in 0..self.domain {
                         let idx = i * self.domain + j;
-                        let el = self.get_element(r, j);
+                        let el = self.get_element(j, r);
                         self.data[idx] -= factor * el;
                     }
                 }
@@ -109,29 +105,27 @@ impl FlatMatrix<F2> {
         }
     }
 
-    // TODO : pub(crate)
     pub(crate) fn pivots(&self) -> Vec<(usize, usize)> {
-        let mut col = 0;
+        let mut domain = 0;
         let mut pivots = vec![];
-        for row in 0..self.codomain {
-            while col < self.domain {
-                if !self.get_element(row, col).is_zero() {
-                    pivots.push((col, row));
-                    col += 1;
+        for codomain in 0..self.codomain {
+            while domain < self.domain {
+                if !self.get_element(domain, codomain).is_zero() {
+                    pivots.push((domain, codomain));
+                    domain += 1;
                     break;
                 }
-                col += 1;
+                domain += 1;
             }
         }
         pivots
     }
 
-    // TODO : Remove
     pub(crate) fn first_non_zero_entry(&self) -> Option<(usize, usize)> {
         for codom_id in 0..self.codomain {
             for dom_id in 0..self.domain {
-                if !self.get_element(codom_id, dom_id).is_zero() {
-                    return Some((codom_id, dom_id));
+                if !self.get_element(dom_id, codom_id).is_zero() {
+                    return Some((dom_id, codom_id));
                 }
             }
         }
@@ -140,22 +134,22 @@ impl FlatMatrix<F2> {
 
     pub(crate) fn rref_kernel(&self) -> Self {
         let mut free_vars = Vec::new();
-        let pivot_cols: Vec<usize> = self.pivots().iter().map(|x| x.0).collect();
+        let pivot_doms: Vec<usize> = self.pivots().iter().map(|x| x.0).collect();
 
         for j in 0..self.domain {
-            if !pivot_cols.contains(&j) {
+            if !pivot_doms.contains(&j) {
                 free_vars.push(j);
             }
         }
 
-        let mut kernel = vec![F2::zero(); free_vars.len() * self.domain];
+        let mut kernel = vec![F::zero(); free_vars.len() * self.domain];
 
         for (i, &free_var) in free_vars.iter().enumerate() {
-            let row_idx = i * self.domain;
-            kernel[row_idx + free_var] = F2::one();
+            let codom_idx = i * self.domain;
+            kernel[codom_idx + free_var] = F::one();
 
-            for (row, &pivot_col) in pivot_cols.iter().enumerate() {
-                kernel[row_idx + pivot_col] = -self.get_element(row, free_var);
+            for (codom, &pivot_dom) in pivot_doms.iter().enumerate() {
+                kernel[codom_idx + pivot_dom] = -self.get_element(free_var, codom);
             }
         }
 

@@ -2,21 +2,15 @@
 mod tests {
 
     use ahash::HashMap;
+    use algebra::{matrices::flat_matrix::FlatMatrix, matrix::Matrix, rings::finite_fields::F2};
 
-    use crate::linalg::field::F2;
-    use crate::basiselement::BasisElement;
-    use crate::linalg::linalg::FlatMatrix;
-    use crate::linalg::graded::{GradedLinearMap, GradedVectorSpace};
-    use crate::grading::UniGrading;
-    use crate::linalg::matrix::Matrix;
+    use crate::{grading::unigrading::UniGrading, k_comodule::graded_space::{GradedLinearMap, GradedVectorSpace}};
     
     // Assuming F2 is implemented as a Field type.
 
     type G = UniGrading; // OrderedGrading type
     type F = F2; // Field type
     type M = FlatMatrix<F>; // Matrix type
-
-    impl BasisElement for usize {}
 
     #[test]
     fn test_graded_vector_space_new() {
@@ -93,10 +87,10 @@ mod tests {
 
         linear_map1.vstack(&mut linear_map2);
 
-        assert_eq!(linear_map1.maps[&UniGrading(0)].domain, 2); // 2 + 3 rows
-        assert_eq!(linear_map1.maps[&UniGrading(1)].domain, 2); // 2 + 3 rows
-        assert_eq!(linear_map1.maps[&UniGrading(0)].codomain, 9); // 2 + 3 rows
-        assert_eq!(linear_map1.maps[&UniGrading(1)].codomain, 6); // 1 + 2 rows
+        assert_eq!(linear_map1.maps[&UniGrading(0)].domain(), 2); // 2 + 3 rows
+        assert_eq!(linear_map1.maps[&UniGrading(1)].domain(), 2); // 2 + 3 rows
+        assert_eq!(linear_map1.maps[&UniGrading(0)].codomain(), 9); // 2 + 3 rows
+        assert_eq!(linear_map1.maps[&UniGrading(1)].codomain(), 6); // 1 + 2 rows
     }
 
     #[test]
@@ -115,10 +109,10 @@ mod tests {
 
         linear_map1.block_sum(&mut linear_map2);
 
-        assert_eq!(linear_map1.maps[&UniGrading(0)].domain, 4);
-        assert_eq!(linear_map1.maps[&UniGrading(0)].codomain, 7);
-        assert_eq!(linear_map1.maps[&UniGrading(1)].domain, 2);
-        assert_eq!(linear_map1.maps[&UniGrading(1)].codomain, 5);
+        assert_eq!(linear_map1.maps[&UniGrading(0)].domain(), 4);
+        assert_eq!(linear_map1.maps[&UniGrading(0)].codomain(), 7);
+        assert_eq!(linear_map1.maps[&UniGrading(1)].domain(), 2);
+        assert_eq!(linear_map1.maps[&UniGrading(1)].codomain(), 5);
     }
 
     #[test]
@@ -139,10 +133,10 @@ mod tests {
 
         assert!(composed.maps.get(&UniGrading(0)).is_some());
         assert!(composed.maps.get(&UniGrading(1)).is_some());
-        assert_eq!(composed.maps[&UniGrading(0)].domain, 2);
-        assert_eq!(composed.maps[&UniGrading(0)].codomain, 4);
-        assert_eq!(composed.maps[&UniGrading(1)].domain, 3);
-        assert_eq!(composed.maps[&UniGrading(1)].codomain, 5);
+        assert_eq!(composed.maps[&UniGrading(0)].domain(), 2);
+        assert_eq!(composed.maps[&UniGrading(0)].codomain(), 4);
+        assert_eq!(composed.maps[&UniGrading(1)].domain(), 3);
+        assert_eq!(composed.maps[&UniGrading(1)].codomain(), 5);
     }
 
     #[test]
@@ -163,7 +157,7 @@ mod tests {
 
     #[test]
     fn test_graded_linear_map_zero_codomain() {
-        // Test zero_codomain produces a map with empty domain
+        // Test zero_codomain() produces a map with empty domain()
         let mut codomain_space = HashMap::default();
         codomain_space.insert(UniGrading(0), vec![0; 3]);
         codomain_space.insert(UniGrading(1), vec![0; 2]);
@@ -171,9 +165,9 @@ mod tests {
         let codomain = GradedVectorSpace::from(codomain_space);
         let zero_map: GradedLinearMap<G, F, M> = GradedLinearMap::zero_codomain(&codomain);
 
-        assert_eq!(zero_map.maps[&UniGrading(0)].codomain, 0);
-        assert_eq!(zero_map.maps[&UniGrading(0)].domain, 3);
-        assert_eq!(zero_map.maps[&UniGrading(1)].codomain, 0);
-        assert_eq!(zero_map.maps[&UniGrading(1)].domain, 2);
+        assert_eq!(zero_map.maps[&UniGrading(0)].codomain(), 0);
+        assert_eq!(zero_map.maps[&UniGrading(0)].domain(), 3);
+        assert_eq!(zero_map.maps[&UniGrading(1)].codomain(), 0);
+        assert_eq!(zero_map.maps[&UniGrading(1)].domain(), 2);
     }
 }

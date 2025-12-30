@@ -12,9 +12,9 @@ impl<F: Field> FlatMatrix<UniPolRing<F>> {
     pub(super) fn internal_cokernel(&self, codomain: &UniPolModule) -> (Self, Self, UniPolModule) {  
         // TODO : Force maps to always be sorted      
         let sorted: Vec<_> = codomain.iter().enumerate().sorted_by(|a, b|{
-            match a.1 {
+            match a.1.1 {
                 Some(pow) => {
-                    match b.1 {
+                    match b.1.1 {
                         Some(b_pow) => {
                             if pow < b_pow {
                                 Ordering::Greater
@@ -30,7 +30,7 @@ impl<F: Field> FlatMatrix<UniPolRing<F>> {
                     } 
                 },
                 None => {
-                    match b.1 {
+                    match b.1.1 {
                         Some(_) => {
                             Ordering::Less
                         },
@@ -41,9 +41,9 @@ impl<F: Field> FlatMatrix<UniPolRing<F>> {
                 },
             }
         }).map(|x| (x.0, {
-            match x.1 {
+            match x.1.1 {
                 Some(pow) => {
-                    UniPolRing(F::one().neg(), *pow)
+                    UniPolRing(F::one().neg(), pow)
                 },
                 None => {
                     UniPolRing::zero()
@@ -83,9 +83,10 @@ impl<F: Field> FlatMatrix<UniPolRing<F>> {
             
             if el.is_unit() { None }
             else if !el.is_zero() {
-                Some(Some(el.1))
+                // TODO :
+                Some((0, Some(el.1)))
             } else { 
-                Some(None)
+                Some((0, None))
             }
         }).collect();
 
@@ -122,7 +123,7 @@ impl<F: Field> FlatMatrix<UniPolRing<F>> {
 
         // Reduce g_map, (if something maps to t^k which is zero in some thing, set it to zero)
         for coker_id in 0..g_map.codomain {
-            if let Some(power) = module[coker_id] {
+            if let Some(power) = module[coker_id].1 {
                 for codom_id in 0..g_map.domain {
                     let el = g_map.get(codom_id, coker_id);
                     if el.1 >= power && !el.is_zero() {
@@ -134,7 +135,7 @@ impl<F: Field> FlatMatrix<UniPolRing<F>> {
 
         // Reduce g_inv_map, (if something maps to t^k which is zero in some thing, set it to zero)
         for codom_id in 0..g_inv_map.codomain {
-            if let Some(power) = codomain[codom_id] {
+            if let Some(power) = codomain[codom_id].1 {
                 for coker_id in 0..g_inv_map.domain {
                     let el = g_inv_map.get(coker_id, codom_id);
                     if el.1 >= power && !el.is_zero() {
@@ -248,12 +249,12 @@ impl<F: Field> FlatMatrix<UniPolRing<F>> {
         if cfg!(debug_assertions) {
             let mut comp = g_map.compose(&g_inv_map);
             for (y, power) in module.iter().enumerate() {
-                match power {
+                match power.1 {
                     Some(power) => {
                         for x in 0..comp.domain() {
                             let el = comp.get(x, y);
                             if !el.is_zero() {
-                                if el.1 >= *power {
+                                if el.1 >= power {
                                     comp.set(x,y,UniPolRing::zero());
                                 }
                             } 

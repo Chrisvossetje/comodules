@@ -6,7 +6,7 @@ use itertools::Itertools;
 use crate::{abelian::Abelian, field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::univariate_polynomial_ring::UniPolRing, snf::SmithNormalForm, unipol::{UniPolMap, UniPolModule, cohomology::internal_cohomology}};
 
 impl<F: Field> Abelian<UniPolRing<F>> for UniPolMap<F> {
-    type Generator = Option<u16>;
+    type Generator = (i32, Option<u16>);
     
     fn kernel(&self, _domain: &Vec<Self::Generator>, _codomain: &Vec<Self::Generator>) -> (Self, Vec<Self::Generator>) {
         todo!()
@@ -61,15 +61,15 @@ impl<F: Field> UniPolMap<F> {
                     let dom_module = domain[dom];
                     let codom_module = codomain[codom];
 
-                    if let Some(codom_module_power) = codom_module {
+                    if let Some(codom_module_power) = codom_module.1 {
                         if power >= codom_module_power {
                             return Err(format!("There is an element mapping to some power of a codomain, but the codomain has quotient which divides out this power. Meaning the matrix should have been reduced and this should have shown zero. Domain {dom} id, codomain {codom} id, power {power}."));
                         }
                     }
 
-                    match dom_module {
+                    match dom_module.1 {
                         Some(dom_cycle) => {
-                            match codom_module {
+                            match codom_module.1 {
                                 Some(codom_cycle) => {
                                     if dom_cycle + power < codom_cycle {
                                         return Err(format!("Maps a cyclic t^{dom_cycle} module to a cyclic t^{codom_cycle} module, which is illegal with power between those being {power}"));   
@@ -91,10 +91,10 @@ impl<F: Field> UniPolMap<F> {
     
     pub(super) fn reduce(&mut self, codomain: &UniPolModule) {
         for (y, pow) in codomain.iter().enumerate() {
-            match pow {
+            match pow.1 {
                 Some(pow) => {
                     for x in 0..self.domain {
-                        if self.get(x, y).1 >= *pow {
+                        if self.get(x, y).1 >= pow {
                             self.set(x, y, UniPolRing::zero());
                         }
                     }
@@ -124,7 +124,7 @@ impl<F: Field> UniPolMap<F> {
             new_map.set_row(n, self.get_row(n));
             
             
-            if let Some(power) = codomain[n] {
+            if let Some(power) = codomain[n].1 {
                 new_map.set(self.domain + n, n, UniPolRing(F::one().neg(),power));
             }
         }
@@ -146,7 +146,7 @@ impl<F: Field> UniPolMap<F> {
                     let super_el = v.get(r, y);
                     if !super_el.is_zero() {
                         if super_el.1 < possible_pow {
-                            if let Some(domain_pow) = domain_pow {
+                            if let Some(domain_pow) = domain_pow.1 {
                                 if domain_pow <= super_el.1 {
                                     continue;
                                 } 
@@ -167,7 +167,7 @@ impl<F: Field> UniPolMap<F> {
                 let super_el = v.get(r, y);
                 if !super_el.is_zero() {
 
-                    if let Some(domain_pow) = domain_pow {
+                    if let Some(domain_pow) = domain_pow.1 {
                         if domain_pow <= super_el.1 {
                             continue;
                         } 
@@ -189,9 +189,9 @@ impl<F: Field> UniPolMap<F> {
 
 pub fn order_maps<F: Field>(f: &UniPolMap<F>, g: &UniPolMap<F>, n: &UniPolModule, q: &UniPolModule) -> (UniPolMap<F>, UniPolMap<F>, UniPolModule, UniPolModule, FlatMatrix<UniPolRing<F>>) {
     let n_sorted: Vec<_> = n.iter().enumerate().sorted_by(|a, b|{
-        match a.1 {
+        match a.1.1 {
             Some(pow) => {
-                match b.1 {
+                match b.1.1 {
                     Some(b_pow) => {
                         if pow < b_pow {
                             Ordering::Greater
@@ -207,7 +207,7 @@ pub fn order_maps<F: Field>(f: &UniPolMap<F>, g: &UniPolMap<F>, n: &UniPolModule
                 } 
             },
             None => {
-                match b.1 {
+                match b.1.1 {
                     Some(_) => {
                         Ordering::Less
                     },
@@ -220,9 +220,9 @@ pub fn order_maps<F: Field>(f: &UniPolMap<F>, g: &UniPolMap<F>, n: &UniPolModule
     }).collect();
 
     let q_sorted: Vec<_> = q.iter().enumerate().sorted_by(|a, b|{
-        match a.1 {
+        match a.1.1 {
             Some(pow) => {
-                match b.1 {
+                match b.1.1 {
                     Some(b_pow) => {
                         if pow < b_pow {
                             Ordering::Greater
@@ -238,7 +238,7 @@ pub fn order_maps<F: Field>(f: &UniPolMap<F>, g: &UniPolMap<F>, n: &UniPolModule
                 } 
             },
             None => {
-                match b.1 {
+                match b.1.1 {
                     Some(_) => {
                         Ordering::Less
                     },

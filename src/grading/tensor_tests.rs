@@ -8,7 +8,7 @@ mod tests {
 
     use crate::{
         grading::{grading::Grading, tensor::TensorMap, unigrading::UniGrading},
-        k_comodule::graded_space::GradedVectorSpace,
+        k_comodule::{graded_space::GradedVectorSpace, kcoalgebra::A0_coalgebra},
     };
 
     fn create_mock_vector_space<G: Grading, B>(
@@ -101,13 +101,4 @@ mod tests {
         assert_eq!(new_tensor.dimensions.get(&UniGrading(2)), None);
         assert!(new_tensor.dimensions.get(&UniGrading(0)).is_none());
     }
-
-    // TODO :
-
-    // #[test]
-    // fn test_correctness_a0() {
-    //     let a0 = A0_coalgebra();
-    //     a0.tensor.is_correct();
-    //     assert_eq!(a0.tensor.dimensions[&UniGrading(1)], 2);
-    // }
 }

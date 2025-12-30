@@ -3,7 +3,6 @@ use crate::{abelian::Abelian, matrices::f2_matrix::F2Matrix, matrix::Matrix, rin
 impl Abelian<F2> for F2Matrix {
     type Generator = ();
 
-    // TODO: WTF am i doing here ?
     fn kernel(&self, _domain: &Vec<Self::Generator>, _codomain: &Vec<Self::Generator>) -> (Self, Vec<Self::Generator>) {
         let mut clone = self.clone();
         clone.rref();
@@ -15,7 +14,7 @@ impl Abelian<F2> for F2Matrix {
     
     fn cokernel(&self, _codomain: &Vec<Self::Generator>) -> (Self, Self, Vec<Self::Generator>) {
         let (coker, module) = self.transpose().kernel(&vec![], &vec![]);
-        let p = coker.pivots(); // TODO: Make it clear wtf pivots returns
+        let p = coker.pivots();
         
         let mut repr_vecs = F2Matrix::zero(coker.codomain(), coker.domain());
         for (domain, codomain) in p {
@@ -111,16 +110,16 @@ impl F2Matrix {
 
     /// Get the pivot positions (column, row) after rref
     pub fn pivots(&self) -> Vec<(usize, usize)> {
-        let mut col = 0;
+        let mut domain = 0;
         let mut pivots = vec![];
-        for row in 0..self.codomain() {
-            while col < self.domain() {
-                if self.get_element(col, row) == F2::one() {
-                    pivots.push((col, row));
-                    col += 1;
+        for codomain in 0..self.codomain() {
+            while domain < self.domain() {
+                if self.get_element(domain, codomain) == F2::one() {
+                    pivots.push((domain, codomain));
+                    domain += 1;
                     break;
                 }
-                col += 1;
+                domain += 1;
             }
         }
         pivots
@@ -141,11 +140,11 @@ impl F2Matrix {
     /// Compute the kernel (null space) of the matrix after rref
     pub fn rref_kernel(&self) -> Self {
         let mut free_vars = Vec::new();
-        let pivot_cols: Vec<usize> = self.pivots().iter().map(|x| x.0).collect();
+        let pivot_doms: Vec<usize> = self.pivots().iter().map(|x| x.0).collect();
 
         // Find free variables (columns without pivots)
         for j in 0..self.domain() {
-            if !pivot_cols.contains(&j) {
+            if !pivot_doms.contains(&j) {
                 free_vars.push(j);
             }
         }
@@ -157,7 +156,7 @@ impl F2Matrix {
             kernel.set_element(free_var, i, F2::one());
 
             // Set the dependent variables based on the rref form
-            for (row, &pivot_col) in pivot_cols.iter().enumerate() {
+            for (row, &pivot_col) in pivot_doms.iter().enumerate() {
                 if row < self.codomain() && free_var < self.domain() {
                     // In F2, negation is the same as the value itself
                     kernel.set_element(pivot_col, i, self.get_element(free_var, row));

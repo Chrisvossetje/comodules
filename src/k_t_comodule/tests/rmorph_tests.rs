@@ -106,8 +106,6 @@ mod tests {
         let one = BiGrading(1, 0);
         let two = BiGrading(2, 0);
 
-        // TODO
-
         // Create comodule with various grades including negative
         let cofree_neg = RComodule::cofree_comodule(coalgebra.clone(), 0, neg_one, two, (UniGrading(0), None));
         let cofree_pos = RComodule::cofree_comodule(coalgebra, 1, one, two, (UniGrading(0), None));

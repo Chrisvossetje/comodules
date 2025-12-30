@@ -9,16 +9,7 @@ mod tests {
         rings::finite_fields::{F2, Fp},
     };
 
-    use crate::{
-        comodule::{
-            kcoalgebra::{A0_coalgebra, kCoalgebra},
-            kcomodule::kComodule,
-            traits::Comodule,
-        },
-        graded_space::{GradedLinearMap, GradedVectorSpace},
-        grading::{Grading, UniGrading},
-        tensor::TensorMap,
-    };
+    use crate::{grading::{grading::Grading, tensor::TensorMap, unigrading::UniGrading}, k_comodule::{graded_space::{GradedLinearMap, GradedVectorSpace}, kcoalgebra::{A0_coalgebra, kCoalgebra}, kcomodule::kComodule}, traits::Coalgebra};
 
     // Test for creating an empty kComodule manually
     #[test]
@@ -26,12 +17,12 @@ mod tests {
         let coalgebra = Arc::new(A0_coalgebra());
 
         // Create empty comodule manually
-        let empty_space = GradedVectorSpace::new();
+        let empty_space: GradedVectorSpace<UniGrading, ()> = GradedVectorSpace::new();
         let empty_coaction_maps = HashMap::default();
         let empty_coaction = GradedLinearMap::<UniGrading, F2, FlatMatrix<F2>>::from(empty_coaction_maps);
         let empty_tensor = TensorMap::default();
 
-        let comodule = kComodule::new(empty_space, empty_coaction, empty_tensor);
+        let comodule: kComodule<UniGrading, kCoalgebra<UniGrading, F2, FlatMatrix<F2>>> = kComodule::new(empty_space, empty_coaction, empty_tensor);
 
         assert_eq!(
             coalgebra.clone().as_ref(),
@@ -45,7 +36,7 @@ mod tests {
     #[test]
     fn test_fp_comodule() {
         let coalgebra = Arc::new(A0_coalgebra());
-        let comodule = kComodule::fp_comodule(&coalgebra, UniGrading::zero());
+        let comodule = kCoalgebra::basering_comodule(&coalgebra, UniGrading::zero());
 
         assert_eq!(comodule.space.0.len(), 1);
         assert!(comodule.space.0.contains_key(&UniGrading(0)));
@@ -66,8 +57,8 @@ mod tests {
     #[test]
     fn test_direct_sum_basic() {
         let coalgebra = Arc::new(A0_coalgebra());
-        let comodule1 = kComodule::fp_comodule(&coalgebra, UniGrading::zero());
-        let comodule2 = kComodule::fp_comodule(&coalgebra, UniGrading(1));
+        let comodule1 = kCoalgebra::basering_comodule(&coalgebra, UniGrading::zero());
+        let comodule2 = kCoalgebra::basering_comodule(&coalgebra, UniGrading(1));
 
         // Test basic properties of the comodules
         assert_eq!(comodule1.space.0.len(), 1);
@@ -81,8 +72,6 @@ mod tests {
     // Test for basic comodule construction with unit elements
     #[test]
     fn test_comodule_construction() {
-        let coalgebra = Arc::new(A0_coalgebra());
-
         // Create a simple space with () elements
         let mut space_map = HashMap::default();
         space_map.insert(UniGrading(0), vec![()]);
@@ -94,7 +83,7 @@ mod tests {
 
         let tensor = TensorMap::default();
 
-        let comodule = kComodule::new(
+        let comodule: kComodule<UniGrading, kCoalgebra<UniGrading, F2, FlatMatrix<F2>>> = kComodule::new(
             GradedVectorSpace::from(space_map),
             coaction,
             tensor,
@@ -115,7 +104,7 @@ mod tests {
             kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input_coalg, UniGrading::infty())
                 .unwrap();
 
-        match kComodule::<UniGrading, F2, FlatMatrix<F2>>::parse(
+        match kComodule::parse(
             input_comod,
             &kcoalg,
             &translator,
@@ -142,7 +131,7 @@ mod tests {
             kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input_coalg, UniGrading(32))
                 .unwrap();
 
-        match kComodule::<UniGrading, F2, FlatMatrix<F2>>::parse(
+        match kComodule::parse(
             input_comod,
             &kcoalg,
             &translator,
@@ -166,7 +155,7 @@ mod tests {
         let (kcoalg, translator) =
             kCoalgebra::<UniGrading, Fp<3>, FlatMatrix<Fp<3>>>::parse(input_coalg, UniGrading(128))
                 .unwrap();
-        match kComodule::<UniGrading, Fp<3>, FlatMatrix<Fp<3>>>::parse(
+        match kComodule::parse(
             input_comod,
             &kcoalg,
             &translator,

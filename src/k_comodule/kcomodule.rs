@@ -1,41 +1,36 @@
-use std::marker::PhantomData;
-
-use ahash::HashMap;
-use algebra::{abelian::Abelian, field::Field};
+use algebra::{abelian::Abelian, field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing};
 use deepsize::DeepSizeOf;
 
 use crate::{
     grading::{grading::Grading, tensor::TensorMap},
     k_comodule::graded_space::{GradedLinearMap, GradedVectorSpace},
-    traits::{CofreeComodule, Comodule},
-    types::ComoduleIndex,
+    traits::{Coalgebra, CofreeComodule, Comodule},
+    types::CoalgebraIndex,
 };
 
 use super::kcoalgebra::kCoalgebra;
 
 #[derive(Clone, PartialEq, DeepSizeOf)]
 #[allow(non_camel_case_types)]
-pub struct kComodule<G: Grading, F: Field, M: Abelian<F>> {
-    pub space: GradedVectorSpace<G, ()>,
-    pub coaction: GradedLinearMap<G, F, M>,
+pub struct kComodule<G: Grading, C: Coalgebra<G>> where C::BaseRing: Field {
+    pub space: GradedVectorSpace<G, <C::RingMorph as Abelian<C::BaseRing>>::Generator>,
+    pub coaction: GradedLinearMap<G, C::BaseRing, C::RingMorph>,
     pub tensor: TensorMap<G>,
 }
 
 #[derive(Debug, Clone, PartialEq, DeepSizeOf)]
 #[allow(non_camel_case_types)]
-pub struct kCofreeComodule<G: Grading, F: Field, M: Abelian<F>> {
-    pub space: GradedVectorSpace<G, ((ComoduleIndex<G>, u16), ())>,
-    pub gen_id_gr: Vec<G>, // TODO : Unnecessaery ?
-    __phantomdata: PhantomData<(F, M)>,
+pub struct kCofreeComodule<G: Grading, C: Coalgebra<G>> where C::BaseRing: Field  {
+    pub space: GradedVectorSpace<G, ((CoalgebraIndex<G>, u16), <C::RingMorph as Abelian<C::BaseRing>>::Generator)>,
 }
 
-impl<G: Grading, F: Field, M: Abelian<F>> std::fmt::Debug for kComodule<G, F, M> {
+impl<G: Grading, C: Coalgebra<G>> std::fmt::Debug for kComodule<G, C> where C::BaseRing: Field {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.space.0)
     }
 }
 
-impl<G: Grading, F: Field, M: Abelian<F>> kComodule<G, F, M> {
+impl<G: Grading, C: Coalgebra<G>> kComodule<G, C> where C::BaseRing: Field {
     pub fn verify(&self) -> bool {
         for (&(m_gr, m_id), map) in &self.tensor.construct {
             let &(t_gr, t_id) = map.get(&(G::zero(), 0)).unwrap();
@@ -49,7 +44,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> kComodule<G, F, M> {
                 .get(&t_gr)
                 .unwrap()
                 .get(m_id as usize, t_id as usize);
-            if val != F::one() {
+            if val != C::BaseRing::one() {
                 return false;
             };
         }
@@ -57,8 +52,8 @@ impl<G: Grading, F: Field, M: Abelian<F>> kComodule<G, F, M> {
     }
 
     pub fn new(
-        space: GradedVectorSpace<G, ()>,
-        coaction: GradedLinearMap<G, F, M>,
+        space: GradedVectorSpace<G, <C::RingMorph as Abelian<C::BaseRing>>::Generator>,
+        coaction: GradedLinearMap<G, C::BaseRing, C::RingMorph>,
         tensor: TensorMap<G>,
     ) -> Self {
         let com = Self {
@@ -69,39 +64,11 @@ impl<G: Grading, F: Field, M: Abelian<F>> kComodule<G, F, M> {
         debug_assert!(com.verify());
         com
     }
-
-    // // TODO : Remove
-    // pub fn find_cogens(&self, limit: G) -> usize {
-    //     let mut temp_coac = self.coaction.clone();
-
-    //     self.space.0.iter().for_each(|(g, els)| {
-    //         (0..els.len()).into_iter().for_each(|domain| {
-    //             let (_, codomain) = self.tensor.construct[&(*g, domain)][&(G::zero(), 0)];
-    //             temp_coac
-    //                 .maps
-    //                 .get_mut(&g)
-    //                 .unwrap()
-    //                 .set(domain, codomain, F::zero());
-    //         })
-    //     });
-
-    //     temp_coac
-    //         .maps
-    //         .iter()
-    //         .filter(|(&gr, _)| gr <= limit)
-    //         .map(|(_, map)| {
-    //             let kernel = map.kernel();
-    //             kernel.codomain()
-    //         })
-    //         .sum()
-    // }
 }
 
-impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G, kCoalgebra<G, F, M>>
-    for kCofreeComodule<G, F, M>
+impl<G: Grading, C: Coalgebra<G>> CofreeComodule<G, C> 
+    for kCofreeComodule<G, C> where C::BaseRing: Field 
 {
-    type Generator = ();
-
     fn get_generators(&self) -> Vec<(usize, G, Option<String>)> {
         self.space
             .0
@@ -128,76 +95,21 @@ impl<G: Grading, F: Field, M: Abelian<F>> CofreeComodule<G, kCoalgebra<G, F, M>>
                 })
                 .or_insert(other_els.drain(0..).collect());
         });
-
-        self.gen_id_gr.append(&mut other.gen_id_gr);
-    }
-
-    fn cofree_comodule(
-        coalgebra: &kCoalgebra<G, F, M>,
-        index: usize,
-        grade: G,
-        limit: G,
-        generator: Self::Generator,
-    ) -> Self {
-        let space: HashMap<G, Vec<_>> = coalgebra
-            .space
-            .0
-            .iter()
-            .filter_map(|(g, v)| {
-                let sum = *g + grade;
-                if sum <= limit {
-                    let k_basis: Vec<_> = (0..v.len())
-                        .map(|j| (((*g, j as u32), index as u16), generator))
-                        .collect();
-                    Some((*g + grade, k_basis))
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        // // TODO! SOME UNSTABLE STUFF
-        // for ((t_gr, _), (a, m)) in &tensor.deconstruct {
-        //     if *t_gr > grade + grade {
-        //         tensor.construct.get_mut(m).unwrap().remove(a);
-        //     }
-        // }
-        // tensor.construct.retain(|_, y| {
-        //     y.len() > 0
-        // });
-
-        // let keys: Vec<G> = space.keys().map(|g| *g).collect();
-        // for g in keys {
-        //     if g > grade + grade {
-        //         space.remove(&g);
-        //         coaction.remove(&g);
-        //         for t_id in 0..tensor.get_dimension(&g) {
-        //             tensor.deconstruct.remove(&(g, t_id));
-        //         }
-        //         tensor.dimensions.remove(&g);
-        //     }
-        // }
-
-        // for ((t_gr,t_id), ((a_gr, _), (m_gr, _))) in &tensor.deconstruct {
-        //     if a_gr > m_gr {
-        //         coaction.get_mut(t_gr).unwrap().set_row_zero(*t_id);
-        //     }
-        // }
-
-        Self {
-            space: GradedVectorSpace::from(space),
-            gen_id_gr: vec![grade],
-            __phantomdata: PhantomData,
-        }
     }
 
     fn zero_comodule() -> Self {
         Self {
             space: GradedVectorSpace::new(),
-            gen_id_gr: vec![],
-            __phantomdata: PhantomData,
         }
     }
 }
 
-impl<G: Grading, F: Field, M: Abelian<F>> Comodule<G, kCoalgebra<G, F, M>> for kComodule<G, F, M> {}
+impl<G: Grading, C: Coalgebra<G>> Comodule<G, kCoalgebra<G, C::BaseRing, C::RingMorph>> for kComodule<G, C> where C::BaseRing: Field {
+    fn zero_comodule() -> Self {
+        Self {
+            space: GradedVectorSpace::new(),
+            coaction: GradedLinearMap::empty(),
+            tensor: TensorMap::default(),
+        }
+    }
+}

@@ -8,3 +8,11 @@
 - size_of crate for memory reduction
 
 - Unstable stuff ?
+
+
+
+New Todos:
+
+- Use M4RI stuff to improve F2 lin alg things
+- Do kernel destroyers smarter
+- Cokernel more parallel calculate

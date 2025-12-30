@@ -3,7 +3,7 @@
 use std::sync::{Mutex, OnceLock, atomic::AtomicPtr};
 
 use ahash::HashMap;
-use algebra::{abelian::Abelian, field::Field, matrix::Matrix, ring::CRing};
+use algebra::{abelian::Abelian, field::Field, matrix::Matrix, ring::CRing, rings::univariate_polynomial_ring::UniPolRing};
 use deepsize::DeepSizeOf;
 use itertools::Itertools;
 use rayon::{
@@ -12,10 +12,7 @@ use rayon::{
 };
 
 use crate::{
-    grading::grading::{GradedIndexing, Grading},
-    k_comodule::kcoalgebra::kCoalgebra,
-    traits::Coalgebra,
-    types::{AGeneratorIndex, CoalgebraIndexType, CofreeBasis, ComoduleIndexType},
+    grading::grading::{GradedIndexing, Grading}, k_comodule::{kcoalgebra::kCoalgebra, kmorphism::kComoduleMorphism}, k_t_comodule::{k_t_coalgebra::ktCoalgebra, k_t_morphism::ktComoduleMorphism}, traits::{Coalgebra, Comodule, ComoduleMorphism}, types::{AGeneratorIndex, CoalgebraIndexType, CofreeBasis, ComoduleIndexType}
 };
 
 #[allow(type_alias_bounds)]
@@ -53,6 +50,8 @@ type ToViLUT<G, C: Coalgebra<G>> = HashMap<CofreeBasis<G>, Vec<(C::BaseRing, AGe
 ///
 /// lut2: For each basis element in  A \otimes V_i-1 wrt (alg_gr, alg_id), v_i index (so not r_gens basis!)
 ///         gives a list of elements in V_i \subset Q_i to which it maps to
+///       One could also see this is the R linear map from A \otimes V_i-1 \to V_i
+///         given by the adjunction
 ///
 #[derive(Debug, DeepSizeOf)]
 pub struct DataCell<G: Grading, C: Coalgebra<G>> {
@@ -135,6 +134,7 @@ impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
         //     || DataCell::luts(gs, prev_s_gs, degree, coalgebra),
         // );
 
+        // TODO : Could probably make this transposed for extra speed !
         let mut small_to_cofree =
             <C::RingMorph as Matrix<C::BaseRing>>::zero(cokernel.len(), r_gens.len());
         // let coact_ref = &mut small_to_cofree as *mut C::RingMorph;
@@ -317,6 +317,7 @@ pub enum ResolveState {
     CokernelAvailable,
     GsAvailable,
     Ready,
+    Done,
 }
 
 #[derive(Debug)]
@@ -377,28 +378,6 @@ impl<G: Grading, C: Coalgebra<G>> ParallelResolution<G, C> {
     }
 
     pub fn spawn_next_tasks<'a>(&'a self, i: &Scope<'a>, s: usize, degree: G) {
-        if degree.incr() <= self.max_degree {
-            let mut m = self.data[s].get(degree.incr().to_index()).0.lock().unwrap();
-            match *m {
-                ResolveState::Nothing => {
-                    *m = ResolveState::GsAvailable; // TODO : This only works for Unigrading
-                    drop(m);
-                }
-                ResolveState::CokernelAvailable => {
-                    *m = ResolveState::Ready;
-                    drop(m);
-                    i.spawn(move |i| {
-                        self.recursion_solve(i, s, degree.incr());
-                    });
-                }
-                ResolveState::GsAvailable => {
-                    panic!("Gs should not have been available yet :(")
-                }
-                ResolveState::Ready => {
-                    panic!("I could not have finished this yet ??")
-                }
-            }
-        }
         if s + 1 <= self.max_s {
             let mut l = self.data[s + 1].get(degree.to_index()).0.lock().unwrap();
             match *l {
@@ -419,12 +398,94 @@ impl<G: Grading, C: Coalgebra<G>> ParallelResolution<G, C> {
                 ResolveState::Ready => {
                     panic!("I could not have finished this yet ??")
                 }
+                ResolveState::Done => {
+                    panic!("I could not have finished this yet ??")
+                }
+            }
+        }
+        
+        if degree.incr() <= self.max_degree {
+            let mut m = self.data[s].get(degree.incr().to_index()).0.lock().unwrap();
+            match *m {
+                ResolveState::Nothing => {
+                    *m = ResolveState::GsAvailable; // TODO : This only works for Unigrading
+                    drop(m);
+                }
+                ResolveState::CokernelAvailable => {
+                    *m = ResolveState::Ready;
+                    drop(m);
+                    i.spawn(move |i| {
+                        self.recursion_solve(i, s, degree.incr());
+                    });
+                }
+                ResolveState::GsAvailable => {
+                    panic!("Gs should not have been available yet :(")
+                }
+                ResolveState::Ready => {
+                    panic!("I could not have finished this yet ??")
+                }
+                ResolveState::Done => {
+                    panic!("I could not have finished this yet ??")
+                }
             }
         }
     }
 }
 
 impl<G: Grading, F: Field, M: Abelian<F>> ParallelResolution<G, kCoalgebra<G, F, M>> {
+    pub fn populate(&self) {
+        let (map, cofree_comod) = kComoduleMorphism::inject_codomain_to_cofree(&self.coalgebra, &self.comodule, self.max_degree);
+        
+        for g in self.max_degree.iterator_from_zero(true) {
+            let r_gens = cofree_comod.space.0.get(&g).map(|x| x.clone()).unwrap_or(vec![]);
+            let to_cofree = map.map.maps.get(&g).map(|x| x.clone()).unwrap_or(M::zero(0, 0));
+
+            let mut lut = HashMap::default();
+            for (id, r) in r_gens.iter().enumerate() {
+                lut.insert(r.0, id as ComoduleIndexType);
+            }
+            
+            let cokernel = self.comodule.space.0.get(&g).map(|x| x.clone()).unwrap_or(vec![]);
+            let to_cokernel = M::zero(0, cokernel.len());
+
+            let a_gens = r_gens.iter().enumerate().filter_map(|(id, x)| {
+                if x.0.0.0 == G::zero() {
+                    Some((x.1, x.0.1, id as ComoduleIndexType))
+                } else {
+                    None
+                }
+            }).collect();
+
+            let lut2 = HashMap::default();
+
+            let a = DataCell {
+                to_cokernel,
+                to_cofree,
+                cokernel,
+                a_gens,
+                r_gens,
+                lut,
+                lut2,
+            };
+            self.data[0].get(g.to_index()).1.set(a).unwrap();
+            let mut l = self.data[0].get(g.to_index()).0.lock().unwrap();
+            *l = ResolveState::Done;
+        }
+
+        for i in 1..=self.max_s {
+            let mut data = self.data[i].get(G::zero().to_index()).0.lock().unwrap();
+            *data = ResolveState::GsAvailable;
+        }
+
+        for h in self.max_degree.iterator_from_zero(true) {
+            let mut data = self.data[1].get(h.to_index()).0.lock().unwrap();
+            *data = ResolveState::CokernelAvailable;
+        }
+
+        let mut data = self.data[1].get(G::zero().to_index()).0.lock().unwrap();
+        *data = ResolveState::Ready;
+    }
+
     pub fn populate_with_basering(&self) {
         // s = 0 should be the coalgebra itself
         // Non zero grade is just the
@@ -433,6 +494,135 @@ impl<G: Grading, F: Field, M: Abelian<F>> ParallelResolution<G, kCoalgebra<G, F,
                 continue;
             }
             let r_size = kCoalgebra::size_in_degree(&self.coalgebra, g);
+
+            let r_gens: Vec<_> = (0..r_size)
+                .map(|x| (((g, x as CoalgebraIndexType), 0), M::Generator::default()))
+                .collect();
+
+            let to_cokernel = M::zero(0, 0);
+            let to_cofree = M::zero(0, r_gens.len());
+
+            let mut lut = HashMap::default();
+            for (r_id, r) in r_gens.iter().enumerate() {
+                lut.insert(r.0, r_id as ComoduleIndexType);
+            }
+
+            let a = DataCell {
+                to_cokernel,
+                to_cofree,
+                cokernel: vec![],
+                a_gens: vec![],
+                r_gens,
+                lut,
+                lut2: HashMap::default(),
+            };
+            self.data[0].get(g.to_index()).1.set(a).unwrap();
+            let mut data = self.data[0].get(g.to_index()).0.lock().unwrap();
+            *data = ResolveState::Ready;
+        }
+
+        // Grade zero
+        let r_gens: Vec<_> = vec![(((G::zero(), 0), 0), M::Generator::default())];
+        let to_cokernel = M::zero(0, 1);
+        let to_cofree = M::identity(1);
+        let cokernel = vec![M::Generator::default()];
+        let a_gens = vec![(M::Generator::default(), 0, 0)];
+
+        let mut lut = HashMap::default();
+        for (r_id, r) in r_gens.iter().enumerate() {
+            lut.insert(r.0, r_id as u32);
+        }
+
+        let a = DataCell {
+            to_cokernel,
+            to_cofree,
+            cokernel,
+            a_gens,
+            r_gens,
+            lut,
+            lut2: HashMap::default(),
+        };
+        self.data[0].get(G::zero().to_index()).1.set(a).unwrap();
+        let mut data = self.data[0].get(G::zero().to_index()).0.lock().unwrap();
+        *data = ResolveState::Ready;
+
+        for i in 1..=self.max_s {
+            let mut data = self.data[i].get(G::zero().to_index()).0.lock().unwrap();
+            *data = ResolveState::GsAvailable;
+        }
+
+        for h in self.max_degree.iterator_from_zero(true) {
+            let mut data = self.data[1].get(h.to_index()).0.lock().unwrap();
+            *data = ResolveState::CokernelAvailable;
+        }
+
+        let mut data = self.data[1].get(G::zero().to_index()).0.lock().unwrap();
+        *data = ResolveState::Ready;
+    }
+}
+
+impl<G: Grading, F: Field, M: Abelian<UniPolRing<F>>> ParallelResolution<G, ktCoalgebra<G, F, M>> {
+    pub fn populate(&self) {
+        let (map, cofree_comod) = ktComoduleMorphism::inject_codomain_to_cofree(&self.coalgebra, &self.comodule, self.max_degree);
+        
+        for g in self.max_degree.iterator_from_zero(true) {
+            let r_gens = cofree_comod.space.0.get(&g).map(|x| x.clone()).unwrap_or(vec![]);
+            let to_cofree = map.map.maps.get(&g).map(|x| x.clone()).unwrap_or(M::zero(0, 0));
+
+            let mut lut = HashMap::default();
+            for (id, r) in r_gens.iter().enumerate() {
+                lut.insert(r.0, id as ComoduleIndexType);
+            }
+            
+            let cokernel = self.comodule.space.0.get(&g).map(|x| x.clone()).unwrap_or(vec![]);
+            let to_cokernel = M::zero(0, cokernel.len());
+
+            let a_gens = r_gens.iter().enumerate().filter_map(|(id, x)| {
+                if x.0.0.0 == G::zero() {
+                    Some((x.1, x.0.1, id as ComoduleIndexType))
+                } else {
+                    None
+                }
+            }).collect();
+
+            let lut2 = HashMap::default();
+
+            let a = DataCell {
+                to_cokernel,
+                to_cofree,
+                cokernel,
+                a_gens,
+                r_gens,
+                lut,
+                lut2,
+            };
+            self.data[0].get(g.to_index()).1.set(a).unwrap();
+            let mut l = self.data[0].get(g.to_index()).0.lock().unwrap();
+            *l = ResolveState::Done;
+        }
+
+        for i in 1..=self.max_s {
+            let mut data = self.data[i].get(G::zero().to_index()).0.lock().unwrap();
+            *data = ResolveState::GsAvailable;
+        }
+
+        for h in self.max_degree.iterator_from_zero(true) {
+            let mut data = self.data[1].get(h.to_index()).0.lock().unwrap();
+            *data = ResolveState::CokernelAvailable;
+        }
+
+        let mut data = self.data[1].get(G::zero().to_index()).0.lock().unwrap();
+        *data = ResolveState::Ready;
+    }
+
+    pub fn populate_with_basering(&self) {
+        // s = 0 should be the coalgebra itself
+        // Non zero grade is just the
+        for g in self.max_degree.iterator_from_zero(true) {
+            if g == G::zero() {
+                continue;
+            }
+            let r_size = ktCoalgebra::size_in_degree(&self.coalgebra, g);
 
             let r_gens: Vec<_> = (0..r_size)
                 .map(|x| (((g, x as CoalgebraIndexType), 0), M::Generator::default()))

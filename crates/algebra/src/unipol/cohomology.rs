@@ -29,7 +29,7 @@ pub(super) fn internal_cohomology<F: Field>(f: &UniPolMap<F>, g: &UniPolMap<F>, 
         g_aug.set_row(i, g.get_row(i));
         
         
-        if let Some(power) = q[i] {
+        if let Some(power) = q[i].1 {
             g_aug.set(g.domain + i, i, UniPolRing(F::one().neg(),power));
         }
     }
@@ -98,7 +98,7 @@ pub(super) fn internal_cohomology<F: Field>(f: &UniPolMap<F>, g: &UniPolMap<F>, 
                 continue;
             }
 
-            let n_x_structure = n[y];
+            let n_x_structure = n[y].1;
             match n_x_structure {
                 Some(n_x_power) => {
                     let new_power = n_x_power - el.1; // If non-negative then the map was unreduced, probably ?
@@ -145,7 +145,7 @@ pub(super) fn internal_cohomology<F: Field>(f: &UniPolMap<F>, g: &UniPolMap<F>, 
             println!("{:?}{:?}", eval, column);
             
             for (id,r) in eval.iter().enumerate() {
-                let power = match q[id] {
+                let power = match q[id].1 {
                     Some(p) => p,
                     None => u16::MAX,
                 };
@@ -204,7 +204,8 @@ pub(super) fn internal_cohomology<F: Field>(f: &UniPolMap<F>, g: &UniPolMap<F>, 
             };
             let col = sol_uinv.get_column(r);
 
-            module.push(structure);
+            // TODO: This first unigrading is wrong :(
+            module.push((0, structure));
             columns.push(col);
         }
     }

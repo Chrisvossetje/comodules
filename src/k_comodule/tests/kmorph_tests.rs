@@ -7,26 +7,18 @@ mod tests {
         matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::finite_fields::F2,
     };
 
-    use crate::{
-        comodule::{
-            kcoalgebra::A0_coalgebra,
-            kcomodule::{kCofreeComodule, kComodule},
-            kmorphism::kComoduleMorphism,
-            traits::{CofreeComodule, Comodule, ComoduleMorphism},
-        },
-        graded_space::GradedLinearMap,
-        grading::{Grading, UniGrading},
-    };
+    use crate::{grading::{grading::Grading, unigrading::UniGrading}, k_comodule::{graded_space::GradedLinearMap, kcoalgebra::{A0_coalgebra, kCoalgebra}, kcomodule::{kCofreeComodule, kComodule}, kmorphism::kComoduleMorphism}, traits::{Coalgebra, CofreeComodule}};
+    use crate::traits::ComoduleMorphism;
 
     #[test]
     fn test_inject_codomain_to_cofree() {
         let coalgebra = Arc::new(A0_coalgebra());
-        let comodule = kComodule::fp_comodule(&coalgebra, UniGrading::zero());
+        let comodule = kCoalgebra::basering_comodule(&coalgebra, UniGrading::zero());
 
         let (_cofree_morphism, cofree_comod) =
             kComoduleMorphism::inject_codomain_to_cofree(&coalgebra, &comodule, UniGrading(5));
 
-        let comp = kCofreeComodule::cofree_comodule(&coalgebra, 0, UniGrading(0), UniGrading(5), ());
+        let comp = coalgebra.cofree_comodule(0, UniGrading(0), UniGrading(5), ());
 
         // Assertions
         assert_eq!(cofree_comod, comp);
@@ -36,10 +28,10 @@ mod tests {
     fn test_cokernel() {
         let coalgebra = Arc::new(A0_coalgebra());
 
-        let domain = kComodule::fp_comodule(&coalgebra, UniGrading::zero());
+        let domain = kCoalgebra::basering_comodule(&coalgebra, UniGrading::zero());
 
         let codomain =
-            kCofreeComodule::cofree_comodule(&coalgebra, 0, UniGrading(0), UniGrading(5), ());
+            coalgebra.cofree_comodule(0, UniGrading(0), UniGrading(5), ());
 
         // Manually create a zero map
         let mut maps = HashMap::default();
@@ -53,7 +45,7 @@ mod tests {
         let mut map: GradedLinearMap<UniGrading, F2, FlatMatrix<F2>> = GradedLinearMap::from(maps);
 
         // Set one element to F2::one()
-        map.maps.get_mut(&UniGrading(0)).unwrap().data[0] = F2::one();
+        map.maps.get_mut(&UniGrading(0)).unwrap().set(0, 0, F2::one());
 
         let morphism = kComoduleMorphism { map };
 
@@ -64,50 +56,9 @@ mod tests {
     }
 
     #[test]
-    fn test_structure_lines() {
-        let coalgebra = Arc::new(A0_coalgebra());
-
-        let domain = kCofreeComodule::cofree_comodule(
-            &coalgebra,
-            0,
-            UniGrading(0),
-            UniGrading(5),
-            (),
-        );
-
-        let codomain =
-            kCofreeComodule::cofree_comodule(&coalgebra, 0, UniGrading(1), UniGrading(5), ());
-
-        // Manually create a zero map
-        let mut maps = HashMap::default();
-        maps.insert(
-            UniGrading(1),
-            FlatMatrix::zero(
-                domain.space.dimension_in_grade(&UniGrading(1)),
-                codomain.space.dimension_in_grade(&UniGrading(1)),
-            ),
-        );
-        let mut map: GradedLinearMap<UniGrading, F2, FlatMatrix<F2>> = GradedLinearMap::from(maps);
-
-        // Set one element to F2::one() if dimensions allow
-        if let Some(matrix) = map.maps.get_mut(&UniGrading(1)) {
-            if matrix.data.len() > 0 {
-                matrix.data[0] = F2::one();
-            }
-        }
-
-        let morphism = kComoduleMorphism { map };
-
-        let lines = morphism.get_structure_lines(&coalgebra, &domain, &codomain);
-
-        // Just test that we can call the function without error
-        assert!(lines.is_empty() || !lines.is_empty());
-    }
-
-    #[test]
     fn test_zero_morphism() {
         let coalgebra = Arc::new(A0_coalgebra());
-        let comodule = kComodule::fp_comodule(&coalgebra, UniGrading::zero());
+        let comodule = kCoalgebra::basering_comodule(&coalgebra, UniGrading::zero());
 
         let zero_morphism = kComoduleMorphism::zero_morphism(&comodule);
 

@@ -5,34 +5,30 @@ mod tests {
     use ahash::HashMap;
     use algebra::{field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, rings::{finite_fields::{F2, Fp}, univariate_polynomial_ring::UniPolRing}};
 
-    use crate::{
-        basiselement::kBasisElement, comodule::{
-            kcoalgebra::kCoalgebra, rcoalgebra::{A0_C, A1_C, tensor_k_coalgebra}, rcomodule::{RCoalgebra, RComodule}, traits::Comodule
-        }, graded_module::GradedModule, graded_module_morphism::GradedModuleMap, grading::{BiGrading, Grading, UniGrading}, tensor::TensorMap
-    };
+    use crate::{grading::{grading::Grading, unigrading::UniGrading}, k_comodule::{graded_space::GradedVectorSpace, kcoalgebra::BasisElement}, k_t_comodule::{graded_module_morphism::GradedktFieldMap, k_t_comodule::RCoalgebra}};
+
 
     /// Helper function to create a simple test RCoalgebra
     fn create_test_coalgebra<G: Grading, F: Field>() -> RCoalgebra<G, F> {
         let zero = G::zero();
         
         // Create basis element
-        let el = kBasisElement {
+        let el = BasisElement {
             name: "1".to_string(),
-            generator: false,
-            primitive: None,
-            generated_index: 0,
+            excess: 0,
         };
 
         let space_map = [(zero, vec![(el, UniGrading(0), None)])].into_iter().collect();
-        let space = GradedModule(space_map);
+        let space = GradedVectorSpace(space_map);
 
         // Create coaction map
         let coact_map: HashMap<G, FlatMatrix<UniPolRing<F>>> =
             [(zero, FlatMatrix::identity(1))].into_iter().collect();
         let mut domain_explain = HashMap::default();
         domain_explain.insert(zero, vec![((zero, 0), 0)]);
-        let coaction = GradedModuleMap {
+        let coaction = GradedktFieldMap {
             maps: coact_map,
+            _p: std::marker::PhantomData,
         };
 
         // Create tensor structure
@@ -124,28 +120,22 @@ mod tests {
         space_map.insert(
             zero,
             vec![
-                (kBasisElement {
+                (BasisElement {
                     name: "gen1".to_string(),
-                    generator: true,
-                    primitive: None,
-                    generated_index: 0,
+                    excess: 0
                 }, UniGrading(0), None),
-                (kBasisElement {
+                (BasisElement {
                     name: "non_gen".to_string(),
-                    generator: false,
-                    primitive: None,
-                    generated_index: 1,
+                    excess: 0
                 }, UniGrading(0), None),
             ],
         );
         space_map.insert(
             one,
             vec![
-                (kBasisElement {
+                (BasisElement {
                     name: "gen2".to_string(),
-                    generator: true,
-                    primitive: None,
-                    generated_index: 2,
+                    excess: 0
                 }, UniGrading(0), None),
             ],
         );

@@ -142,8 +142,16 @@ impl Grading for BiGrading {
         }
     }
 
-    fn init_memory<A: Send + Sync, T: Fn() -> A>(&self, _map: T) -> Self::ContiguousMemory<A> {
-        todo!()
+    fn init_memory<A: Send + Sync, T: Fn() -> A>(&self, map: T) -> Self::ContiguousMemory<A> {
+        let mut v = vec![];
+        for _ in 0..=self.0 {
+            let mut w = vec![];
+            for _ in 0..=self.1 {
+                w.push(map());
+            }
+            v.push(w);
+        }
+        v
     }
 
     fn incr(self) -> Self {

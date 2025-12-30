@@ -6,12 +6,12 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 use crate::{
-    grading::grading::Grading, k_comodule::graded_space::GradedVectorSpace, types::ComoduleIndex,
+    grading::grading::Grading, k_comodule::graded_space::GradedVectorSpace, traits::Comodule, types::{CoalgebraIndex, CoalgebraIndexType, ComoduleIndex, ComoduleIndexType}
 };
 
 pub type TensorConstruct<G> =
-    HashMap<ComoduleIndex<G>, HashMap<ComoduleIndex<G>, ComoduleIndex<G>>>;
-pub type TensorDeconstruct<G> = HashMap<ComoduleIndex<G>, (ComoduleIndex<G>, ComoduleIndex<G>)>;
+    HashMap<ComoduleIndex<G>, HashMap<CoalgebraIndex<G>, ComoduleIndex<G>>>;
+pub type TensorDeconstruct<G> = HashMap<ComoduleIndex<G>, (CoalgebraIndex<G>, ComoduleIndex<G>)>;
 pub type TensorDimension<G> = HashMap<G, usize>;
 
 pub trait ObjectGenerator<G: Grading> {
@@ -48,8 +48,8 @@ impl<G: Grading, B> ObjectGenerator<G> for GradedVectorSpace<G, B> {
     }
 }
 
-// TODO :
 
+// TODO :
 // impl<G: Grading> ObjectGenerator<G> for GradedModule<G> {
 //     fn contains_grade(&self, grade: &G) -> bool {
 //         self.0.contains_key(grade)
@@ -90,7 +90,7 @@ impl<G: Grading> TensorMap<G> {
 
         // This sorted is important for consistency !
         for (l_grade, l_elements) in left.sorted_els() {
-            for l_id in 0..l_elements as u32 {
+            for l_id in 0..l_elements as CoalgebraIndexType {
                 for (r_grade, r_elements) in right.sorted_els() {
                     let t_grade = l_grade + r_grade;
 
@@ -98,16 +98,16 @@ impl<G: Grading> TensorMap<G> {
                         continue;
                     }
 
-                    for r_id in 0..r_elements as u32 {
+                    for r_id in 0..r_elements as ComoduleIndexType {
                         let t_id = dimensions.entry(t_grade).or_insert(0 as usize);
 
                         construct
                             .entry((r_grade, r_id))
                             .or_insert(HashMap::default())
-                            .insert((l_grade, l_id), (t_grade, *t_id as u32));
+                            .insert((l_grade, l_id), (t_grade, *t_id as ComoduleIndexType));
 
                         deconstruct
-                            .insert((t_grade, *t_id as u32), ((l_grade, l_id), (r_grade, r_id)));
+                            .insert((t_grade, *t_id as ComoduleIndexType), ((l_grade, l_id), (r_grade, r_id)));
                         *t_id = *t_id + 1;
                     }
                 }

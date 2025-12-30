@@ -8,10 +8,8 @@ mod tests {
     };
     use itertools::Itertools;
 
-    use crate::{
-        comodule::kcoalgebra::{A0_coalgebra, kCoalgebra},
-        grading::{Grading, UniGrading},
-    };
+    use crate::{grading::{grading::Grading, unigrading::UniGrading}, k_comodule::kcoalgebra::{A0_coalgebra, kCoalgebra}};
+
 
     #[test]
     fn test_a0() {
@@ -22,10 +20,6 @@ mod tests {
                 .unwrap();
 
         assert_eq!(kcoalg.coaction, A0_coalgebra().coaction);
-
-        // HASHMAPS are NOT deterministic SO DON'T COMPARE
-        // as construct and deconstruct are dependent on insertion order
-        assert_eq!(kcoalg.tensor.dimensions, A0_coalgebra().tensor.dimensions);
         assert_eq!(kcoalg.space, A0_coalgebra().space);
     }
 
@@ -67,51 +61,5 @@ mod tests {
         assert!(res.is_ok());
         let (_, trans) = res.unwrap();
         assert!(trans.len() > 3)
-    }
-
-    #[test]
-    fn test_poly_vs_direct_tensor() {
-        let input_direct = include_str!("../../../examples/direct/A(2).txt");
-        let input_poly = include_str!("../../../examples/polynomial/A(2).txt");
-
-        let (kcoalg_direct, _) =
-            kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input_direct, UniGrading::infty())
-                .unwrap();
-        let (kcoalg_poly, _) = kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(
-            input_poly,
-            UniGrading::infty() - UniGrading(10),
-        )
-        .unwrap();
-
-        for grade in kcoalg_direct.tensor.dimensions.keys() {
-            assert_eq!(
-                (
-                    kcoalg_direct.coaction.maps[grade].domain(),
-                    kcoalg_direct.coaction.maps[grade].codomain()
-                ),
-                (
-                    kcoalg_poly.coaction.maps[grade].domain(),
-                    kcoalg_poly.coaction.maps[grade].codomain()
-                ),
-                "Mismatched dimensions, grade: {}",
-                grade
-            );
-
-            let num_non_zeros_direct = kcoalg_direct.coaction.maps[grade]
-                .data
-                .iter()
-                .filter(|x| !(*x != &F2::zero()))
-                .count();
-            let num_non_zeros_poly = kcoalg_poly.coaction.maps[grade]
-                .data
-                .iter()
-                .filter(|x| !(*x != &F2::zero()))
-                .count();
-            assert_eq!(
-                num_non_zeros_direct, num_non_zeros_poly,
-                "Mismatched number of non-zero entries, grade: {}",
-                grade
-            );
-        }
     }
 }

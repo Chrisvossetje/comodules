@@ -8,7 +8,7 @@ use deepsize::DeepSizeOf;
 
 #[derive(Clone, PartialEq, Deserialize, Serialize, DeepSizeOf)]
 pub struct FlatMatrix<R: CRing> {
-    pub data: Vec<R>,
+    pub(crate) data: Vec<R>,
     pub(crate) domain: usize,
     pub(crate) codomain: usize,
 }
@@ -33,12 +33,12 @@ impl<R: CRing> FlatMatrix<R> {
         codomain * self.domain + domain
     }
 
-    pub(crate) fn get_element(&self, row: usize, col: usize) -> R {
-        self.data[row * self.domain + col].clone()
+    pub(crate) fn get_element(&self, domain: usize, codomain: usize) -> R {
+        self.data[codomain * self.domain + domain].clone()
     }
 
-    pub(crate) fn set_element(&mut self, row: usize, col: usize, value: R) {
-        self.data[row * self.domain + col] = value;
+    pub(crate) fn set_element(&mut self, domain: usize, codomain: usize, value: R) {
+        self.data[codomain * self.domain + domain] = value;
     }
 }
 
@@ -49,7 +49,7 @@ impl<R: CRing> Matrix<R> for FlatMatrix<R> {
         let mut new_matrix = vec![R::zero(); self.data.len()];
         for i in 0..self.codomain {
             for j in 0..self.domain {
-                new_matrix[j * self.codomain + i] = self.get_element(i, j);
+                new_matrix[j * self.codomain + i] = self.get_element(j, i);
             }
         }
 
@@ -102,11 +102,11 @@ impl<R: CRing> Matrix<R> for FlatMatrix<R> {
     }
 
     fn get(&self, domain: usize, codomain: usize) -> R {
-        self.get_element(codomain, domain)
+        self.get_element(domain, codomain)
     }
 
     fn set(&mut self, domain: usize, codomain: usize, r: R) {
-        self.set_element(codomain, domain, r);
+        self.set_element(domain, codomain, r);
     }
 
     fn add_at(&mut self, domain: usize, codomain: usize, r: R) {
@@ -147,7 +147,7 @@ impl<R: CRing> Matrix<R> for FlatMatrix<R> {
             for y in 0..rhs.domain {
                 let mut sum = R::zero();
                 for k in 0..self.domain {
-                    sum += self.get_element(x, k) * rhs.get_element(k, y);
+                    sum += self.get_element(k, x) * rhs.get_element(y, k);
                 }
                 compose[x * rhs.domain + y] = sum;
             }
@@ -173,24 +173,24 @@ impl<R: CRing> Matrix<R> for FlatMatrix<R> {
         self.data.extend(vec![R::zero(); self.domain]);
     }
 
-    fn swap_rows(&mut self, row1: usize, row2: usize) {
-        if row1 == row2 {
+    fn swap_rows(&mut self, codom1: usize, codom2: usize) {
+        if codom1 == codom2 {
             return;
         }
         for j in 0..self.domain() {
-            let a = self.get_index(j, row1);
-            let b = self.get_index(j, row2);
+            let a = self.get_index(j, codom1);
+            let b = self.get_index(j, codom2);
             self.data.swap(a, b);
         }
     }
 
-    fn swap_cols(&mut self, col1: usize, col2: usize) {
-        if col1 == col2 {
+    fn swap_cols(&mut self, domain1: usize, domain2: usize) {
+        if domain1 == domain2 {
             return;
         }
         for i in 0..self.codomain() {
-            let a = self.get_index(col1, i);
-            let b = self.get_index(col2, i);
+            let a = self.get_index(domain1, i);
+            let b = self.get_index(domain2, i);
             self.data.swap(a, b);
         }
     }
