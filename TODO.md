@@ -14,5 +14,5 @@
 New Todos:
 
 - Use M4RI stuff to improve F2 lin alg things
-- Do kernel destroyers smarter
-- Cokernel more parallel calculate
+- Transposed cokernel
+- Make it bounded by t-s

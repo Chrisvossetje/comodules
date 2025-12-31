@@ -1,4 +1,4 @@
-use algebra::{abelian::Abelian, field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing};
+use algebra::{abelian::Abelian, field::Field, matrix::Matrix, ring::CRing};
 use deepsize::DeepSizeOf;
 
 use crate::{

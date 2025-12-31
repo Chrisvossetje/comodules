@@ -136,4 +136,20 @@ impl Grading for UniGrading {
     fn compare(self, rhs: &Self) -> Ordering {
         self.0.cmp(&rhs.0)
     }
+    
+    fn nexts(&self) -> Vec<Self> {
+        vec![UniGrading(self.0 + 1)]
+    }
+
+    fn directions() -> usize {
+        1    
+    }
+
+    fn incomings(&self) -> usize {
+        if self.0 > 0 {
+            1
+        } else {
+            0
+        }
+    }
 }

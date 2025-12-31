@@ -8,7 +8,7 @@ mod tests {
 
     use crate::{
         grading::{grading::Grading, tensor::TensorMap, unigrading::UniGrading},
-        k_comodule::{graded_space::GradedVectorSpace, kcoalgebra::A0_coalgebra},
+        k_comodule::graded_space::GradedVectorSpace,
     };
 
     fn create_mock_vector_space<G: Grading, B>(

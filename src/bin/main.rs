@@ -268,143 +268,54 @@ use std::time::Instant;
 //     println!("\nProgram took: {:.2?}", start.elapsed());
 // }
 
-// fn main() {
-//     const MAX_GRADING: UniGrading = UniGrading(128);
-//     const S: usize = 40;
-
-//     let start = Instant::now();
-
-//     println!("Started processing coalgebra");
-//     let input = include_str!("../../examples/polynomial/A.txt");
-//     let coalgebra = kCoalgebra::<UniGrading, F2, F2Matrix>::parse(input, MAX_GRADING)
-//         .unwrap()
-//         .0;
-//     println!("Ended processing coalgebra");
-
-//     println!(
-//         "Elements in coalgebra: {:?}\nSize of coalgebra: {:?}\nSize of space:{:?}\nSize of coaction:{:?}\n",
-//         coalgebra
-//             .space
-//             .0
-//             .iter()
-//             .fold(0, |count, g| count + g.1.len()),
-//         deepsize::DeepSizeOf::deep_size_of(&coalgebra),
-//         deepsize::DeepSizeOf::deep_size_of(&coalgebra.space),
-//         deepsize::DeepSizeOf::deep_size_of(&coalgebra.coaction),
-//     );
-//     let coalgebra = coalgebra;
-
-//     let fp = coalgebra.basering_comodule(UniGrading::zero());
-//     let res = ParallelResolution::init(coalgebra, fp, S, MAX_GRADING);
-//     res.populate();
-
-//     let resolution_time = Instant::now();
-
-//     // Parallal Executor
-//     rayon::scope(|i| {
-//         res.recursion_solve(i, 1, UniGrading::zero());
-//     });
-
-
-//     // // Non Parallal executor
-//     // for g in MAX_GRADING.iterator_from_zero(true) {
-//     //     for s in 1..=S {
-//     //         if s==2 && g == UniGrading(5) {
-//     //             println!("S:{}, G:{}", s, g);
-//     //         }
-//     //         res.resolve_at_s_g(s, g);
-//     //     }
-//     // }
-
-
-//     for s in 0..=S {
-//         for g in MAX_GRADING.iterator_from_zero(true) {
-//             debug_assert!(&res.data[s][g.to_index()].1.get().is_some());
-//         }
-//     }
-
-//     let mut gens = vec![];
-
-//     for s in 0..=S {
-//         for g in MAX_GRADING.iterator_from_zero(true) {
-//             let mut a_gens = res
-//                 .get_data_cell(s, g)
-//                 .a_gens
-//                 .iter()
-//                 .map(|x| (s, x.1 as usize, g.export_grade(), None))
-//                 .collect();
-//             gens.append(&mut a_gens);
-//         }
-//     }
-
-//     let page = Page {
-//         id: 2,
-//         generators: gens,
-//         structure_lines: vec![],
-//     };
-
-//     let (x_formula, y_formula) = UniGrading::default_formulas();
-
-//     let sseq = SSeq {
-//         name: "A".to_owned(),
-//         degrees: UniGrading::degree_names(),
-//         x_formula,
-//         y_formula,
-//         pages: vec![page],
-//         differentials: vec![],
-//     };
-
-//     sseq.save_to_json("A_par.json").unwrap();
-
-//     println!(
-//         "\nCoalgebra generation took: {:.2?}",
-//         (resolution_time - start)
-//     );
-//     println!("\nResolution took: {:.2?}", resolution_time.elapsed());
-
-//     println!("\nProgram took: {:.2?}", start.elapsed());
-// }
-
-
 fn main() {
-    const MAX_GRADING: UniGrading = UniGrading(35);
-    const S: usize = (MAX_GRADING.0 / 2) as usize;
+    const MAX_GRADING: UniGrading = UniGrading(100);
+    const S: usize = 40;
 
     let start = Instant::now();
 
-    let input = include_str!("../../examples/polynomial/A_C.txt");
+    println!("Started processing coalgebra");
+    let input = include_str!("../../examples/polynomial/A.txt");
+    let coalgebra = kCoalgebra::<UniGrading, F2, F2Matrix>::parse(input, MAX_GRADING)
+        .unwrap()
+        .0;
+    println!("Ended processing coalgebra");
 
-    let coalgebra = ktCoalgebra::<UniGrading, F2, FlatMatrix<UniPolRing<F2>>>::parse(input, UniGrading(30)).unwrap().0;
+    println!(
+        "Elements in coalgebra: {:?}\nSize of coalgebra: {:?}\nSize of space:{:?}\nSize of coaction:{:?}\n",
+        coalgebra
+            .space
+            .0
+            .iter()
+            .fold(0, |count, g| count + g.1.len()),
+        deepsize::DeepSizeOf::deep_size_of(&coalgebra),
+        deepsize::DeepSizeOf::deep_size_of(&coalgebra.space),
+        deepsize::DeepSizeOf::deep_size_of(&coalgebra.coaction),
+    );
+    let coalgebra = coalgebra;
 
-    let kt = ktCoalgebra::basering_comodule(&coalgebra, UniGrading(0));
-
-    let res = ParallelResolution::init(coalgebra, kt, S, MAX_GRADING);
+    let fp = coalgebra.basering_comodule(UniGrading::zero());
+    let res = ParallelResolution::init(coalgebra, fp, S, MAX_GRADING);
     res.populate();
 
     let resolution_time = Instant::now();
 
-    // // Parallal Executor
-    // rayon::scope(|i| {
-    //     res.recursion_solve(i, 1, UniGrading::zero());
-    // });
+    // Parallal Executor
+    rayon::scope(|i| {
+        res.recursion_solve(i);
+    });
 
 
-    // Non Parallal executor
-    for g in MAX_GRADING.iterator_from_zero(true) {
-        for s in 1..=S {
-            if s==2 && g == UniGrading(5) {
-                println!("S:{}, G:{}", s, g);
-            }
-            res.resolve_at_s_g(s, g);
-        }
-    }
-
-
-    for s in 0..=S {
-        for g in MAX_GRADING.iterator_from_zero(true) {
-            debug_assert!(&res.data[s][g.to_index()].1.get().is_some());
-        }
-    }
+    // // Non Parallal executor
+    // for g in MAX_GRADING.iterator_from_zero(true) {
+    //     for s in 1..=S {
+    //         if s==2 && g == UniGrading(5) {
+    //             println!("S:{}, G:{}", s, g);
+    //         }
+    //         res.resolve_coker_at_s_g(s, g);
+    //         res.resolve_data_at_s_g(s, g);
+    //     }
+    // }
 
     let mut gens = vec![];
 
@@ -414,7 +325,7 @@ fn main() {
                 .get_data_cell(s, g)
                 .a_gens
                 .iter()
-                .map(|x| (s, x.1 as usize, g.export_grade(), Some((format!("{:?}", x.0)))))
+                .map(|x| (s, x.1 as usize, g.export_grade(), None))
                 .collect();
             gens.append(&mut a_gens);
         }
@@ -447,3 +358,86 @@ fn main() {
 
     println!("\nProgram took: {:.2?}", start.elapsed());
 }
+
+
+// fn main() {
+//     const MAX_GRADING: UniGrading = UniGrading(35);
+//     const S: usize = (MAX_GRADING.0 / 2) as usize;
+
+//     let start = Instant::now();
+
+//     let input = include_str!("../../examples/polynomial/A_C.txt");
+
+//     let coalgebra = ktCoalgebra::<UniGrading, F2, FlatMatrix<UniPolRing<F2>>>::parse(input, UniGrading(30)).unwrap().0;
+
+//     let kt = ktCoalgebra::basering_comodule(&coalgebra, UniGrading(0));
+
+//     let res = ParallelResolution::init(coalgebra, kt, S, MAX_GRADING);
+//     res.populate();
+
+//     let resolution_time = Instant::now();
+
+//     // // Parallal Executor
+//     // rayon::scope(|i| {
+//     //     res.recursion_solve(i, 1, UniGrading::zero());
+//     // });
+
+
+//     // Non Parallal executor
+//     for g in MAX_GRADING.iterator_from_zero(true) {
+//         for s in 1..=S {
+//             if s==2 && g == UniGrading(5) {
+//                 println!("S:{}, G:{}", s, g);
+//             }
+//             res.resolve_at_s_g(s, g);
+//         }
+//     }
+
+
+//     for s in 0..=S {
+//         for g in MAX_GRADING.iterator_from_zero(true) {
+//             debug_assert!(&res.data[s][g.to_index()].1.get().is_some());
+//         }
+//     }
+
+//     let mut gens = vec![];
+
+//     for s in 0..=S {
+//         for g in MAX_GRADING.iterator_from_zero(true) {
+//             let mut a_gens = res
+//                 .get_data_cell(s, g)
+//                 .a_gens
+//                 .iter()
+//                 .map(|x| (s, x.1 as usize, g.export_grade(), Some((format!("{:?}", x.0)))))
+//                 .collect();
+//             gens.append(&mut a_gens);
+//         }
+//     }
+
+//     let page = Page {
+//         id: 2,
+//         generators: gens,
+//         structure_lines: vec![],
+//     };
+
+//     let (x_formula, y_formula) = UniGrading::default_formulas();
+
+//     let sseq = SSeq {
+//         name: "A".to_owned(),
+//         degrees: UniGrading::degree_names(),
+//         x_formula,
+//         y_formula,
+//         pages: vec![page],
+//         differentials: vec![],
+//     };
+
+//     sseq.save_to_json("A_par.json").unwrap();
+
+//     println!(
+//         "\nCoalgebra generation took: {:.2?}",
+//         (resolution_time - start)
+//     );
+//     println!("\nResolution took: {:.2?}", resolution_time.elapsed());
+
+//     println!("\nProgram took: {:.2?}", start.elapsed());
+// }

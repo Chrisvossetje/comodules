@@ -12,7 +12,7 @@ pub trait Parse: Sized {
     fn parse(s: &str) -> Result<Self, String>;
 }
 
-pub trait GradedIndexing<A, I> {
+pub trait GradedIndexing<A, I>: Sized {
     fn get(&self, index: I) -> &A;
     fn mut_get(&mut self, index: I) -> &mut A;
 }
@@ -48,6 +48,10 @@ pub trait Grading:
 
     fn iterator_from_zero(&self, include_self: bool) -> Vec<Self>;
     fn init_memory<A: Send + Sync, T: Fn() -> A>(&self, map: T) -> Self::ContiguousMemory<A>;
+    fn nexts(&self) -> Vec<Self>;
+    fn directions() -> usize;
+    fn incomings(&self) -> usize;
+
 
     fn degree_names() -> Vec<char>;
     fn default_formulas() -> (String, String);

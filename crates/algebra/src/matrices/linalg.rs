@@ -1,4 +1,4 @@
-use crate::{abelian::Abelian, field::Field, matrices::{flat_matrix::FlatMatrix}, matrix::Matrix, ring::CRing};
+use crate::{abelian::Abelian, field::Field, matrices::{flat_matrix::FlatMatrix}, matrix::Matrix};
 
 impl<F: Field> Abelian<F> for FlatMatrix<F> {
     type Generator = ();
@@ -36,14 +36,15 @@ impl<F: Field> Abelian<F> for FlatMatrix<F> {
     }
     
     fn kernel_destroyers(&self, _domain: &Vec<Self::Generator>, _codomain: &Vec<Self::Generator>) -> Vec<usize> {
-        // TODO : This could prob be smarter 
         let mut pivots = vec![];
-        let mut mat = self.clone();
-        while let Some(pivot) = mat.kernel_find_single_generator() {
+        let (mut kernel, _) = self.kernel(&vec![], &vec![]);
+
+        while let Some(pivot) = kernel.first_non_zero_entry().map(|(x, _)| x) {
             pivots.push(pivot);
-            let codom = mat.codomain;
-            mat.extend_one_row();
-            mat.set(pivot, codom, F::one());
+            for codom in 0..kernel.codomain() {
+                kernel.set(pivot, codom, F::zero());
+            }
+            kernel.rref();
         }
         pivots
     }
@@ -52,11 +53,6 @@ impl<F: Field> Abelian<F> for FlatMatrix<F> {
 
 
 impl<F: Field> FlatMatrix<F> {
-    pub(crate) fn kernel_find_single_generator(&self) -> Option<usize> {
-        let (kernel, _) = self.kernel(&vec![], &vec![]);
-        kernel.first_non_zero_entry().map(|(x, _)| x)
-    } 
-
     pub(crate) fn rref(&mut self) {
         let mut lead = 0;
 

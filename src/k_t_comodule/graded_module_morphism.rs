@@ -7,7 +7,7 @@ use algebra::{
 use deepsize::DeepSizeOf;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
-use crate::{grading::{grading::Grading}, k_comodule::graded_space::GradedVectorSpace, k_t_comodule::k_t_coalgebra::ktCoalgebra, traits::Coalgebra};
+use crate::{grading::{grading::Grading}, k_comodule::graded_space::GradedVectorSpace};
 
 
 #[derive(Debug, Clone, PartialEq, Default, DeepSizeOf)]

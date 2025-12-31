@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 use crate::{
-    grading::grading::Grading, k_comodule::graded_space::GradedVectorSpace, traits::Comodule, types::{CoalgebraIndex, CoalgebraIndexType, ComoduleIndex, ComoduleIndexType}
+    grading::grading::Grading, k_comodule::graded_space::GradedVectorSpace, types::{CoalgebraIndex, CoalgebraIndexType, ComoduleIndex, ComoduleIndexType}
 };
 
 pub type TensorConstruct<G> =
