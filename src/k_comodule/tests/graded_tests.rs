@@ -4,8 +4,11 @@ mod tests {
     use ahash::HashMap;
     use algebra::{matrices::flat_matrix::FlatMatrix, matrix::Matrix, rings::finite_fields::F2};
 
-    use crate::{grading::unigrading::UniGrading, k_comodule::graded_space::{GradedLinearMap, GradedVectorSpace}};
-    
+    use crate::{
+        grading::unigrading::UniGrading,
+        k_comodule::graded_space::{GradedLinearMap, GradedVectorSpace},
+    };
+
     // Assuming F2 is implemented as a Field type.
 
     type G = UniGrading; // OrderedGrading type

@@ -4,4 +4,4 @@ pub mod f2_matrix;
 pub mod linalg;
 pub mod f2_linalg;
 
-pub mod m4ri;
+pub mod f2_m4ri;

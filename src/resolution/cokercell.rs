@@ -1,16 +1,16 @@
 use algebra::abelian::Abelian;
 use deepsize::DeepSizeOf;
 
-use crate::{grading::grading::Grading, resolution::datacell::{DataCell, Module}, traits::Coalgebra, types::ComoduleIndexType};
+use crate::{grading::grading::Grading, resolution::datacell::DataCell, traits::Coalgebra};
 
 /// Everything below is wrt. some degree g
 ///
 /// to_cokernel: morphism from A\otimes V_i-1 to Q_i
 ///
 /// cokernel: module structure of the cokernel Q_i
-/// 
+///
 /// repr_vecs: inverse image of some mapping
-/// 
+///
 #[derive(Debug, DeepSizeOf)]
 pub struct CokerCell<G: Grading, C: Coalgebra<G>> {
     pub to_cokernel: C::RingMorph,
@@ -18,11 +18,16 @@ pub struct CokerCell<G: Grading, C: Coalgebra<G>> {
     pub repr_vecs: C::RingMorph,
 }
 
-
 impl<G: Grading, C: Coalgebra<G>> CokerCell<G, C> {
     pub fn cokernel(prev_s: &DataCell<G, C>) -> CokerCell<G, C> {
         let codom_module = prev_s.r_gens.iter().map(|x| x.1).collect();
-        let (to_cokernel, repr_vecs, cokernel) = prev_s.to_cofree.cokernel(&codom_module);
-        CokerCell { to_cokernel, cokernel, repr_vecs }
+        let (to_cokernel, repr_vecs, cokernel) = prev_s
+            .transposed_to_cofree
+            .transposed_cokernel(&codom_module);
+        CokerCell {
+            to_cokernel,
+            cokernel,
+            repr_vecs,
+        }
     }
 }

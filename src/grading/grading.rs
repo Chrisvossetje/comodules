@@ -52,7 +52,6 @@ pub trait Grading:
     fn directions() -> usize;
     fn incomings(&self) -> usize;
 
-
     fn degree_names() -> Vec<char>;
     fn default_formulas() -> (String, String);
     fn export_grade(self) -> Vec<i64>;

@@ -573,7 +573,13 @@ impl<G: Grading, F: Field, M: Matrix<F>> kCoalgebra<G, F, M> {
                         ));
                         (*a_grade_index, *b_grade_index, *f)
                     })
-                    .sorted_by(|a, b| if a.0 == b.0 {a.1.cmp(&b.1)} else {a.0.cmp(&b.0)})
+                    .sorted_by(|a, b| {
+                        if a.0 == b.0 {
+                            a.1.cmp(&b.1)
+                        } else {
+                            a.0.cmp(&b.0)
+                        }
+                    })
                     .collect();
 
                 (*idx, v)
@@ -767,14 +773,13 @@ fn get_list<G: Grading, F: Field, M: Matrix<F>>(
     v
 }
 
-
-impl<G: Grading, F: Field, M: Abelian<F>> kComodule<G, kCoalgebra<G,F,M>> {
+impl<G: Grading, F: Field, M: Abelian<F>> kComodule<G, kCoalgebra<G, F, M>> {
     pub fn parse(
         input: &str,
         coalgebra: &kCoalgebra<G, F, M>,
         coalgebra_translate: &HashMap<String, CoalgebraIndex<G>>,
         max_grading: G,
-    ) -> Result<kComodule<G, kCoalgebra<G,F,M>>, String> {
+    ) -> Result<kComodule<G, kCoalgebra<G, F, M>>, String> {
         if input.contains("- BASIS") {
             Self::parse_direct(input, coalgebra, coalgebra_translate)
         } else {
@@ -786,7 +791,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> kComodule<G, kCoalgebra<G,F,M>> {
         input: &str,
         coalgebra: &kCoalgebra<G, F, M>,
         coalgebra_translate: &HashMap<String, CoalgebraIndex<G>>,
-    ) -> Result<kComodule<G, kCoalgebra<G,F,M>>, String> {
+    ) -> Result<kComodule<G, kCoalgebra<G, F, M>>, String> {
         #[derive(Debug, Clone, PartialEq)]
         enum State {
             None,
@@ -881,10 +886,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> kComodule<G, kCoalgebra<G,F,M>> {
             if basis_dict.contains_key(name) {
                 return Err(format!("Basis element '{}' appears twice", name));
             }
-            basis_dict.insert(
-                name.clone(),
-                *grade,
-            );
+            basis_dict.insert(name.clone(), *grade);
         }
 
         // Transform basis
@@ -892,7 +894,10 @@ impl<G: Grading, F: Field, M: Abelian<F>> kComodule<G, kCoalgebra<G,F,M>> {
         let mut basis_translate: HashMap<String, ComoduleIndex<G>> = HashMap::default();
 
         for (name, gr) in basis_dict.iter().sorted_by_key(|(name, _)| *name) {
-            transformed.entry(*gr).or_insert(vec![]).push(<M as Abelian<F>>::Generator::default());
+            transformed
+                .entry(*gr)
+                .or_insert(vec![])
+                .push(<M as Abelian<F>>::Generator::default());
             basis_translate.insert(name.clone(), (*gr, (transformed[&gr].len() - 1) as u32));
         }
 
@@ -961,7 +966,7 @@ impl<G: Grading, F: Field, M: Abelian<F>> kComodule<G, kCoalgebra<G,F,M>> {
         coalgebra: &kCoalgebra<G, F, M>,
         coalgebra_translate: &HashMap<String, CoalgebraIndex<G>>,
         max_grading: G,
-    ) -> Result<kComodule<G, kCoalgebra<G,F,M>>, String> {
+    ) -> Result<kComodule<G, kCoalgebra<G, F, M>>, String> {
         #[derive(Debug, Clone, PartialEq)]
         enum State {
             None,
@@ -1155,7 +1160,10 @@ impl<G: Grading, F: Field, M: Abelian<F>> kComodule<G, kCoalgebra<G,F,M>> {
 
             let index = basis.entry(grade).or_insert_with(Vec::new).len();
             monomial_to_grade_index.insert(monomial.clone(), (grade, index as ComoduleIndexType));
-            basis.entry(grade).or_insert_with(Vec::new).push(<M as Abelian<F>>::Generator::default());
+            basis
+                .entry(grade)
+                .or_insert_with(Vec::new)
+                .push(<M as Abelian<F>>::Generator::default());
         }
 
         // Create the graded vector space

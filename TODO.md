@@ -13,6 +13,5 @@
 
 New Todos:
 
-- Use M4RI stuff to improve F2 lin alg things
-- Transposed cokernel
 - Make it bounded by t-s
+- Improve algebra of F2[t] stuff + Check if this reduces to F2 linalg

@@ -2,7 +2,6 @@ use std::fmt::Debug;
 
 use algebra::{abelian::Abelian, field::Field, ring::CRing};
 use deepsize::DeepSizeOf;
-use serde::{Deserialize, Serialize};
 
 use crate::{grading::grading::Grading, types::CoalgebraIndex};
 
@@ -21,7 +20,13 @@ pub trait Coalgebra<G: Grading>: DeepSizeOf + Clone + Sync + Send + Debug {
         i: CoalgebraIndex<G>,
     ) -> &[(CoalgebraIndex<G>, CoalgebraIndex<G>, Self::BaseRing)];
     fn basering_comodule(&self, shift: G) -> Self::Comod;
-    fn cofree_comodule(&self, index: usize, shift: G, limit: G, generator: <Self::RingMorph as Abelian<Self::BaseRing>>::Generator) -> Self::CofMod;
+    fn cofree_comodule(
+        &self,
+        index: usize,
+        shift: G,
+        limit: G,
+        generator: <Self::RingMorph as Abelian<Self::BaseRing>>::Generator,
+    ) -> Self::CofMod;
 }
 
 pub trait Comodule<G: Grading, C: Coalgebra<G>>: DeepSizeOf + Clone + Send + Sync {

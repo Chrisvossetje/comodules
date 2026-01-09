@@ -9,6 +9,7 @@ pub trait Abelian<R: CRing>: Matrix<R> + Clone + Send + Sync + PartialEq + Debug
     type Generator: Default + Send + Sync + Copy + Clone + Ord + Debug + DeepSizeOf + Serialize + for<'a> Deserialize<'a>;
 
     fn kernel(&self, domain: &Vec<Self::Generator>, codomain: &Vec<Self::Generator>) -> (Self, Vec<Self::Generator>);
+    fn transposed_cokernel(&self, codomain: &Vec<Self::Generator>) -> (Self, Self, Vec<Self::Generator>);
     fn cokernel(&self, codomain: &Vec<Self::Generator>) -> (Self, Self, Vec<Self::Generator>);
     
     fn cohomology(f: &Self, g: &Self, n: &Vec<Self::Generator>, q: &Vec<Self::Generator>) -> (Self, Vec<Self::Generator>);

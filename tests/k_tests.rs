@@ -1,11 +1,13 @@
-// TODO : Only generators get checked here
-
 #[cfg(test)]
 mod tests {
-    use std::{i32, sync::Arc};
-
     use algebra::{matrices::flat_matrix::FlatMatrix, rings::finite_fields::F2};
-    use comodules::{export::SSeq, grading::{grading::Grading, unigrading::UniGrading}, k_comodule::{kcoalgebra::{A0_coalgebra, kCoalgebra}, kcomodule::kComodule}, resolution::resolve_by_s::Resolution, traits::Coalgebra};
+    use comodules::{
+        export::SSeq,
+        grading::{grading::Grading, unigrading::UniGrading},
+        k_comodule::kcoalgebra::{A0_coalgebra, kCoalgebra},
+        resolution::resolve_by_s::Resolution,
+        traits::Coalgebra,
+    };
     use itertools::Itertools;
 
     #[allow(dead_code)]
@@ -42,10 +44,9 @@ mod tests {
         {
             let input = include_str!("../examples/polynomial/A(2).txt");
 
-            let coalgebra =
-                kCoalgebra::parse(input, UniGrading::infty() - UniGrading(10))
-                    .unwrap()
-                    .0;
+            let coalgebra = kCoalgebra::parse(input, UniGrading::infty() - UniGrading(10))
+                .unwrap()
+                .0;
 
             let fp = kCoalgebra::basering_comodule(&coalgebra, UniGrading::zero());
 
@@ -164,10 +165,9 @@ mod tests {
     fn test_a2_resolution_poly() {
         let input = include_str!("../examples/polynomial/A(2).txt");
 
-        let coalgebra =
-            kCoalgebra::parse(input, UniGrading::infty() - UniGrading(10))
-                .unwrap()
-                .0;
+        let coalgebra = kCoalgebra::parse(input, UniGrading::infty() - UniGrading(10))
+            .unwrap()
+            .0;
 
         let fp = kCoalgebra::basering_comodule(&coalgebra, UniGrading::zero());
 

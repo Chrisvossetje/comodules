@@ -1,18 +1,31 @@
-// TODO : implement an F2_matrix thing, where we compress the data of our matrices
-
 use crate::{matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::finite_fields::F2};
 use serde::{Deserialize, Serialize};
 use deepsize::DeepSizeOf;
 
 
-#[derive(Debug, Clone, PartialEq, Deserialize, Serialize, DeepSizeOf)]
+#[derive(Clone, PartialEq, Deserialize, Serialize, DeepSizeOf)]
 pub struct F2Matrix {
     pub data: Vec<u64>,
     pub(crate) domain: usize,
     pub(crate) codomain: usize,
     pub(crate) words_per_row: usize,
 
+    // For each domain, find if it contains a pivot at column i
     pub(crate) pivots: Vec<Option<u32>>,
+}
+
+impl std::fmt::Debug for F2Matrix {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for m in 0..self.codomain {
+            for n in 0..self.domain {
+                let el = self.get(n, m);
+                let s = format!("{:?}", el);
+                write!(f, "{}", s)?;
+            }
+            writeln!(f)?;
+        }
+        writeln!(f)
+    }
 }
 
 impl F2Matrix {
@@ -53,6 +66,13 @@ impl F2Matrix {
             } 
         }
         z
+    }
+
+
+    pub fn get_row_mut(&mut self, codomain: usize) -> &mut [u64] {
+        let start = self.words_per_row * codomain;
+        let end = start + self.words_per_row;
+        &mut self.data[start..end]
     }
 }
 
@@ -116,7 +136,7 @@ impl Matrix<F2> for F2Matrix {
                 result.set_element(j, i, self.get_element(i, j));
             }
         }
-        
+
         result
     }
 
@@ -138,46 +158,92 @@ impl Matrix<F2> for F2Matrix {
         self.codomain = new_codomain;
     }
 
-    // TODO : This is NOT correct !!!!
+        /// Evaluate `self * vector` (vector length = domain), returning length = codomain.
+    /// Uses packed parity computation.
+    fn eval_vector(&self, vector: &[F2]) -> Vec<F2> {
+        assert_eq!(vector.len(), self.domain);
+
+        // Pack vector bits into u64 words matching matrix layout.
+        let v_words = (self.domain + 63) >> 6;
+        let mut v = vec![0u64; v_words];
+        for (i, bit) in vector.iter().enumerate() {
+            if bit.0 & 1 == 1 {
+                v[i >> 6] |= 1u64 << (i & 63);
+            }
+        }
+
+        let mut out = vec![F2(0); self.codomain];
+        for row in 0..self.codomain {
+            let r = self.get_row(row);
+            let mut acc = 0u64;
+            for w in 0..self.words_per_row {
+                acc ^= r[w] & v[w];
+            }
+            // parity of acc
+            let parity = (acc.count_ones() & 1) as u8;
+            out[row] = F2(parity);
+        }
+        out
+    }
+
+
+    /// [ self  0 ]
+    /// [  0  other ]
     fn block_sum(&mut self, other: &Self) {
         let old_domain = self.domain;
         let old_codomain = self.codomain;
+
         let new_domain = self.domain + other.domain;
         let new_codomain = self.codomain + other.codomain;
-        
-        let words_per_old_row = (old_domain + 63) >> 6;
-        let words_per_new_row = (new_domain + 63) >> 6;
-        
-        let mut new_data = vec![0u64; words_per_new_row * new_codomain];
-        
-        // Copy self to top-left block
+
+        let new_wpr = (new_domain + 63) >> 6;
+        let mut new_data = vec![0u64; new_wpr * new_codomain];
+
+        // Copy self rows into top-left.
         for row in 0..old_codomain {
-            for word in 0..words_per_old_row {
-                let old_idx = row * words_per_old_row + word;
-                let new_idx = row * words_per_new_row + word;
-                new_data[new_idx] = self.data[old_idx];
-            }
+            let src = self.get_row(row);
+            let dst_start = row * new_wpr;
+            // domain offset = 0, so aligned copy with possible truncation
+            new_data[dst_start..dst_start + self.words_per_row].copy_from_slice(src);
         }
-        
-        // Copy other to bottom-right block
+
+        // Copy other rows into bottom-right with bit offset.
+        let bit_off = old_domain & 63;
+        let word_off = old_domain >> 6;
+
         for row in 0..other.codomain {
-            for col in 0..other.domain {
-                let other_value = other.get_element(col, row);
-                if other_value != F2::zero() {
-                    let new_row = old_codomain + row;
-                    let new_col = old_domain + col;
-                    let word_idx = new_col >> 6;
-                    let bit_idx = new_col & 0b111111;
-                    let data_idx = new_row * words_per_new_row + word_idx;
-                    new_data[data_idx] |= 1u64 << bit_idx;
+            let src = other.get_row(row);
+            let dst_row = old_codomain + row;
+            let dst_start = dst_row * new_wpr;
+
+            if bit_off == 0 {
+                // aligned at word boundary
+                for w in 0..other.words_per_row {
+                    new_data[dst_start + word_off + w] |= src[w];
+                }
+            } else {
+                // needs shifting across word boundary
+                let sh = bit_off as u32;
+                let inv_sh = 64 - sh;
+
+                for w in 0..other.words_per_row {
+                    let val = src[w];
+                    let low = val << sh;
+                    new_data[dst_start + word_off + w] |= low;
+
+                    // spill into next word if needed
+                    if dst_start + word_off + w + 1 < dst_start + new_wpr {
+                        let high = val >> inv_sh;
+                        new_data[dst_start + word_off + w + 1] |= high;
+                    }
                 }
             }
         }
-        
+
         self.data = new_data;
         self.domain = new_domain;
         self.codomain = new_codomain;
-        self.words_per_row = words_per_new_row;
+        self.words_per_row = new_wpr;
     }
 
     fn extend_one_row(&mut self) {
@@ -186,10 +252,6 @@ impl Matrix<F2> for F2Matrix {
         }
         
         self.codomain += 1;
-    }
-    
-    fn eval_vector(&self, _vector: &[F2]) -> Vec<F2> {
-        todo!()
     }
 
     fn swap_rows(&mut self, row1: usize, row2: usize) {

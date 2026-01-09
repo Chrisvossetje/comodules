@@ -1,24 +1,24 @@
 // struct PartialModule()
 
-use std::sync::{Mutex, OnceLock, atomic::AtomicPtr};
+use std::sync::{Mutex, OnceLock};
 
 use ahash::HashMap;
-use algebra::{abelian::Abelian, field::Field, matrix::Matrix, ring::CRing, rings::univariate_polynomial_ring::UniPolRing};
-use deepsize::DeepSizeOf;
-use itertools::Itertools;
-use rayon::{
-    Scope,
-    iter::{ParallelBridge, ParallelIterator},
-};
+use algebra::{abelian::Abelian, field::Field, rings::univariate_polynomial_ring::UniPolRing};
+use rayon::Scope;
 
 use crate::{
-    grading::grading::{GradedIndexing, Grading}, k_comodule::{kcoalgebra::kCoalgebra, kmorphism::kComoduleMorphism}, k_t_comodule::{k_t_coalgebra::ktCoalgebra, k_t_morphism::ktComoduleMorphism}, resolution::{cokercell::CokerCell, datacell::DataCell}, traits::{Coalgebra, Comodule, ComoduleMorphism}, types::{AGeneratorIndex, CoalgebraIndexType, CofreeBasis, ComoduleIndexType}
+    grading::grading::{GradedIndexing, Grading},
+    k_comodule::{kcoalgebra::kCoalgebra, kmorphism::kComoduleMorphism},
+    k_t_comodule::{k_t_coalgebra::ktCoalgebra, k_t_morphism::ktComoduleMorphism},
+    resolution::{cokercell::CokerCell, datacell::DataCell},
+    traits::{Coalgebra, ComoduleMorphism},
+    types::ComoduleIndexType,
 };
-
 
 #[derive(Default, PartialEq, Debug)]
 pub enum ResolveStateEnum {
-    #[default] Nothing,
+    #[default]
+    Nothing,
     Ready,
     Done,
 }
@@ -42,19 +42,31 @@ pub struct ParallelResolution<G: Grading, C: Coalgebra<G>> {
     pub max_degree: G,
     // All happing at a certrain grade g,
     // A \otimes V_i-1 -> Q, Q -> A\otimes V_i, V_i, A\otimes V_i, Hashmap to find the index in the list for A\otimes V_i
-    pub data: Vec<G::ContiguousMemory<(Mutex<ResolveState>, OnceLock<CokerCell<G, C>>, OnceLock<DataCell<G, C>>)>>,
+    pub data: Vec<
+        G::ContiguousMemory<(
+            Mutex<ResolveState>,
+            OnceLock<CokerCell<G, C>>,
+            OnceLock<DataCell<G, C>>,
+        )>,
+    >,
 }
 
 impl<G: Grading, C: Coalgebra<G>> ParallelResolution<G, C> {
     pub fn init(coalgebra: C, comodule: C::Comod, s: usize, degree: G) -> Self {
         let mut data = vec![];
         for _ in 0..=s {
-            data.push(degree.init_memory(|| (Mutex::new(ResolveState::default()), OnceLock::new(), OnceLock::new())));
+            data.push(degree.init_memory(|| {
+                (
+                    Mutex::new(ResolveState::default()),
+                    OnceLock::new(),
+                    OnceLock::new(),
+                )
+            }));
         }
 
         for g in degree.iterator_from_zero(true) {
             for t in 0..=s {
-                let inc =  g.incomings();
+                let inc = g.incomings();
                 data[t].get(g.to_index()).0.lock().unwrap().degree_count = g.incomings();
                 if inc == 0 {
                     data[t].get(g.to_index()).0.lock().unwrap().gs = ResolveStateEnum::Ready;
@@ -79,17 +91,17 @@ impl<G: Grading, C: Coalgebra<G>> ParallelResolution<G, C> {
         self.data[s].get(g.to_index()).1.get().unwrap()
     }
 
-    pub fn resolve_coker_at_s_g(&self, s: usize, degree: G) {        
+    pub fn resolve_coker_at_s_g(&self, s: usize, degree: G) {
         if s == 0 {
             return;
         }
         println!("Calculating Cokernel for {s} | {degree}");
-    
+
         let prev_s = self.data[s - 1].get(degree.to_index()).2.get_or_init(|| {
             unreachable!();
         });
         let a = CokerCell::cokernel(prev_s);
-    
+
         // TODO : make some sort "save" function
         self.data[s].get(degree.to_index()).1.set(a).unwrap();
         let mut m = self.data[s].get(degree.to_index()).0.lock().unwrap();
@@ -149,7 +161,6 @@ impl<G: Grading, C: Coalgebra<G>> ParallelResolution<G, C> {
                 panic!("This could not have been done yet ?")
             }
         }
-        
     }
 
     pub fn data_spawn_task<'a>(&'a self, i: &Scope<'a>, s: usize, degree: G) {
@@ -189,7 +200,6 @@ impl<G: Grading, C: Coalgebra<G>> ParallelResolution<G, C> {
                         }
                     }
                 }
-                
             }
         }
     }
@@ -197,32 +207,57 @@ impl<G: Grading, C: Coalgebra<G>> ParallelResolution<G, C> {
 
 impl<G: Grading, F: Field, M: Abelian<F>> ParallelResolution<G, kCoalgebra<G, F, M>> {
     pub fn populate(&self) {
-        let (map, cofree_comod) = kComoduleMorphism::inject_codomain_to_cofree(&self.coalgebra, &self.comodule, self.max_degree);
-        
+        let (map, cofree_comod) = kComoduleMorphism::inject_codomain_to_cofree(
+            &self.coalgebra,
+            &self.comodule,
+            self.max_degree,
+        );
+
         for g in self.max_degree.iterator_from_zero(true) {
-            let r_gens = cofree_comod.space.0.get(&g).map(|x| x.clone()).unwrap_or(vec![]);
-            let to_cofree = map.map.maps.get(&g).map(|x| x.clone()).unwrap_or(M::zero(0, 0));
+            let r_gens = cofree_comod
+                .space
+                .0
+                .get(&g)
+                .map(|x| x.clone())
+                .unwrap_or(vec![]);
+            let transposed_to_cofree = map
+                .map
+                .maps
+                .get(&g)
+                .map(|x| x.clone())
+                .unwrap_or(M::zero(0, 0))
+                .transpose();
 
             let mut lut = HashMap::default();
             for (id, r) in r_gens.iter().enumerate() {
                 lut.insert(r.0, id as ComoduleIndexType);
             }
-            
-            let cokernel = self.comodule.space.0.get(&g).map(|x| x.clone()).unwrap_or(vec![]);
+
+            let cokernel = self
+                .comodule
+                .space
+                .0
+                .get(&g)
+                .map(|x| x.clone())
+                .unwrap_or(vec![]);
             let to_cokernel = M::zero(0, cokernel.len());
 
-            let a_gens = r_gens.iter().enumerate().filter_map(|(id, x)| {
-                if x.0.0.0 == G::zero() {
-                    Some((x.1, x.0.1, id as ComoduleIndexType))
-                } else {
-                    None
-                }
-            }).collect();
+            let a_gens = r_gens
+                .iter()
+                .enumerate()
+                .filter_map(|(id, x)| {
+                    if x.0.0.0 == G::zero() {
+                        Some((x.1, x.0.1, id as ComoduleIndexType))
+                    } else {
+                        None
+                    }
+                })
+                .collect();
 
             let lut2 = HashMap::default();
 
             let a = DataCell {
-                to_cofree,
+                transposed_to_cofree,
                 a_gens,
                 r_gens,
                 lut,
@@ -323,32 +358,57 @@ impl<G: Grading, F: Field, M: Abelian<F>> ParallelResolution<G, kCoalgebra<G, F,
 
 impl<G: Grading, F: Field, M: Abelian<UniPolRing<F>>> ParallelResolution<G, ktCoalgebra<G, F, M>> {
     pub fn populate(&self) {
-        let (map, cofree_comod) = ktComoduleMorphism::inject_codomain_to_cofree(&self.coalgebra, &self.comodule, self.max_degree);
-        
+        let (map, cofree_comod) = ktComoduleMorphism::inject_codomain_to_cofree(
+            &self.coalgebra,
+            &self.comodule,
+            self.max_degree,
+        );
+
         for g in self.max_degree.iterator_from_zero(true) {
-            let r_gens = cofree_comod.space.0.get(&g).map(|x| x.clone()).unwrap_or(vec![]);
-            let to_cofree = map.map.maps.get(&g).map(|x| x.clone()).unwrap_or(M::zero(0, 0));
+            let r_gens = cofree_comod
+                .space
+                .0
+                .get(&g)
+                .map(|x| x.clone())
+                .unwrap_or(vec![]);
+            let transposed_to_cofree = map
+                .map
+                .maps
+                .get(&g)
+                .map(|x| x.clone())
+                .unwrap_or(M::zero(0, 0))
+                .transpose();
 
             let mut lut = HashMap::default();
             for (id, r) in r_gens.iter().enumerate() {
                 lut.insert(r.0, id as ComoduleIndexType);
             }
-            
-            let cokernel = self.comodule.space.0.get(&g).map(|x| x.clone()).unwrap_or(vec![]);
+
+            let cokernel = self
+                .comodule
+                .space
+                .0
+                .get(&g)
+                .map(|x| x.clone())
+                .unwrap_or(vec![]);
             let to_cokernel = M::zero(0, cokernel.len());
 
-            let a_gens = r_gens.iter().enumerate().filter_map(|(id, x)| {
-                if x.0.0.0 == G::zero() {
-                    Some((x.1, x.0.1, id as ComoduleIndexType))
-                } else {
-                    None
-                }
-            }).collect();
+            let a_gens = r_gens
+                .iter()
+                .enumerate()
+                .filter_map(|(id, x)| {
+                    if x.0.0.0 == G::zero() {
+                        Some((x.1, x.0.1, id as ComoduleIndexType))
+                    } else {
+                        None
+                    }
+                })
+                .collect();
 
             let lut2 = HashMap::default();
 
             let a = DataCell {
-                to_cofree,
+                transposed_to_cofree,
                 a_gens,
                 r_gens,
                 lut,

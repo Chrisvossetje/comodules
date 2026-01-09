@@ -2,14 +2,14 @@
 mod tests {
     use algebra::{
         matrices::flat_matrix::FlatMatrix,
-        matrix::Matrix,
-        ring::CRing,
         rings::finite_fields::{F2, Fp},
     };
     use itertools::Itertools;
 
-    use crate::{grading::{grading::Grading, unigrading::UniGrading}, k_comodule::kcoalgebra::{A0_coalgebra, kCoalgebra}};
-
+    use crate::{
+        grading::{grading::Grading, unigrading::UniGrading},
+        k_comodule::kcoalgebra::{A0_coalgebra, kCoalgebra},
+    };
 
     #[test]
     fn test_a0() {

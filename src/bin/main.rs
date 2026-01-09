@@ -1,12 +1,9 @@
 use algebra::matrices::f2_matrix::F2Matrix;
-use algebra::matrices::flat_matrix::FlatMatrix;
 use algebra::rings::finite_fields::F2;
-use algebra::rings::univariate_polynomial_ring::UniPolRing;
 use comodules::export::{Page, SSeq};
 use comodules::grading::grading::Grading;
 use comodules::grading::unigrading::UniGrading;
 use comodules::k_comodule::kcoalgebra::kCoalgebra;
-use comodules::k_t_comodule::k_t_coalgebra::{ktCoalgebra, tensor_k_coalgebra};
 use comodules::resolution::superparallel::ParallelResolution;
 use comodules::traits::Coalgebra;
 use std::time::Instant;
@@ -269,7 +266,7 @@ use std::time::Instant;
 // }
 
 fn main() {
-    const MAX_GRADING: UniGrading = UniGrading(100);
+    const MAX_GRADING: UniGrading = UniGrading(128);
     const S: usize = 40;
 
     let start = Instant::now();
@@ -305,11 +302,10 @@ fn main() {
         res.recursion_solve(i);
     });
 
-
     // // Non Parallal executor
     // for g in MAX_GRADING.iterator_from_zero(true) {
     //     for s in 1..=S {
-    //         if s==2 && g == UniGrading(5) {
+    //         if s==1 && g == UniGrading(2) {
     //             println!("S:{}, G:{}", s, g);
     //         }
     //         res.resolve_coker_at_s_g(s, g);
@@ -359,7 +355,6 @@ fn main() {
     println!("\nProgram took: {:.2?}", start.elapsed());
 }
 
-
 // fn main() {
 //     const MAX_GRADING: UniGrading = UniGrading(35);
 //     const S: usize = (MAX_GRADING.0 / 2) as usize;
@@ -382,7 +377,6 @@ fn main() {
 //     //     res.recursion_solve(i, 1, UniGrading::zero());
 //     // });
 
-
 //     // Non Parallal executor
 //     for g in MAX_GRADING.iterator_from_zero(true) {
 //         for s in 1..=S {
@@ -392,7 +386,6 @@ fn main() {
 //             res.resolve_at_s_g(s, g);
 //         }
 //     }
-
 
 //     for s in 0..=S {
 //         for g in MAX_GRADING.iterator_from_zero(true) {

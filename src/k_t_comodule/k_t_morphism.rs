@@ -1,14 +1,23 @@
-use std::{marker::PhantomData, sync::Arc};
+use std::marker::PhantomData;
 
 use ahash::HashMap;
-use algebra::{abelian::Abelian, field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::univariate_polynomial_ring::UniPolRing};
+use algebra::{
+    abelian::Abelian, field::Field, ring::CRing, rings::univariate_polynomial_ring::UniPolRing,
+};
 use deepsize::DeepSizeOf;
 use itertools::Itertools;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
-use crate::{grading::{grading::Grading, tensor::TensorMap}, k_comodule::graded_space::GradedLinearMap, k_t_comodule::{graded_module_morphism::GradedktFieldMap, k_t_coalgebra::ktCoalgebra, k_t_comodule::{ktCofreeComodule, ktComodule}}, traits::{Coalgebra, CofreeComodule, Comodule, ComoduleMorphism}, types::{BasisElement, CoalgebraIndexType, CofreeBasis, ComoduleIndex, ComoduleIndexType}};
-
-
+use crate::{
+    grading::{grading::Grading, tensor::TensorMap},
+    k_t_comodule::{
+        graded_module::GradedktFieldMap,
+        k_t_coalgebra::ktCoalgebra,
+        k_t_comodule::{ktCofreeComodule, ktComodule},
+    },
+    traits::{Coalgebra, CofreeComodule, Comodule, ComoduleMorphism},
+    types::{CoalgebraIndexType, CofreeBasis, ComoduleIndex, ComoduleIndexType},
+};
 
 #[derive(Debug, Clone, DeepSizeOf)]
 #[allow(non_camel_case_types)]
@@ -16,17 +25,20 @@ pub struct ktComoduleMorphism<G: Grading, F: Field, M: Abelian<UniPolRing<F>>> {
     pub map: GradedktFieldMap<G, F, M>,
 }
 
-
-impl<G: Grading, F: Field, M: Abelian<UniPolRing<F>>> ComoduleMorphism<G, ktCoalgebra<G,F,M>>
+impl<G: Grading, F: Field, M: Abelian<UniPolRing<F>>> ComoduleMorphism<G, ktCoalgebra<G, F, M>>
     for ktComoduleMorphism<G, F, M>
 {
-    fn cokernel(&self, coalgebra: &ktCoalgebra<G,F,M>, codomain: &ktCofreeComodule<G, ktCoalgebra<G,F,M>>) -> (Self, ktComodule<G, F, M>) {
+    fn cokernel(
+        &self,
+        coalgebra: &ktCoalgebra<G, F, M>,
+        codomain: &ktCofreeComodule<G, ktCoalgebra<G, F, M>>,
+    ) -> (Self, ktComodule<G, F, M>) {
         // TODO :
         // if cfg!(debug_assertions) {
         //     self.map.verify(&self.domain.space, &self.codomain.space).unwrap();
         //     self.codomain.verify().unwrap()
         // }
-        
+
         let (coker_to, coker_inv, coker) = self.map.cokernel(&codomain.to_module_generators());
 
         let tensor = TensorMap::generate(&coalgebra.space, &coker);
@@ -35,7 +47,7 @@ impl<G: Grading, F: Field, M: Abelian<UniPolRing<F>>> ComoduleMorphism<G, ktCoal
             .space
             .0
             // the choice for the tensor here is not neccessary
-            // Could also be self.codomain.space and iterate over len of the module 
+            // Could also be self.codomain.space and iterate over len of the module
             .par_iter()
             .flat_map(|(f_gr, m)| {
                 // Transfer a specific codomain grade and id (f_gr, f_id) to a list of elements which it maps to in the cokernel
@@ -67,7 +79,7 @@ impl<G: Grading, F: Field, M: Abelian<UniPolRing<F>>> ComoduleMorphism<G, ktCoal
 
         // TODO :
         // let coker_tensor_module = coker.generate_tensor_as_module(&self.codomain.coalgebra.space, &tensor);
-        
+
         let coaction = coker
             .0
             .par_iter()
@@ -78,7 +90,6 @@ impl<G: Grading, F: Field, M: Abelian<UniPolRing<F>>> ComoduleMorphism<G, ktCoal
                 let inv_map = coker_inv.maps.get(&g).unwrap();
                 let space = &codomain.space.0[g];
 
-
                 (0..v.len()).for_each(|coker_id| {
                     for codom_id in 0..inv_map.codomain() {
                         let inv_val = inv_map.get(coker_id, codom_id);
@@ -88,30 +99,31 @@ impl<G: Grading, F: Field, M: Abelian<UniPolRing<F>>> ComoduleMorphism<G, ktCoal
 
                         let (((alg_gr, alg_id), gen_id), _) = space[codom_id];
 
-                        for ((alg_l_gr, alg_l_id), (alg_r_gr, alg_r_id), coact_val) in coalgebra.coaction.get(&(alg_gr, alg_id)).unwrap() {
+                        for ((alg_l_gr, alg_l_id), (alg_r_gr, alg_r_id), coact_val) in
+                            coalgebra.coaction.get(&(alg_gr, alg_id)).unwrap()
+                        {
                             let (mod_gr, mod_id) = find[&((*alg_r_gr, *alg_r_id), gen_id)];
 
                             for (target_id, val) in m_lut.get(&(mod_gr, mod_id)).unwrap() {
-                                    let (_, final_id) =
-                                        tensor.construct[&(mod_gr, *target_id)][&(*alg_l_gr, *alg_l_id)];
+                                let (_, final_id) = tensor.construct[&(mod_gr, *target_id)]
+                                    [&(*alg_l_gr, *alg_l_id)];
 
-                                    
-                                    let final_val = inv_val * *coact_val * *val;
-                                    
-                                    // TODO : Coker tensor module thing!
-                                    // if let Some(tens_el_power) = tensor_el.2 {
-                                    //     if final_val.1 >= tens_el_power {
-                                    //         continue;
-                                    //     }
-                                    // }
-                                    g_coaction.add_at(coker_id, final_id as usize, final_val);
-                                
+                                let final_val = inv_val * *coact_val * *val;
+
+                                // TODO : Coker tensor module thing!
+                                // if let Some(tens_el_power) = tensor_el.2 {
+                                //     if final_val.1 >= tens_el_power {
+                                //         continue;
+                                //     }
+                                // }
+                                g_coaction.add_at(coker_id, final_id as usize, final_val);
                             }
                         }
                     }
                 });
                 (*g, g_coaction)
-            }).collect();
+            })
+            .collect();
 
         let coaction = GradedktFieldMap {
             maps: coaction,
@@ -124,13 +136,14 @@ impl<G: Grading, F: Field, M: Abelian<UniPolRing<F>>> ComoduleMorphism<G, ktCoal
             tensor,
         };
 
-        (Self {
-            map: coker_to,
-        }, coker_comod)
+        (Self { map: coker_to }, coker_comod)
     }
-    
-    fn inject_codomain_to_cofree(coalgebra: &ktCoalgebra<G,F,M>, comodule: &ktComodule<G, F, M>, limit: G)
-    -> (Self, ktCofreeComodule<G, ktCoalgebra<G,F,M>>) {
+
+    fn inject_codomain_to_cofree(
+        coalgebra: &ktCoalgebra<G, F, M>,
+        comodule: &ktComodule<G, F, M>,
+        limit: G,
+    ) -> (Self, ktCofreeComodule<G, ktCoalgebra<G, F, M>>) {
         let mut growing_map: GradedktFieldMap<G, F, M> =
             GradedktFieldMap::zero_codomain(&comodule.space);
         let mut growing_comodule = ktCofreeComodule::zero_comodule();
@@ -140,9 +153,7 @@ impl<G: Grading, F: Field, M: Abelian<UniPolRing<F>>> ComoduleMorphism<G, ktCoal
             .maps
             .iter()
             .map(|(g, _)| *g)
-            .sorted_by(|a,b| {
-                a.compare(b)
-            })  
+            .sorted_by(|a, b| a.compare(b))
             .filter(|&g| g.compare(&limit).is_le())
             .collect();
 
@@ -153,11 +164,29 @@ impl<G: Grading, F: Field, M: Abelian<UniPolRing<F>>> ComoduleMorphism<G, ktCoal
             let map = growing_map.maps.get(&pivot_grade).unwrap();
             let empty = vec![];
             let domain: &Vec<_> = &comodule.space.0.get(&pivot_grade).unwrap_or(&empty);
-            let codomain: Vec<_> = growing_comodule.space.0.get(&pivot_grade).map_or(vec![], |x| x.iter().map(|y: &(((G, u16), u16), <M as Abelian<UniPolRing<F>>>::Generator)| y.1.clone()).collect()); 
-            
+            let codomain: Vec<_> = growing_comodule
+                .space
+                .0
+                .get(&pivot_grade)
+                .map_or(vec![], |x| {
+                    x.iter()
+                        .map(
+                            |y: &(((G, u16), u16), <M as Abelian<UniPolRing<F>>>::Generator)| {
+                                y.1.clone()
+                            },
+                        )
+                        .collect()
+                });
+
             let l = map.kernel_destroyers(domain, &codomain);
             for pivot in l {
-                let generator = comodule.space.0.get(&pivot_grade).unwrap().get(pivot).unwrap();
+                let generator = comodule
+                    .space
+                    .0
+                    .get(&pivot_grade)
+                    .unwrap()
+                    .get(pivot)
+                    .unwrap();
 
                 let alg_to_tens = comodule
                     .tensor
@@ -199,12 +228,8 @@ impl<G: Grading, F: Field, M: Abelian<UniPolRing<F>>> ComoduleMorphism<G, ktCoal
                     Some((t_gr, map))
                 }).collect();
 
-                let mut f = coalgebra.cofree_comodule(
-                    iteration,
-                    pivot_grade,
-                    fixed_limit,
-                    *generator
-                );
+                let mut f =
+                    coalgebra.cofree_comodule(iteration, pivot_grade, fixed_limit, *generator);
 
                 let mut extend_map = GradedktFieldMap {
                     maps: cofree_map,
@@ -220,50 +245,40 @@ impl<G: Grading, F: Field, M: Abelian<UniPolRing<F>>> ComoduleMorphism<G, ktCoal
                 //     growing_map.verify(&comodule.space, &growing_comodule.space).unwrap();
                 // }
 
-                iteration += 1;                
-            } 
+                iteration += 1;
+            }
         }
 
-        (Self {
-            map: growing_map,
-        }, growing_comodule)
+        (Self { map: growing_map }, growing_comodule)
     }
-    
+
     fn zero_morphism(comodule: &ktComodule<G, F, M>) -> Self {
         let zero: ktComodule<G, F, M> = ktComodule::zero_comodule();
 
         let zero_map = GradedktFieldMap::zero(&zero.space, &comodule.space);
 
-        Self {
-            map: zero_map,
-        }
+        Self { map: zero_map }
     }
-    
-    fn compose(l: &Self, r: &Self, codomain: &ktCofreeComodule<G, ktCoalgebra<G,F,M>>) -> Self {
-        let codomain = l.clone();
-        let domain = r.clone();
 
+    fn compose(l: &Self, r: &Self, _codomain: &ktCofreeComodule<G, ktCoalgebra<G, F, M>>) -> Self {
         let map = l.map.compose(&r.map);
 
-        Self {
-            map,
-        }
+        Self { map }
     }
     // fn cokernel(&self) -> Self {
-    //     
+    //
     // }
 
-    // fn inject_codomain_to_cofree(&self, limit: G) -> Self 
+    // fn inject_codomain_to_cofree(&self, limit: G) -> Self
     // where
     //     G: OrderedGrading {
-    //     
+    //
     // }
-    
+
     // /// Zero should be the domain, the comodule is the codomain
     // fn zero_morphism(comodule: Arc<ktComodule<G,F>>) -> Self {
 
     // }
-
 
     // TODO : This could be removed but might be useful ?
 

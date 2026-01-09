@@ -11,7 +11,11 @@ impl<F: Field> Abelian<UniPolRing<F>> for UniPolMap<F> {
     fn kernel(&self, _domain: &Vec<Self::Generator>, _codomain: &Vec<Self::Generator>) -> (Self, Vec<Self::Generator>) {
         todo!()
     }
-    
+
+    fn transposed_cokernel(&self, _codomain: &Vec<Self::Generator>) -> (Self, Self, Vec<Self::Generator>) {
+        todo!()
+    }
+
     fn cokernel(&self, codomain: &Vec<Self::Generator>) -> (Self, Self, Vec<Self::Generator>) {
         self.internal_cokernel(codomain)
     }

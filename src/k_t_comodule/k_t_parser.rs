@@ -1,10 +1,21 @@
 use ahash::HashMap;
-use algebra::{abelian::Abelian, field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::univariate_polynomial_ring::UniPolRing};
+use algebra::{
+    abelian::Abelian, field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing,
+    rings::univariate_polynomial_ring::UniPolRing,
+};
 use itertools::Itertools;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
-use crate::{grading::{grading::{Grading, Parse}, tensor::TensorMap, unigrading::UniGrading}, k_comodule::graded_space::GradedVectorSpace, k_t_comodule::{graded_module_morphism::GradedktFieldMap, k_t_coalgebra::ktCoalgebra}, types::{BasisElement, CoalgebraIndex, CoalgebraIndexType, ComoduleIndexType}};
-
+use crate::{
+    grading::{
+        grading::{Grading, Parse},
+        tensor::TensorMap,
+        unigrading::UniGrading,
+    },
+    k_comodule::graded_space::GradedVectorSpace,
+    k_t_comodule::{graded_module::GradedktFieldMap, k_t_coalgebra::ktCoalgebra},
+    types::{BasisElement, CoalgebraIndex, CoalgebraIndexType, ComoduleIndexType},
+};
 
 impl<G: Grading, F: Field> ktCoalgebra<G, F, FlatMatrix<UniPolRing<F>>> {
     fn check_translator(&self, translate: &HashMap<String, CoalgebraIndex<G>>) -> bool {
@@ -17,7 +28,11 @@ impl<G: Grading, F: Field> ktCoalgebra<G, F, FlatMatrix<UniPolRing<F>>> {
                     el.0.name
                 );
                 assert_eq!(comp.unwrap().0, *gr, "Grades do not coincide");
-                assert_eq!(comp.unwrap().1, index as CoalgebraIndexType, "Indices do not coincide");
+                assert_eq!(
+                    comp.unwrap().1,
+                    index as CoalgebraIndexType,
+                    "Indices do not coincide"
+                );
             }
         }
         return true;
@@ -127,14 +142,16 @@ impl<G: Grading, F: Field> ktCoalgebra<G, F, FlatMatrix<UniPolRing<F>>> {
                                     e
                                 )
                             })?,
-                            UniGrading::parse(uni_grade.trim()).map_err(|e| {
-                                format!(
-                                    "Line {}: Invalid unigrade '{}' - {}",
-                                    line_num,
-                                    grade.trim(),
-                                    e
-                                )
-                            })?.0 as i32,
+                            UniGrading::parse(uni_grade.trim())
+                                .map_err(|e| {
+                                    format!(
+                                        "Line {}: Invalid unigrade '{}' - {}",
+                                        line_num,
+                                        grade.trim(),
+                                        e
+                                    )
+                                })?
+                                .0 as i32,
                         ));
                     }
                     State::Coaction => {
@@ -182,7 +199,7 @@ impl<G: Grading, F: Field> ktCoalgebra<G, F, FlatMatrix<UniPolRing<F>>> {
                 (
                     BasisElement {
                         name: name.clone(),
-                        excess: 0
+                        excess: 0,
                     },
                     *grade,
                     *unigrade,
@@ -195,11 +212,23 @@ impl<G: Grading, F: Field> ktCoalgebra<G, F, FlatMatrix<UniPolRing<F>>> {
         let mut basis_translate = HashMap::default();
 
         for (name, (el, gr, uni_gr)) in basis_dict.iter().sorted_by_key(|(name, _)| *name) {
-            transformed.entry(*gr).or_insert(vec![]).push((el.clone(), (*uni_gr, None)));
-            basis_translate.insert(name.clone(), (*gr, (transformed[&gr].len() - 1) as CoalgebraIndexType));
+            transformed
+                .entry(*gr)
+                .or_insert(vec![])
+                .push((el.clone(), (*uni_gr, None)));
+            basis_translate.insert(
+                name.clone(),
+                (*gr, (transformed[&gr].len() - 1) as CoalgebraIndexType),
+            );
         }
 
-        let graded_space: GradedVectorSpace<G, (BasisElement, <FlatMatrix<UniPolRing<F>> as Abelian<UniPolRing<F>>>::Generator)> = GradedVectorSpace(transformed);
+        let graded_space: GradedVectorSpace<
+            G,
+            (
+                BasisElement,
+                <FlatMatrix<UniPolRing<F>> as Abelian<UniPolRing<F>>>::Generator,
+            ),
+        > = GradedVectorSpace(transformed);
         let tensor = TensorMap::generate(&graded_space, &graded_space);
 
         let mut coaction: HashMap<G, FlatMatrix<UniPolRing<F>>> = HashMap::default();
@@ -216,9 +245,9 @@ impl<G: Grading, F: Field> ktCoalgebra<G, F, FlatMatrix<UniPolRing<F>>> {
             ))?;
             for (scalar, l, r) in ls {
                 let el = UniPolRing::parse(&scalar).map_err(|e| {
-                            format!("Invalid scalar '{}' for coaction of '{}': {}", scalar, b, e)
-                        })?;
-                
+                    format!("Invalid scalar '{}' for coaction of '{}': {}", scalar, b, e)
+                })?;
+
                 let l_id = basis_translate.get(&l).ok_or(format!(
                     "Left element '{}' not found in basis for coaction of '{}'",
                     l, b
@@ -227,7 +256,7 @@ impl<G: Grading, F: Field> ktCoalgebra<G, F, FlatMatrix<UniPolRing<F>>> {
                     "Right element '{}' not found in basis for coaction of '{}'",
                     r, b
                 ))?;
-                if (l_id.0 + r_id.0 ) != *gr {
+                if (l_id.0 + r_id.0) != *gr {
                     return Err(format!(
                         "Grades are not homogenous for coaction of '{}': {} + {} != {}",
                         b, l_id.0, r_id.0, gr
@@ -241,7 +270,9 @@ impl<G: Grading, F: Field> ktCoalgebra<G, F, FlatMatrix<UniPolRing<F>>> {
                         b, t_id.0, gr
                     ));
                 };
-                let mat = coaction.get_mut(&gr).ok_or(format!("Expected coaction to exist in grade {}", gr))?;
+                let mat = coaction
+                    .get_mut(&gr)
+                    .ok_or(format!("Expected coaction to exist in grade {}", gr))?;
                 mat.set(*id as usize, t_id.1 as usize, el);
             }
         }
@@ -260,7 +291,6 @@ impl<G: Grading, F: Field> ktCoalgebra<G, F, FlatMatrix<UniPolRing<F>>> {
                 );
             }
         }
-
 
         let coalg = ktCoalgebra {
             space: graded_space,
@@ -291,7 +321,6 @@ impl<G: Grading, F: Field> ktCoalgebra<G, F, FlatMatrix<UniPolRing<F>>> {
             Coaction,
         }
 
-    
         let max_grading = max_grading.incr().incr();
         let mut state = State::None;
         let mut field: Option<usize> = None;
@@ -370,7 +399,8 @@ impl<G: Grading, F: Field> ktCoalgebra<G, F, FlatMatrix<UniPolRing<F>>> {
                             line_num, line
                         ))?;
                         generator_translate.insert(name.trim().to_string(), generators.len());
-                        generators.push((name.trim().to_string(),
+                        generators.push((
+                            name.trim().to_string(),
                             G::parse(grade.trim()).map_err(|e| {
                                 format!(
                                     "Line {}: Invalid grade '{}' - {}",
@@ -379,14 +409,17 @@ impl<G: Grading, F: Field> ktCoalgebra<G, F, FlatMatrix<UniPolRing<F>>> {
                                     e
                                 )
                             })?,
-                            UniGrading::parse(uni_grade.trim()).map_err(|e| {
-                                format!(
-                                    "Line {}: Invalid unigrade '{}' - {}",
-                                    line_num,
-                                    grade.trim(),
-                                    e
-                                )
-                            })?.0 as i32,));
+                            UniGrading::parse(uni_grade.trim())
+                                .map_err(|e| {
+                                    format!(
+                                        "Line {}: Invalid unigrade '{}' - {}",
+                                        line_num,
+                                        grade.trim(),
+                                        e
+                                    )
+                                })?
+                                .0 as i32,
+                        ));
                     }
                     State::Relations => {
                         let (lhs, rhs) = match line.split_once('=') {
@@ -396,19 +429,24 @@ impl<G: Grading, F: Field> ktCoalgebra<G, F, FlatMatrix<UniPolRing<F>>> {
                                 let (s, t) = match rhs.split_once('.') {
                                     Some((s, t)) => (s.trim(), t.trim()),
                                     None => ("1", rhs.trim()),
-                                }; 
-                                let monomial = parse_monomial(t, &generator_translate, generators.len())
-                                    .map_err(|e| {
-                                        format!("Line {}: Invalid rhs of relation '{}' - {}", line_num, t, e)
-                                    })?;
+                                };
+                                let monomial =
+                                    parse_monomial(t, &generator_translate, generators.len())
+                                        .map_err(|e| {
+                                            format!(
+                                                "Line {}: Invalid rhs of relation '{}' - {}",
+                                                line_num, t, e
+                                            )
+                                        })?;
                                 let value = UniPolRing::parse(s).map_err(|e| {
-                                        format!("Line {}: Invalid value of relation '{}' - {}", line_num, s, e)
-                                    })?;
+                                    format!(
+                                        "Line {}: Invalid value of relation '{}' - {}",
+                                        line_num, s, e
+                                    )
+                                })?;
                                 (lhs.trim(), RelationType::Equal(value, monomial))
-                            },
-                            None => {
-                                (line.trim(), RelationType::Zero)
-                            },
+                            }
+                            None => (line.trim(), RelationType::Zero),
                         };
                         let monomial = parse_monomial(lhs, &generator_translate, generators.len())
                             .map_err(|e| {
@@ -453,7 +491,12 @@ impl<G: Grading, F: Field> ktCoalgebra<G, F, FlatMatrix<UniPolRing<F>>> {
                             })
                             .try_collect()?;
                         if name.trim() != generators[coactions.len()].0 {
-                            return Err(format!("Line {}: Coaction for '{}' must match generator order, expected '{}'", line_num, name.trim(), generators[coactions.len()].0));
+                            return Err(format!(
+                                "Line {}: Coaction for '{}' must match generator order, expected '{}'",
+                                line_num,
+                                name.trim(),
+                                generators[coactions.len()].0
+                            ));
                         }
 
                         coactions.push(tensors);
@@ -482,7 +525,10 @@ impl<G: Grading, F: Field> ktCoalgebra<G, F, FlatMatrix<UniPolRing<F>>> {
 
         // Initialize basis information for the unit monomial (1)
         let mut one_coact = HashMap::default();
-        one_coact.insert((one_monomial.clone(), one_monomial.clone()), UniPolRing::one());
+        one_coact.insert(
+            (one_monomial.clone(), one_monomial.clone()),
+            UniPolRing::one(),
+        );
         monomial_coaction.insert(one_monomial.clone(), one_coact);
 
         basis_translate.insert("1".to_owned(), (G::zero(), 0));
@@ -566,7 +612,13 @@ impl<G: Grading, F: Field> ktCoalgebra<G, F, FlatMatrix<UniPolRing<F>>> {
         println!("Constructing correct datastructures");
 
         // Construct the basis structure
-        let mut basis: HashMap<G, Vec<(BasisElement, <FlatMatrix<UniPolRing<F>> as Abelian<UniPolRing<F>>>::Generator)>> = HashMap::default();
+        let mut basis: HashMap<
+            G,
+            Vec<(
+                BasisElement,
+                <FlatMatrix<UniPolRing<F>> as Abelian<UniPolRing<F>>>::Generator,
+            )>,
+        > = HashMap::default();
         let mut monomial_to_grade_index: HashMap<Monomial, CoalgebraIndex<G>> = HashMap::default();
 
         for monomial in monomial_coaction.keys().sorted() {
@@ -579,11 +631,15 @@ impl<G: Grading, F: Field> ktCoalgebra<G, F, FlatMatrix<UniPolRing<F>>> {
             };
 
             let index = basis.entry(grade.0).or_insert_with(Vec::new).len();
-            monomial_to_grade_index.insert(monomial.clone(), (grade.0, index as CoalgebraIndexType));
+            monomial_to_grade_index
+                .insert(monomial.clone(), (grade.0, index as CoalgebraIndexType));
 
             let index = basis.get(&grade.0).map_or(0, |el| el.len());
             basis_translate.insert(label, (grade.0, index as CoalgebraIndexType));
-            basis.entry(grade.0).or_insert_with(Vec::new).push((element, (grade.1, None)));
+            basis
+                .entry(grade.0)
+                .or_insert_with(Vec::new)
+                .push((element, (grade.1, None)));
         }
 
         // Create the graded vector space A
@@ -610,7 +666,13 @@ impl<G: Grading, F: Field> ktCoalgebra<G, F, FlatMatrix<UniPolRing<F>>> {
                         ));
                         (*a_grade_index, *b_grade_index, *f)
                     })
-                    .sorted_by(|a, b| if a.0 == b.0 {a.1.cmp(&b.1)} else {a.0.cmp(&b.0)})
+                    .sorted_by(|a, b| {
+                        if a.0 == b.0 {
+                            a.1.cmp(&b.1)
+                        } else {
+                            a.0.cmp(&b.0)
+                        }
+                    })
                     .collect();
 
                 (*idx, v)
@@ -632,11 +694,10 @@ impl<G: Grading, F: Field> ktCoalgebra<G, F, FlatMatrix<UniPolRing<F>>> {
 
 type Monomial = Vec<usize>;
 type HelperTensor<F> = HashMap<(Monomial, Monomial), UniPolRing<F>>;
-enum RelationType<FF : Field> {
+enum RelationType<FF: Field> {
     Zero,
-    Equal(UniPolRing<FF>, Monomial)
+    Equal(UniPolRing<FF>, Monomial),
 }
-
 
 fn parse_name_exponent(el: &str) -> Result<(&str, usize), String> {
     let parts: Vec<&str> = el.split('^').collect();
@@ -655,7 +716,7 @@ fn parse_name_exponent(el: &str) -> Result<(&str, usize), String> {
             return Err(format!(
                 "Invalid monomial format '{}' - expected 'name' or 'name^exponent'",
                 el
-            ))
+            ));
         }
     })
 }
@@ -713,7 +774,10 @@ fn monomial_divide(a: &Monomial, b: &Monomial) -> Option<Monomial> {
     }
 }
 
-fn reduce_monomial<F: Field>(m: &Monomial, relations: &Vec<(Monomial, RelationType<F>)>) -> Option<Monomial> {
+fn reduce_monomial<F: Field>(
+    m: &Monomial,
+    relations: &Vec<(Monomial, RelationType<F>)>,
+) -> Option<Monomial> {
     for (relation, _) in relations {
         if monomial_is_divisible(m, relation) {
             return None;
@@ -726,7 +790,7 @@ fn monomial_to_grade<G: Grading>(m: &Monomial, generators: &Vec<(String, G, i32)
     m.iter()
         .zip(generators.iter())
         .map(|(x, (_, g, e))| (g.integer_multiplication(*x as i16), *e * (*x as i32)))
-        .fold((G::zero(), 0), |(i_g, i_e), (g,e)| (i_g + g, i_e + e))
+        .fold((G::zero(), 0), |(i_g, i_e), (g, e)| (i_g + g, i_e + e))
 }
 
 fn monomial_to_string<G: Grading>(m: &Monomial, generators: &Vec<(String, G, i32)>) -> String {
@@ -749,7 +813,11 @@ fn monomial_to_string<G: Grading>(m: &Monomial, generators: &Vec<(String, G, i32
     }
 }
 
-fn multiply_monomials<F: Field>(a: &Monomial, b: &Monomial, relations: &Vec<(Monomial, RelationType<F>)>) -> Option<(UniPolRing<F>, Monomial)> {
+fn multiply_monomials<F: Field>(
+    a: &Monomial,
+    b: &Monomial,
+    relations: &Vec<(Monomial, RelationType<F>)>,
+) -> Option<(UniPolRing<F>, Monomial)> {
     let product = add_monomials(a, b);
     for (relation, el) in relations {
         if let Some(new_mon) = monomial_divide(&product, relation) {
@@ -757,10 +825,10 @@ fn multiply_monomials<F: Field>(a: &Monomial, b: &Monomial, relations: &Vec<(Mon
                 RelationType::Zero => return None,
                 RelationType::Equal(uni_pol_ring, items) => {
                     return match multiply_monomials(&new_mon, items, relations) {
-                        Some((a,b)) => Some((a * *uni_pol_ring, b)),
-                        None => { None },
+                        Some((a, b)) => Some((a * *uni_pol_ring, b)),
+                        None => None,
                     };
-                },
+                }
             }
         }
     }
@@ -1143,7 +1211,7 @@ fn get_list<G: Grading, F: Field, M: Abelian<UniPolRing<F>>>(
 // //                                     r.trim(),
 // //                                     &generator_translate,
 // //                                     generators.len(),
-// //                                 ).map_err(|e| format!("Line {}: Invalid right monomial '{}' - {}", line_num, r.trim(), e))?;                                
+// //                                 ).map_err(|e| format!("Line {}: Invalid right monomial '{}' - {}", line_num, r.trim(), e))?;
 // //                                 Ok((s, coalgebra_elements, right))
 // //                             })
 // //                             .try_collect()?;

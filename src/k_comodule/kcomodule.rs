@@ -12,7 +12,10 @@ use super::kcoalgebra::kCoalgebra;
 
 #[derive(Clone, PartialEq, DeepSizeOf)]
 #[allow(non_camel_case_types)]
-pub struct kComodule<G: Grading, C: Coalgebra<G>> where C::BaseRing: Field {
+pub struct kComodule<G: Grading, C: Coalgebra<G>>
+where
+    C::BaseRing: Field,
+{
     pub space: GradedVectorSpace<G, <C::RingMorph as Abelian<C::BaseRing>>::Generator>,
     pub coaction: GradedLinearMap<G, C::BaseRing, C::RingMorph>,
     pub tensor: TensorMap<G>,
@@ -20,17 +23,32 @@ pub struct kComodule<G: Grading, C: Coalgebra<G>> where C::BaseRing: Field {
 
 #[derive(Debug, Clone, PartialEq, DeepSizeOf)]
 #[allow(non_camel_case_types)]
-pub struct kCofreeComodule<G: Grading, C: Coalgebra<G>> where C::BaseRing: Field  {
-    pub space: GradedVectorSpace<G, ((CoalgebraIndex<G>, u16), <C::RingMorph as Abelian<C::BaseRing>>::Generator)>,
+pub struct kCofreeComodule<G: Grading, C: Coalgebra<G>>
+where
+    C::BaseRing: Field,
+{
+    pub space: GradedVectorSpace<
+        G,
+        (
+            (CoalgebraIndex<G>, u16),
+            <C::RingMorph as Abelian<C::BaseRing>>::Generator,
+        ),
+    >,
 }
 
-impl<G: Grading, C: Coalgebra<G>> std::fmt::Debug for kComodule<G, C> where C::BaseRing: Field {
+impl<G: Grading, C: Coalgebra<G>> std::fmt::Debug for kComodule<G, C>
+where
+    C::BaseRing: Field,
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self.space.0)
     }
 }
 
-impl<G: Grading, C: Coalgebra<G>> kComodule<G, C> where C::BaseRing: Field {
+impl<G: Grading, C: Coalgebra<G>> kComodule<G, C>
+where
+    C::BaseRing: Field,
+{
     pub fn verify(&self) -> bool {
         for (&(m_gr, m_id), map) in &self.tensor.construct {
             let &(t_gr, t_id) = map.get(&(G::zero(), 0)).unwrap();
@@ -66,8 +84,9 @@ impl<G: Grading, C: Coalgebra<G>> kComodule<G, C> where C::BaseRing: Field {
     }
 }
 
-impl<G: Grading, C: Coalgebra<G>> CofreeComodule<G, C> 
-    for kCofreeComodule<G, C> where C::BaseRing: Field 
+impl<G: Grading, C: Coalgebra<G>> CofreeComodule<G, C> for kCofreeComodule<G, C>
+where
+    C::BaseRing: Field,
 {
     fn get_generators(&self) -> Vec<(usize, G, Option<String>)> {
         self.space
@@ -104,7 +123,11 @@ impl<G: Grading, C: Coalgebra<G>> CofreeComodule<G, C>
     }
 }
 
-impl<G: Grading, C: Coalgebra<G>> Comodule<G, kCoalgebra<G, C::BaseRing, C::RingMorph>> for kComodule<G, C> where C::BaseRing: Field {
+impl<G: Grading, C: Coalgebra<G>> Comodule<G, kCoalgebra<G, C::BaseRing, C::RingMorph>>
+    for kComodule<G, C>
+where
+    C::BaseRing: Field,
+{
     fn zero_comodule() -> Self {
         Self {
             space: GradedVectorSpace::new(),

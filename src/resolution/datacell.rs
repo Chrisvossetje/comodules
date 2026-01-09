@@ -4,10 +4,13 @@ use ahash::HashMap;
 use algebra::{abelian::Abelian, matrix::Matrix, ring::CRing};
 use deepsize::DeepSizeOf;
 use itertools::Itertools;
-use rayon::iter::{ParallelBridge, ParallelIterator};
 
-use crate::{grading::grading::{GradedIndexing, Grading}, resolution::cokercell::CokerCell, traits::Coalgebra, types::{AGeneratorIndex, CoalgebraIndexType, CofreeBasis, ComoduleIndexType}};
-
+use crate::{
+    grading::grading::{GradedIndexing, Grading},
+    resolution::cokercell::CokerCell,
+    traits::Coalgebra,
+    types::{AGeneratorIndex, CoalgebraIndexType, CofreeBasis, ComoduleIndexType},
+};
 
 #[allow(type_alias_bounds)]
 pub type AGen<G, C: Coalgebra<G>> = (
@@ -45,13 +48,12 @@ pub type ToViLUT<G, C: Coalgebra<G>> = HashMap<CofreeBasis<G>, Vec<(C::BaseRing,
 ///
 #[derive(Debug, DeepSizeOf)]
 pub struct DataCell<G: Grading, C: Coalgebra<G>> {
-    pub to_cofree: C::RingMorph,
+    pub transposed_to_cofree: C::RingMorph,
     pub a_gens: Vec<AGen<G, C>>,
     pub r_gens: Vec<RGen<G, C>>, // TODO : Seperate RGens with module structure
     pub lut: LUT<G>,
     pub lut2: ToViLUT<G, C>,
 }
-
 
 impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
     fn luts<A: Send + Sync>(
@@ -95,14 +97,12 @@ impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
         (a_gens, r_gens, lut, reduced_to_coker)
     }
 
-    pub fn map_to_cofree() {
-
-    }
+    pub fn map_to_cofree() {}
 
     pub fn resolve<A: Send + Sync>(
         gs: &G::ContiguousMemory<(A, OnceLock<CokerCell<G, C>>, OnceLock<DataCell<G, C>>)>,
         prev_s: &DataCell<G, C>,
-        coker: &CokerCell<G,C>,
+        coker: &CokerCell<G, C>,
         degree: G,
         coalgebra: &C,
     ) -> Self {
@@ -113,15 +113,14 @@ impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
         let (gs_a_gens, mut r_gens, mut lut, reduced_to_coker) =
             DataCell::luts(gs, degree, coalgebra);
 
-        // TODO : Could probably make this transposed for extra speed !
         let mut small_to_cofree =
             <C::RingMorph as Matrix<C::BaseRing>>::zero(coker.cokernel.len(), r_gens.len());
         // let coact_ref = &mut small_to_cofree as *mut C::RingMorph;
         // let map_ref = AtomicPtr::new(coact_ref);
 
+        // TODO : PAR Iter < might not want this ! as the function is "to light"
         // (0..cokernel.len()).into_iter().collect::<Vec<_>>().into_par_iter().with_min_len(32).for_each(|coker_id| {
         (0..coker.cokernel.len()).into_iter().for_each(|coker_id| {
-            // TODO : PAR Iter < might not want this ! as the function is "to light"
             for codom_id in 0..coker.repr_vecs.codomain() {
                 let value = coker.repr_vecs.get(coker_id, codom_id);
                 if value.is_zero() {
@@ -209,27 +208,28 @@ impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
             lut.insert(((G::zero(), 0), a_gen.1), a_gen_idxes[a_gen_id] as u32);
         });
 
-        let mut to_cofree =
-            <C::RingMorph as Matrix<C::BaseRing>>::zero(coker.cokernel.len(), r_gens.len());
+        let mut transposed_to_cofree =
+            <C::RingMorph as Matrix<C::BaseRing>>::zero(r_gens.len(), coker.cokernel.len());
         for (a_gen_id, target_id) in a_gen_idxes.iter().enumerate() {
             let q_index = a_gens[a_gen_id].2;
-            to_cofree.set(q_index as usize, *target_id, C::BaseRing::one());
+            transposed_to_cofree.set(*target_id, q_index as usize, C::BaseRing::one());
         }
 
-        let coact_ref = &mut to_cofree as *mut C::RingMorph;
+        let coact_ref = &mut transposed_to_cofree as *mut C::RingMorph;
         let map_ref = AtomicPtr::new(coact_ref);
 
         r_gens_map
             .iter()
             .enumerate()
-            // .par_bridge() // TODO
             .for_each(|(old_r_gen, new_r_gen)| {
-                let row = small_to_cofree.get_row(old_r_gen);
-                unsafe { (**(map_ref.as_ptr())).set_row(*new_r_gen, row) }
+                for c in 0..coker.cokernel.len() {
+                    let row = small_to_cofree.get(c, old_r_gen);
+                    unsafe { (**(map_ref.as_ptr())).set(*new_r_gen, c, row) }
+                }
             });
 
         Self {
-            to_cofree,
+            transposed_to_cofree,
             a_gens,
             r_gens,
             lut,
@@ -237,12 +237,6 @@ impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
         }
     }
 }
-
-
-
-
-
-
 
 // Helper function
 

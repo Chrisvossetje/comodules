@@ -9,7 +9,15 @@ mod tests {
         rings::finite_fields::{F2, Fp},
     };
 
-    use crate::{grading::{grading::Grading, tensor::TensorMap, unigrading::UniGrading}, k_comodule::{graded_space::{GradedLinearMap, GradedVectorSpace}, kcoalgebra::{A0_coalgebra, kCoalgebra}, kcomodule::kComodule}, traits::Coalgebra};
+    use crate::{
+        grading::{grading::Grading, tensor::TensorMap, unigrading::UniGrading},
+        k_comodule::{
+            graded_space::{GradedLinearMap, GradedVectorSpace},
+            kcoalgebra::{A0_coalgebra, kCoalgebra},
+            kcomodule::kComodule,
+        },
+        traits::Coalgebra,
+    };
 
     // Test for creating an empty kComodule manually
     #[test]
@@ -19,15 +27,14 @@ mod tests {
         // Create empty comodule manually
         let empty_space: GradedVectorSpace<UniGrading, ()> = GradedVectorSpace::new();
         let empty_coaction_maps = HashMap::default();
-        let empty_coaction = GradedLinearMap::<UniGrading, F2, FlatMatrix<F2>>::from(empty_coaction_maps);
+        let empty_coaction =
+            GradedLinearMap::<UniGrading, F2, FlatMatrix<F2>>::from(empty_coaction_maps);
         let empty_tensor = TensorMap::default();
 
-        let comodule: kComodule<UniGrading, kCoalgebra<UniGrading, F2, FlatMatrix<F2>>> = kComodule::new(empty_space, empty_coaction, empty_tensor);
+        let comodule: kComodule<UniGrading, kCoalgebra<UniGrading, F2, FlatMatrix<F2>>> =
+            kComodule::new(empty_space, empty_coaction, empty_tensor);
 
-        assert_eq!(
-            coalgebra.clone().as_ref(),
-            coalgebra.clone().as_ref()
-        );
+        assert_eq!(coalgebra.clone().as_ref(), coalgebra.clone().as_ref());
         assert!(comodule.space.0.is_empty());
         assert!(comodule.coaction.maps.is_empty());
     }
@@ -79,15 +86,12 @@ mod tests {
         // Create simple coaction and tensor maps
         let mut coaction_maps = HashMap::default();
         coaction_maps.insert(UniGrading(0), FlatMatrix::identity(1));
-        let coaction = GradedLinearMap::<UniGrading,F2,FlatMatrix<F2>>::from(coaction_maps);
+        let coaction = GradedLinearMap::<UniGrading, F2, FlatMatrix<F2>>::from(coaction_maps);
 
         let tensor = TensorMap::default();
 
-        let comodule: kComodule<UniGrading, kCoalgebra<UniGrading, F2, FlatMatrix<F2>>> = kComodule::new(
-            GradedVectorSpace::from(space_map),
-            coaction,
-            tensor,
-        );
+        let comodule: kComodule<UniGrading, kCoalgebra<UniGrading, F2, FlatMatrix<F2>>> =
+            kComodule::new(GradedVectorSpace::from(space_map), coaction, tensor);
 
         // Basic tests
         assert_eq!(comodule.space.0.len(), 1);
@@ -104,12 +108,7 @@ mod tests {
             kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input_coalg, UniGrading::infty())
                 .unwrap();
 
-        match kComodule::parse(
-            input_comod,
-            &kcoalg,
-            &translator,
-            UniGrading::infty(),
-        ) {
+        match kComodule::parse(input_comod, &kcoalg, &translator, UniGrading::infty()) {
             Ok(comod) => {
                 assert_eq!(comod.space.0[&UniGrading(0)].len(), 1);
                 assert!(!comod.space.0.contains_key(&UniGrading(1)));
@@ -131,12 +130,7 @@ mod tests {
             kCoalgebra::<UniGrading, F2, FlatMatrix<F2>>::parse(input_coalg, UniGrading(32))
                 .unwrap();
 
-        match kComodule::parse(
-            input_comod,
-            &kcoalg,
-            &translator,
-            UniGrading::infty(),
-        ) {
+        match kComodule::parse(input_comod, &kcoalg, &translator, UniGrading::infty()) {
             Ok(comod) => {
                 println!("{:?}", comod.coaction);
             }
@@ -155,12 +149,7 @@ mod tests {
         let (kcoalg, translator) =
             kCoalgebra::<UniGrading, Fp<3>, FlatMatrix<Fp<3>>>::parse(input_coalg, UniGrading(128))
                 .unwrap();
-        match kComodule::parse(
-            input_comod,
-            &kcoalg,
-            &translator,
-            UniGrading(6),
-        ) {
+        match kComodule::parse(input_comod, &kcoalg, &translator, UniGrading(6)) {
             Ok(comod) => {
                 println!("{:?}", comod.coaction);
             }

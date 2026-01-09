@@ -1,10 +1,21 @@
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
     use ahash::HashMap;
-    use algebra::{abelian::Abelian, field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, rings::{finite_fields::F2, univariate_polynomial_ring::UniPolRing}};
-    use comodules::{export::{Page, SSeq}, grading::{grading::Grading, unigrading::UniGrading}, k_comodule::kcoalgebra::{A0_coalgebra, kCoalgebra}, k_t_comodule::k_t_coalgebra::{A0_C, ktCoalgebra, tensor_k_coalgebra}, resolution::resolve_by_s::Resolution, traits::Coalgebra, types::BasisElement};
+    use algebra::{
+        abelian::Abelian,
+        field::Field,
+        matrices::flat_matrix::FlatMatrix,
+        matrix::Matrix,
+        rings::{finite_fields::F2, univariate_polynomial_ring::UniPolRing},
+    };
+    use comodules::{
+        export::{Page, SSeq},
+        grading::{grading::Grading, unigrading::UniGrading},
+        k_comodule::kcoalgebra::{A0_coalgebra, kCoalgebra},
+        k_t_comodule::k_t_coalgebra::{A0_C, ktCoalgebra, tensor_k_coalgebra},
+        resolution::resolve_by_s::Resolution,
+        traits::Coalgebra,
+    };
     use itertools::Itertools;
 
     #[test]
@@ -34,8 +45,8 @@ mod tests {
 
         res.resolve_to_s(20, UniGrading(40));
 
-        let sseq = res.generate_sseq("A0");
-        let comp_sseq: SSeq = serde_json::from_str(include_str!("./A(0).json")).unwrap();
+        let _sseq = res.generate_sseq("A0");
+        let _comp_sseq: SSeq = serde_json::from_str(include_str!("./A(0).json")).unwrap();
 
         // TODO :
         // assert_eq!(sseq.pages[0].generators, comp_sseq.pages[0].generators);
@@ -62,7 +73,12 @@ mod tests {
     #[test]
     fn test_a1_tensor_parser_resolution() {
         let input = include_str!("../examples/direct/A(1)_dual_graded.txt");
-        let coalgebra = ktCoalgebra::<UniGrading, F2, FlatMatrix<UniPolRing<F2>>>::parse(input, UniGrading::infty()).unwrap().0;
+        let coalgebra = ktCoalgebra::<UniGrading, F2, FlatMatrix<UniPolRing<F2>>>::parse(
+            input,
+            UniGrading::infty(),
+        )
+        .unwrap()
+        .0;
 
         let kt = ktCoalgebra::basering_comodule(&coalgebra, UniGrading(0));
 
@@ -96,7 +112,12 @@ mod tests {
     #[test]
     fn test_a1_c_resolution() {
         let input = include_str!("../examples/direct/A(1)_C.txt");
-        let coalgebra = ktCoalgebra::<UniGrading, F2, FlatMatrix<UniPolRing<F2>>>::parse(input, UniGrading::infty()).unwrap().0;
+        let coalgebra = ktCoalgebra::<UniGrading, F2, FlatMatrix<UniPolRing<F2>>>::parse(
+            input,
+            UniGrading::infty(),
+        )
+        .unwrap()
+        .0;
 
         let kt = ktCoalgebra::basering_comodule(&coalgebra, UniGrading(0));
 
@@ -108,16 +129,15 @@ mod tests {
 
         let mut gens = vec![];
 
-        for (s, ((f_full, n_full), (g_full, q_full))) in ccpx.0.iter().zip(ccpx.1).tuple_windows().enumerate() {
+        for (s, ((f_full, n_full), (g_full, q_full))) in
+            ccpx.0.iter().zip(ccpx.1).tuple_windows().enumerate()
+        {
             let mut count = 0;
             for (gr, f) in f_full {
                 let zero_map = FlatMatrix::zero(0, 0);
                 let g = match g_full.get(gr) {
-                    Some(g) => { g
-                    },
-                    None => {
-                        &zero_map
-                    },
+                    Some(g) => g,
+                    None => &zero_map,
                 };
                 let empty = vec![];
 
@@ -136,7 +156,7 @@ mod tests {
             }
         }
 
-        println!("{:?}",gens);
+        println!("{:?}", gens);
 
         let page = Page {
             id: 2,
@@ -163,7 +183,10 @@ mod tests {
     #[test]
     fn test_a1_c_parser() {
         let input = include_str!("../examples/polynomial/A(1)_C.txt");
-        let coalgebra = ktCoalgebra::<UniGrading, F2, FlatMatrix<UniPolRing<F2>>>::parse(input, UniGrading(80)).unwrap().0;
+        let coalgebra =
+            ktCoalgebra::<UniGrading, F2, FlatMatrix<UniPolRing<F2>>>::parse(input, UniGrading(80))
+                .unwrap()
+                .0;
 
         let kt = ktCoalgebra::basering_comodule(&coalgebra, UniGrading(0));
 
@@ -171,21 +194,19 @@ mod tests {
 
         res.resolve_to_s(25, UniGrading(80));
 
-
         let ccpx = to_cochain_cpx(res);
 
         let mut gens = vec![];
 
-        for (s, ((f_full, n_full), (g_full, q_full))) in ccpx.0.iter().zip(ccpx.1).tuple_windows().enumerate() {
+        for (s, ((f_full, n_full), (g_full, q_full))) in
+            ccpx.0.iter().zip(ccpx.1).tuple_windows().enumerate()
+        {
             let mut count = 0;
             for (gr, f) in f_full {
                 let zero_map = FlatMatrix::zero(0, 0);
                 let g = match g_full.get(gr) {
-                    Some(g) => { g
-                    },
-                    None => {
-                        &zero_map
-                    },
+                    Some(g) => g,
+                    None => &zero_map,
                 };
                 let empty = vec![];
 
@@ -204,7 +225,7 @@ mod tests {
             }
         }
 
-        println!("{:?}",gens);
+        println!("{:?}", gens);
 
         let page = Page {
             id: 2,
@@ -231,7 +252,10 @@ mod tests {
     #[test]
     fn test_a2_c_parser() {
         let input = include_str!("../examples/polynomial/A(2)_C.txt");
-         let coalgebra = ktCoalgebra::<UniGrading, F2, FlatMatrix<UniPolRing<F2>>>::parse(input, UniGrading(30)).unwrap().0;
+        let coalgebra =
+            ktCoalgebra::<UniGrading, F2, FlatMatrix<UniPolRing<F2>>>::parse(input, UniGrading(30))
+                .unwrap()
+                .0;
 
         let kt = ktCoalgebra::basering_comodule(&coalgebra, UniGrading(0));
 
@@ -243,16 +267,15 @@ mod tests {
 
         let mut gens = vec![];
 
-        for (s, ((f_full, n_full), (g_full, q_full))) in ccpx.0.iter().zip(ccpx.1).tuple_windows().enumerate() {
+        for (s, ((f_full, n_full), (g_full, q_full))) in
+            ccpx.0.iter().zip(ccpx.1).tuple_windows().enumerate()
+        {
             let mut count = 0;
             for (gr, f) in f_full {
                 let zero_map = FlatMatrix::zero(0, 0);
                 let g = match g_full.get(gr) {
-                    Some(g) => { g
-                    },
-                    None => {
-                        &zero_map
-                    },
+                    Some(g) => g,
+                    None => &zero_map,
                 };
                 let empty = vec![];
 
@@ -274,7 +297,7 @@ mod tests {
             }
         }
 
-        println!("{:?}",gens);
+        println!("{:?}", gens);
 
         let page = Page {
             id: 2,
@@ -343,20 +366,26 @@ mod tests {
     //     }
     // }
 
-    fn to_cochain_cpx<F: Field, M: Abelian<UniPolRing<F>>>(res: Resolution<UniGrading, ktCoalgebra<UniGrading, F, M>>) -> (Vec<HashMap<UniGrading, FlatMatrix<UniPolRing<F>>>>, Vec<HashMap<UniGrading, Vec<(M::Generator)>>>) {
+    fn to_cochain_cpx<F: Field, M: Abelian<UniPolRing<F>>>(
+        res: Resolution<UniGrading, ktCoalgebra<UniGrading, F, M>>,
+    ) -> (
+        Vec<HashMap<UniGrading, FlatMatrix<UniPolRing<F>>>>,
+        Vec<HashMap<UniGrading, Vec<M::Generator>>>,
+    ) {
         let mut maps = vec![];
         let mut codomains = vec![];
 
         // res.resolution[0].domain;
         for (s, a) in res.resolution.iter().enumerate() {
-
             let mut gr_map = HashMap::default();
             let mut gr_codom = HashMap::default();
 
-            for (gr,map) in &a.0.map.maps {
+            for (gr, map) in &a.0.map.maps {
                 let empty = vec![];
-                let domain = if s == 0 {&empty} else {
-                    res.resolution[s-1].1.space.0.get(gr).unwrap_or(&empty)
+                let domain = if s == 0 {
+                    &empty
+                } else {
+                    res.resolution[s - 1].1.space.0.get(gr).unwrap_or(&empty)
                 };
                 let codomain = a.1.space.0.get(gr).unwrap_or(&empty);
 
@@ -385,10 +414,8 @@ mod tests {
                     }
                 }
 
-                gr_map.insert(*gr,new_map);
-                let real_codom = new_codomain.iter().map(|x| {
-                    x.1.1.clone()
-                }).collect();
+                gr_map.insert(*gr, new_map);
+                let real_codom = new_codomain.iter().map(|x| x.1.1.clone()).collect();
                 gr_codom.insert(*gr, real_codom);
             }
             maps.push(gr_map);

@@ -6,7 +6,9 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 use crate::{
-    grading::grading::Grading, k_comodule::graded_space::GradedVectorSpace, types::{CoalgebraIndex, CoalgebraIndexType, ComoduleIndex, ComoduleIndexType}
+    grading::grading::Grading,
+    k_comodule::graded_space::GradedVectorSpace,
+    types::{CoalgebraIndex, CoalgebraIndexType, ComoduleIndex, ComoduleIndexType},
 };
 
 pub type TensorConstruct<G> =
@@ -48,26 +50,6 @@ impl<G: Grading, B> ObjectGenerator<G> for GradedVectorSpace<G, B> {
     }
 }
 
-
-// TODO :
-// impl<G: Grading> ObjectGenerator<G> for GradedModule<G> {
-//     fn contains_grade(&self, grade: &G) -> bool {
-//         self.0.contains_key(grade)
-//     }
-
-//     fn els(&self, grade: &G) -> usize {
-//         self.0.get(grade).map_or(0, |x| x.len())
-//     }
-
-//     fn sorted_els(&self) -> Vec<(G, usize)> {
-//         self.0
-//             .iter()
-//             .sorted_by_key(|(g, _)| **g)
-//             .map(|(&g, l)| (g, l.len()))
-//             .collect()
-//     }
-// }
-
 impl<G: Grading> TensorMap<G> {
     pub fn default() -> Self {
         Self {
@@ -106,8 +88,10 @@ impl<G: Grading> TensorMap<G> {
                             .or_insert(HashMap::default())
                             .insert((l_grade, l_id), (t_grade, *t_id as ComoduleIndexType));
 
-                        deconstruct
-                            .insert((t_grade, *t_id as ComoduleIndexType), ((l_grade, l_id), (r_grade, r_id)));
+                        deconstruct.insert(
+                            (t_grade, *t_id as ComoduleIndexType),
+                            ((l_grade, l_id), (r_grade, r_id)),
+                        );
                         *t_id = *t_id + 1;
                     }
                 }

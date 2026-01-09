@@ -1,22 +1,37 @@
 use std::marker::PhantomData;
 
 use ahash::HashMap;
-use algebra::{abelian::Abelian, field::Field, matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::{finite_fields::F2, univariate_polynomial_ring::UniPolRing}};
+use algebra::{
+    abelian::Abelian,
+    field::Field,
+    matrices::flat_matrix::FlatMatrix,
+    ring::CRing,
+    rings::{finite_fields::F2, univariate_polynomial_ring::UniPolRing},
+};
 use deepsize::DeepSizeOf;
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::{grading::{grading::Grading, tensor::TensorMap, unigrading::UniGrading}, k_comodule::{graded_space::GradedVectorSpace, kcoalgebra::kCoalgebra}, k_t_comodule::{graded_module_morphism::GradedktFieldMap, k_t_comodule::{ktCofreeComodule, ktComodule}, k_t_morphism::ktComoduleMorphism}, traits::Coalgebra, types::{AGeneratorIndex, BasisElement, CoalgebraIndex, CoalgebraIndexType}};
+use crate::{
+    grading::{grading::Grading, tensor::TensorMap, unigrading::UniGrading},
+    k_comodule::{graded_space::GradedVectorSpace, kcoalgebra::kCoalgebra},
+    k_t_comodule::{
+        graded_module::GradedktFieldMap,
+        k_t_comodule::{ktCofreeComodule, ktComodule},
+        k_t_morphism::ktComoduleMorphism,
+    },
+    traits::Coalgebra,
+    types::{AGeneratorIndex, BasisElement, CoalgebraIndex, CoalgebraIndexType},
+};
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, DeepSizeOf)]
 #[allow(non_camel_case_types)]
 pub struct ktCoalgebra<G: Grading, F: Field, M: Abelian<UniPolRing<F>>> {
     pub space: GradedVectorSpace<G, (BasisElement, M::Generator)>,
-    pub coaction: HashMap<CoalgebraIndex<G>, Vec<(CoalgebraIndex<G>, CoalgebraIndex<G>, UniPolRing<F>)>>,
+    pub coaction:
+        HashMap<CoalgebraIndex<G>, Vec<(CoalgebraIndex<G>, CoalgebraIndex<G>, UniPolRing<F>)>>,
 }
 
-
-impl <G: Grading, F: Field, M: Abelian<UniPolRing<F>>> Coalgebra<G> for ktCoalgebra<G,F,M> {
+impl<G: Grading, F: Field, M: Abelian<UniPolRing<F>>> Coalgebra<G> for ktCoalgebra<G, F, M> {
     type BaseField = F;
     type BaseRing = UniPolRing<F>;
     type RingMorph = M;
@@ -35,15 +50,19 @@ impl <G: Grading, F: Field, M: Abelian<UniPolRing<F>>> Coalgebra<G> for ktCoalge
         self.coaction.get(&i).unwrap().as_slice()
     }
 
-
     fn basering_comodule(&self, shift: G) -> Self::Comod {
         let zero = G::zero();
-        
-        let space_map: HashMap<G, Vec<_>> = [(shift, vec![M::Generator::default()])].into_iter().collect();
+
+        let space_map: HashMap<G, Vec<_>> = [(shift, vec![M::Generator::default()])]
+            .into_iter()
+            .collect();
         let space = GradedVectorSpace::from(space_map);
 
         let coact_map: HashMap<G, M> = [(shift, M::identity(1))].into_iter().collect();
-        let coaction = GradedktFieldMap { maps: coact_map, _p: PhantomData };
+        let coaction = GradedktFieldMap {
+            maps: coact_map,
+            _p: PhantomData,
+        };
 
         let mut dimensions = HashMap::default();
         dimensions.insert(shift, 1);
@@ -69,7 +88,13 @@ impl <G: Grading, F: Field, M: Abelian<UniPolRing<F>>> Coalgebra<G> for ktCoalge
         }
     }
 
-    fn cofree_comodule(&self, index: usize, shift: G, limit: G, generator: <Self::RingMorph as Abelian<Self::BaseRing>>::Generator) -> Self::CofMod {
+    fn cofree_comodule(
+        &self,
+        index: usize,
+        shift: G,
+        limit: G,
+        generator: <Self::RingMorph as Abelian<Self::BaseRing>>::Generator,
+    ) -> Self::CofMod {
         let space: HashMap<G, Vec<_>> = self
             .space
             .0
@@ -78,7 +103,12 @@ impl <G: Grading, F: Field, M: Abelian<UniPolRing<F>>> Coalgebra<G> for ktCoalge
                 let sum = *g + shift;
                 if sum <= limit {
                     let k_basis: Vec<_> = (0..v.len())
-                        .map(|j| (((*g, j as CoalgebraIndexType), index as AGeneratorIndex), generator))
+                        .map(|j| {
+                            (
+                                ((*g, j as CoalgebraIndexType), index as AGeneratorIndex),
+                                generator,
+                            )
+                        })
                         .collect();
                     Some((*g + shift, k_basis))
                 } else {
@@ -90,7 +120,7 @@ impl <G: Grading, F: Field, M: Abelian<UniPolRing<F>>> Coalgebra<G> for ktCoalge
         Self::CofMod {
             space: GradedVectorSpace(space),
         }
-    }    
+    }
 
     // fn cofree_comodule(coalgebra: Arc<Self::Coalgebra>, index: usize, grade: G, limit: G, generator: Self::Generator) -> Self {
     //     let coact_maps = match generator.1 {
@@ -111,7 +141,7 @@ impl <G: Grading, F: Field, M: Abelian<UniPolRing<F>>> Coalgebra<G> for ktCoalge
     //             hashmap_add_restrict(&coalgebra.coaction.maps, grade, limit)
     //         },
     //     };
-            
+
     //     let space = hashmap_add_restrict_transform(&coalgebra.space.0, grade, limit, |v| {
     //         v.iter()
     //             .map(|basis| {
@@ -161,8 +191,7 @@ pub fn A0_C() -> ktCoalgebra<UniGrading, F2, FlatMatrix<UniPolRing<F2>>> {
                 name: "1".to_owned(),
                 excess: 0,
             },
-            (0,
-            None)
+            (0, None),
         )],
     );
 
@@ -173,17 +202,34 @@ pub fn A0_C() -> ktCoalgebra<UniGrading, F2, FlatMatrix<UniPolRing<F2>>> {
                 name: "t0".to_owned(),
                 excess: 1,
             },
-            (0,
-            None)
+            (0, None),
         )],
     );
 
     let mut coaction = HashMap::default();
-    coaction.insert((UniGrading::zero(), 0), vec![((UniGrading::zero(), 0),(UniGrading::zero(), 0), UniPolRing::one())]);
-    coaction.insert((UniGrading(1), 0), vec![
-        ((UniGrading::zero(), 0),(UniGrading(1), 0), UniPolRing::one()),
-        ((UniGrading(1), 0),(UniGrading::zero(), 0), UniPolRing::one()) 
-        ]);
+    coaction.insert(
+        (UniGrading::zero(), 0),
+        vec![(
+            (UniGrading::zero(), 0),
+            (UniGrading::zero(), 0),
+            UniPolRing::one(),
+        )],
+    );
+    coaction.insert(
+        (UniGrading(1), 0),
+        vec![
+            (
+                (UniGrading::zero(), 0),
+                (UniGrading(1), 0),
+                UniPolRing::one(),
+            ),
+            (
+                (UniGrading(1), 0),
+                (UniGrading::zero(), 0),
+                UniPolRing::one(),
+            ),
+        ],
+    );
 
     ktCoalgebra {
         space: GradedVectorSpace::from(space),
@@ -194,24 +240,32 @@ pub fn A0_C() -> ktCoalgebra<UniGrading, F2, FlatMatrix<UniPolRing<F2>>> {
 pub fn tensor_k_coalgebra(
     coalgebra: kCoalgebra<UniGrading, F2, FlatMatrix<F2>>,
 ) -> ktCoalgebra<UniGrading, F2, FlatMatrix<UniPolRing<F2>>> {
-
     let (space, coaction) = (coalgebra.space, coalgebra.coaction);
 
     let space: HashMap<_, _> = space
         .0
         .into_iter()
         .map(|x| {
-            let gr = UniGrading(x.0 .0);
+            let gr = UniGrading(x.0.0);
             let module: Vec<(BasisElement, (i32, Option<u16>))> =
                 x.1.into_iter().map(|y| (y, (0, None))).collect();
             (gr, module)
         })
         .collect();
 
-    let coaction: HashMap<(UniGrading, u16), Vec<((UniGrading, u16), (UniGrading, u16), UniPolRing<F2>)>> = coaction.into_iter().map(|(gr, m)| {        
-        let new_m: Vec<_> = m.into_iter().map(|x| (x.0, x.1, UniPolRing(x.2,0))).collect();
-        (gr, new_m)
-    }).collect();
+    let coaction: HashMap<
+        (UniGrading, u16),
+        Vec<((UniGrading, u16), (UniGrading, u16), UniPolRing<F2>)>,
+    > = coaction
+        .into_iter()
+        .map(|(gr, m)| {
+            let new_m: Vec<_> = m
+                .into_iter()
+                .map(|x| (x.0, x.1, UniPolRing(x.2, 0)))
+                .collect();
+            (gr, new_m)
+        })
+        .collect();
 
     ktCoalgebra {
         space: GradedVectorSpace::from(space),

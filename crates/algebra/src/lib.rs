@@ -7,7 +7,6 @@ pub mod ring;
 pub mod matrix;
 pub mod abelian;
 
-// TODO : Find a better place for snf
 pub mod snf;
 
 #[cfg(test)]

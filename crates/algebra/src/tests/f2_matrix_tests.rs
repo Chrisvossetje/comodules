@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::{matrices::f2_matrix::F2Matrix, matrix::{self, Matrix}, ring::CRing, rings::finite_fields::F2};
+    use crate::{matrices::f2_matrix::F2Matrix, matrix::Matrix, ring::CRing, rings::finite_fields::F2};
 
     #[test]
     fn test_vstack_1() {

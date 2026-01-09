@@ -7,8 +7,16 @@ mod tests {
         matrices::flat_matrix::FlatMatrix, matrix::Matrix, ring::CRing, rings::finite_fields::F2,
     };
 
-    use crate::{grading::{grading::Grading, unigrading::UniGrading}, k_comodule::{graded_space::GradedLinearMap, kcoalgebra::{A0_coalgebra, kCoalgebra}, kcomodule::{kCofreeComodule, kComodule}, kmorphism::kComoduleMorphism}, traits::{Coalgebra, CofreeComodule}};
     use crate::traits::ComoduleMorphism;
+    use crate::{
+        grading::{grading::Grading, unigrading::UniGrading},
+        k_comodule::{
+            graded_space::GradedLinearMap,
+            kcoalgebra::{A0_coalgebra, kCoalgebra},
+            kmorphism::kComoduleMorphism,
+        },
+        traits::Coalgebra,
+    };
 
     #[test]
     fn test_inject_codomain_to_cofree() {
@@ -30,8 +38,7 @@ mod tests {
 
         let domain = kCoalgebra::basering_comodule(&coalgebra, UniGrading::zero());
 
-        let codomain =
-            coalgebra.cofree_comodule(0, UniGrading(0), UniGrading(5), ());
+        let codomain = coalgebra.cofree_comodule(0, UniGrading(0), UniGrading(5), ());
 
         // Manually create a zero map
         let mut maps = HashMap::default();
@@ -45,7 +52,10 @@ mod tests {
         let mut map: GradedLinearMap<UniGrading, F2, FlatMatrix<F2>> = GradedLinearMap::from(maps);
 
         // Set one element to F2::one()
-        map.maps.get_mut(&UniGrading(0)).unwrap().set(0, 0, F2::one());
+        map.maps
+            .get_mut(&UniGrading(0))
+            .unwrap()
+            .set(0, 0, F2::one());
 
         let morphism = kComoduleMorphism { map };
 

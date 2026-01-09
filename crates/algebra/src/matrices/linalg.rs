@@ -13,8 +13,8 @@ impl<F: Field> Abelian<F> for FlatMatrix<F> {
         (kernel, vec![(); len])
     }
     
-    fn cokernel(&self, _codomain: &Vec<Self::Generator>) -> (Self, Self, Vec<Self::Generator>) {                
-        let (coker, module) = self.transpose().kernel(&vec![], &vec![]);
+    fn transposed_cokernel(&self, _codomain: &Vec<Self::Generator>) -> (Self, Self, Vec<Self::Generator>) {                
+        let (coker, module) = self.kernel(&vec![], &vec![]);
         let p = coker.pivots();
 
         let mut repr_vecs = FlatMatrix::zero(coker.codomain, coker.domain);
@@ -25,6 +25,10 @@ impl<F: Field> Abelian<F> for FlatMatrix<F> {
         debug_assert!(coker.compose(&repr_vecs).is_unit().is_ok());
 
         (coker, repr_vecs, module)
+    }
+
+    fn cokernel(&self, codomain: &Vec<Self::Generator>) -> (Self, Self, Vec<Self::Generator>) {                
+        return self.transpose().transposed_cokernel(&codomain);
     }
     
     fn cohomology(_f: &Self, _g: &Self, _n: &Vec<Self::Generator>, _q: &Vec<Self::Generator>) -> (Self, Vec<Self::Generator>) {
@@ -39,12 +43,15 @@ impl<F: Field> Abelian<F> for FlatMatrix<F> {
         let mut pivots = vec![];
         let (mut kernel, _) = self.kernel(&vec![], &vec![]);
 
-        while let Some(pivot) = kernel.first_non_zero_entry().map(|(x, _)| x) {
-            pivots.push(pivot);
-            for codom in 0..kernel.codomain() {
-                kernel.set(pivot, codom, F::zero());
+        while let Some((pivot_domain, pivot_codomain)) = kernel.first_non_zero_entry() {
+            pivots.push(pivot_domain);
+            
+            for domain in 0..kernel.domain() {
+                kernel.set(domain, pivot_codomain, F::zero());
             }
-            kernel.rref();
+            for codom in 0..kernel.codomain() {
+                kernel.set(pivot_domain, codom, F::zero());
+            }
         }
         pivots
     }

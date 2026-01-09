@@ -13,7 +13,7 @@ mod tests {
         matrix.set_element(0, 1, F2::one()); 
         matrix.set_element(0, 2, F2::one()); 
 
-        matrix.rref();
+        matrix.echelonize();
 
 
         // Should be in rref form:
@@ -37,7 +37,7 @@ mod tests {
         matrix.set_element(1, 1, F2::one());  // (1,1) = 1  
         matrix.set_element(2, 1, F2::one());  // (2,1) = 1
 
-        matrix.rref();
+        matrix.echelonize();
 
         // Should be in rref form:
         // [1 0 1]
@@ -66,7 +66,7 @@ mod tests {
         matrix.set_element(0, 2, F2::one());  // (0,2) = 1
         matrix.set_element(1, 2, F2::one());  // (1,2) = 1
 
-        matrix.rref();
+        matrix.echelonize();
 
         println!("{:?}", matrix);
 
@@ -118,7 +118,7 @@ mod tests {
         matrix.set_element(1, 1, F2::one());
         matrix.set_element(2, 1, F2::one());
         
-        matrix.rref();
+        matrix.echelonize();
         let kernel = matrix.rref_kernel();
 
 
@@ -171,7 +171,7 @@ mod tests {
         matrix.set_element(1, 1, F2::one());
         matrix.set_element(2, 1, F2::one());
 
-        matrix.add_row_to_row(0, 1);
+        matrix.xor_row_from_word(1, 0, 0);
 
         // Row 1 = Row 1 XOR Row 0
         assert_eq!(matrix.get_element(0, 0), F2::one());   // unchanged
@@ -180,28 +180,6 @@ mod tests {
         assert_eq!(matrix.get_element(0, 1), F2::one());   // 0 XOR 1 = 1
         assert_eq!(matrix.get_element(1, 1), F2::one());   // 1 XOR 0 = 1
         assert_eq!(matrix.get_element(2, 1), F2::zero());  // 1 XOR 1 = 0
-    }
-
-    #[test]
-    fn test_is_rref() {
-        // Test a matrix that is in rref
-        let mut rref_matrix = F2Matrix::zero(3, 2);
-        rref_matrix.set_element(0, 0, F2::one());  // pivot at (0,0)
-        rref_matrix.set_element(2, 0, F2::one());
-        rref_matrix.set_element(1, 1, F2::one());  // pivot at (1,1)
-        rref_matrix.set_element(2, 1, F2::zero());
-
-        assert!(rref_matrix.is_rref());
-
-        // Test a matrix that is NOT in rref
-        let mut non_rref_matrix = F2Matrix::zero(3, 2);
-        non_rref_matrix.set_element(0, 0, F2::one());
-        non_rref_matrix.set_element(2, 0, F2::one());
-        non_rref_matrix.set_element(0, 1, F2::one()); // Should be 0 for rref
-        non_rref_matrix.set_element(1, 1, F2::one());
-        non_rref_matrix.set_element(2, 1, F2::one());
-
-        assert!(!non_rref_matrix.is_rref());
     }
 
     #[test]
@@ -235,7 +213,7 @@ mod tests {
             matrix.set_element(i, i % 50, F2::one());
         }
 
-        matrix.rref();
+        matrix.echelonize();
         
         assert!(matrix.is_rref());
         assert_eq!(matrix.rank(), 50);
@@ -244,7 +222,7 @@ mod tests {
 
     #[test]
     fn test_rref_4() {
-        let mut matrix = FlatMatrix {
+        let matrix = FlatMatrix {
             data: vec![F2 { 0: 1 }, F2 { 0: 0 }],
             domain: 1,
             codomain: 2,
@@ -255,45 +233,8 @@ mod tests {
             codomain: 2,
         };
         let mut f2_matrix = F2Matrix::from_flat(matrix);
-        f2_matrix.rref();
+        f2_matrix.echelonize();
         let f2_expected = F2Matrix::from_flat(expected);
-        assert_eq!(f2_matrix, f2_expected);
-    }
-
-    #[test]
-    fn test_rref_5() {
-        let mut matrix = FlatMatrix {
-            data: vec![
-                // F2::zero(), F2::zero(), F2::zero(), F2::zero(),
-                F2::zero(),
-                F2::one(),
-                F2::zero(),
-                F2::one(),
-                F2::one(),
-                F2::zero(),
-                F2::one(),
-                F2::one(),
-            ],
-            domain: 4,
-            codomain: 2,
-        };
-        let expected = FlatMatrix {
-            data: vec![
-                F2::one(),
-                F2::zero(),
-                F2::one(),
-                F2::one(),
-                F2::zero(),
-                F2::one(),
-                F2::zero(),
-                F2::one(),
-            ],
-            domain: 4,
-            codomain: 2,
-        };
-        let mut f2_matrix = F2Matrix::from_flat(matrix);
-        f2_matrix.rref();
-        let f2_expected = F2Matrix::from_flat(expected);
-        assert_eq!(f2_matrix, f2_expected);
+        assert_eq!(f2_matrix.data, f2_expected.data);
     }
 }

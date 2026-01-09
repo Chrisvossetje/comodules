@@ -160,20 +160,20 @@ impl Grading for BiGrading {
 
     fn compare(self, rhs: &Self) -> Ordering {
         self.cmp(rhs)
-    }   
+    }
 
     fn nexts(&self) -> Vec<Self> {
         let a = BiGrading(self.0 + 1, self.1);
         let b = BiGrading(self.0, self.1 + 1);
-        vec![a,b]
+        vec![a, b]
     }
 
     fn directions() -> usize {
-        2 
+        2
     }
 
     fn incomings(&self) -> usize {
-        let mut m = 0; 
+        let mut m = 0;
         if self.0 > 0 {
             m += 1;
         }

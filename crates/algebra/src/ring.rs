@@ -36,8 +36,6 @@ pub trait CRing:
 
 
     fn is_unit(&self) -> bool;
-
-    // 
     fn try_inverse(&self) -> Option<Self>;
 
     // If you know an element is a unit
@@ -51,9 +49,3 @@ pub(crate) trait ValuationRing: CRing {
     fn divides(self, other: &Self) -> bool;
     fn unsafe_divide(self, div: Self) -> Self;
 }
-
-// TODO : Do potentially more SNF stuff ? Prob remove
-// pub(crate) trait PID: CRing {
-//     fn gcd(&self, other: &Self) -> Self;
-// }
-
