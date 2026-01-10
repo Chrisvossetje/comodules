@@ -1,9 +1,11 @@
 use algebra::matrices::f2_matrix::F2Matrix;
+use algebra::matrices::flat_matrix::FlatMatrix;
 use algebra::rings::finite_fields::F2;
 use comodules::export::{Page, SSeq};
 use comodules::grading::grading::Grading;
 use comodules::grading::unigrading::UniGrading;
 use comodules::k_comodule::kcoalgebra::kCoalgebra;
+use comodules::resolution::resolve_by_s::Resolution;
 use comodules::resolution::superparallel::ParallelResolution;
 use comodules::traits::Coalgebra;
 use std::time::Instant;
@@ -266,8 +268,9 @@ use std::time::Instant;
 // }
 
 fn main() {
-    const MAX_GRADING: UniGrading = UniGrading(128);
+    const MAX_GRADING: UniGrading = UniGrading(80);
     const S: usize = 40;
+    const ADAMS_BOUND: bool = true;
 
     let start = Instant::now();
 
@@ -292,38 +295,30 @@ fn main() {
     let coalgebra = coalgebra;
 
     let fp = coalgebra.basering_comodule(UniGrading::zero());
-    let res = ParallelResolution::init(coalgebra, fp, S, MAX_GRADING);
+    let res = ParallelResolution::init(coalgebra, fp, S, ADAMS_BOUND, MAX_GRADING);
     res.populate();
 
     let resolution_time = Instant::now();
 
     // Parallal Executor
-    rayon::scope(|i| {
-        res.recursion_solve(i);
-    });
-
+    res.parallel_solve();
+    
     // // Non Parallal executor
-    // for g in MAX_GRADING.iterator_from_zero(true) {
-    //     for s in 1..=S {
-    //         if s==1 && g == UniGrading(2) {
-    //             println!("S:{}, G:{}", s, g);
-    //         }
-    //         res.resolve_coker_at_s_g(s, g);
-    //         res.resolve_data_at_s_g(s, g);
-    //     }
-    // }
+    // res.linear_solve();
 
     let mut gens = vec![];
-
     for s in 0..=S {
-        for g in MAX_GRADING.iterator_from_zero(true) {
-            let mut a_gens = res
-                .get_data_cell(s, g)
-                .a_gens
-                .iter()
-                .map(|x| (s, x.1 as usize, g.export_grade(), None))
-                .collect();
-            gens.append(&mut a_gens);
+        for g in res.grade_iter(s+1, true) {
+            if g <= res.largest_degree() {
+                if let Some(cell) = res.data[s].get(g.to_index()).unwrap().2.get() {
+                    let mut a_gens = cell
+                        .a_gens
+                        .iter()
+                        .map(|x| (s, x.1 as usize, g.export_grade(), None))
+                        .collect();
+                    gens.append(&mut a_gens);
+                }
+            }
         }
     }
 
@@ -354,6 +349,51 @@ fn main() {
 
     println!("\nProgram took: {:.2?}", start.elapsed());
 }
+
+// fn main() {
+//     const MAX_GRADING: UniGrading = UniGrading(23);
+//     const S: usize = 20;
+
+//     let start = Instant::now();
+
+//     println!("Started processing coalgebra");
+//     let input = include_str!("../../examples/polynomial/A.txt");
+//     let coalgebra = kCoalgebra::<UniGrading, F2, F2Matrix>::parse(input, MAX_GRADING)
+//         .unwrap()
+//         .0;
+//     println!("Ended processing coalgebra");
+
+//     println!(
+//         "Elements in coalgebra: {:?}\nSize of coalgebra: {:?}\nSize of space:{:?}\nSize of coaction:{:?}\n",
+//         coalgebra
+//             .space
+//             .0
+//             .iter()
+//             .fold(0, |count, g| count + g.1.len()),
+//         deepsize::DeepSizeOf::deep_size_of(&coalgebra),
+//         deepsize::DeepSizeOf::deep_size_of(&coalgebra.space),
+//         deepsize::DeepSizeOf::deep_size_of(&coalgebra.coaction),
+//     );
+//     let coalgebra = coalgebra;
+
+//     let fp = coalgebra.basering_comodule(UniGrading::zero());
+//     let mut res = Resolution::new(coalgebra, fp);
+
+//     let resolution_time = Instant::now();
+//     res.resolve_to_s_with_print(S, MAX_GRADING);
+
+//     let sseq = res.generate_sseq("A");
+
+//     sseq.save_to_json("A_normal_new.json").unwrap();
+
+//     println!(
+//         "\nCoalgebra generation took: {:.2?}",
+//         (resolution_time - start)
+//     );
+//     println!("\nResolution took: {:.2?}", resolution_time.elapsed());
+
+//     println!("\nProgram took: {:.2?}", start.elapsed());
+// }
 
 // fn main() {
 //     const MAX_GRADING: UniGrading = UniGrading(35);

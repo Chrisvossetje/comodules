@@ -13,5 +13,6 @@
 
 New Todos:
 
-- Make it bounded by t-s
+- Check if t-s bound is compatible wrt. bigrading
+- Make the computation recovorable ?
 - Improve algebra of F2[t] stuff + Check if this reduces to F2 linalg

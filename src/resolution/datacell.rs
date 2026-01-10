@@ -42,8 +42,8 @@ pub type ToViLUT<G, C: Coalgebra<G>> = HashMap<CofreeBasis<G>, Vec<(C::BaseRing,
 /// lut: A \otimes V_i -> to its index in r_gens  
 ///
 /// lut2: For each basis element in  A \otimes V_i-1 wrt (alg_gr, alg_id), v_i index (so not r_gens basis!)
-///         gives a list of elements in V_i \subset Q_i to which it maps to
-///       One could also see this is the R linear map from A \otimes V_i-1 \to V_i
+///         gives a list of elements in V_i \subset Q_i to which it maps
+///       One could also see this as the R linear map from A \otimes V_i-1 \to V_i
 ///         given by the adjunction
 ///
 #[derive(Debug, DeepSizeOf)]
@@ -99,20 +99,35 @@ impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
 
     pub fn map_to_cofree() {}
 
-    pub fn resolve<A: Send + Sync>(
+    pub fn boundary_resolve<A: Send + Sync>(
         gs: &G::ContiguousMemory<(A, OnceLock<CokerCell<G, C>>, OnceLock<DataCell<G, C>>)>,
-        prev_s: &DataCell<G, C>,
-        coker: &CokerCell<G, C>,
         degree: G,
         coalgebra: &C,
     ) -> Self {
-        // Compute Cokernel of prev_s
-        // Get all previous A generators and generate corresponding r_gens and lut for this degree
-        // The only elements missing from r_gens and lut are the new a generators found later
-
-        let (gs_a_gens, mut r_gens, mut lut, reduced_to_coker) =
+        
+        let (_, r_gens, lut, _) =
             DataCell::luts(gs, degree, coalgebra);
+        let transposed_to_cofree = C::RingMorph::zero(r_gens.len(), 0);
 
+        
+
+        DataCell {
+            transposed_to_cofree,
+            a_gens: vec![],
+            r_gens,
+            lut,
+            lut2: HashMap::default(),
+        }
+    }
+
+    pub fn coker_to_cofree<A: Send + Sync>(
+        prev_s: &DataCell<G, C>,
+        coker: &CokerCell<G, C>,
+        coalgebra: &C,
+        reduced_to_coker: &HashMap<((G, u16), u16), Vec<(<C as Coalgebra<G>>::BaseRing, u16)>>,
+        lut: &HashMap<((G, u16), u16), u32>,
+        r_gens: &Vec<RGen<G,C>>
+    ) -> C::RingMorph {
         let mut small_to_cofree =
             <C::RingMorph as Matrix<C::BaseRing>>::zero(coker.cokernel.len(), r_gens.len());
         // let coact_ref = &mut small_to_cofree as *mut C::RingMorph;
@@ -163,6 +178,25 @@ impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
                 }
             }
         });
+
+        small_to_cofree
+    }
+
+    pub fn resolve<A: Send + Sync>(
+        gs: &G::ContiguousMemory<(A, OnceLock<CokerCell<G, C>>, OnceLock<DataCell<G, C>>)>,
+        prev_s: &DataCell<G, C>,
+        coker: &CokerCell<G, C>,
+        degree: G,
+        coalgebra: &C,
+    ) -> Self {
+        // Compute Cokernel of prev_s
+        // Get all previous A generators and generate corresponding r_gens and lut for this degree
+        // The only elements missing from r_gens and lut are the new a generators found later
+
+        let (gs_a_gens, mut r_gens, mut lut, reduced_to_coker) =
+            DataCell::luts(gs, degree, coalgebra);
+
+        let small_to_cofree = DataCell::coker_to_cofree::<A>(prev_s, coker, coalgebra, &reduced_to_coker, &lut, &r_gens);
 
         // Now we need to find the kernel of the map Q_i -> A \otimes V_i
         // And see if we need to add any extra A generators
@@ -234,6 +268,27 @@ impl<G: Grading, C: Coalgebra<G>> DataCell<G, C> {
             r_gens,
             lut,
             lut2,
+        }
+    }
+    
+    pub fn partial_resolve<A: Send + Sync>(
+        gs: &G::ContiguousMemory<(A, OnceLock<CokerCell<G, C>>, OnceLock<DataCell<G, C>>)>,
+        prev_s: &DataCell<G, C>,
+        coker: &CokerCell<G, C>,
+        degree: G,
+        coalgebra: &C,
+    ) -> Self {
+        let (_, r_gens, lut, reduced_to_coker) =
+            DataCell::luts(gs, degree, coalgebra);
+
+        let small_to_cofree = DataCell::coker_to_cofree::<A>(prev_s, coker, coalgebra, &reduced_to_coker, &lut, &r_gens);
+
+        Self {
+            transposed_to_cofree: small_to_cofree.transpose(),
+            a_gens: vec![],
+            r_gens,
+            lut,
+            lut2: HashMap::default(),
         }
     }
 }

@@ -122,9 +122,9 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kCoalgebra<G, F, M
             .par_iter()
             .map(|(g, v)| {
                 let g_tensor_dimen = tensor.get_dimension(g);
-                let mut g_coaction = M::zero(v.len(), g_tensor_dimen);
+                let mut g_coaction_transposed = M::zero(g_tensor_dimen, v.len());
 
-                let coact_ref = &mut g_coaction as *mut M;
+                let coact_ref = &mut g_coaction_transposed as *mut M;
                 let map_ref = AtomicPtr::new(coact_ref);
 
                 let space = &codomain.space.0[g];
@@ -141,21 +141,20 @@ impl<G: Grading, F: Field, M: Abelian<F>> ComoduleMorphism<G, kCoalgebra<G, F, M
                             let (_, final_id) =
                                 tensor.construct[&(mod_gr, *target_id)][&(*alg_l_gr, *alg_l_id)];
 
+                            // TODO
                             // As coker_id is seperate across parallel instances
-                            // This unsafe code is fine, AS LONG as the matrix is FlatMatrix :)
-                            // TODO : This is not reallly generic, and depends on the underlying implementation
-                            // This probably breaks for a F2 matrix implementation.
+                            // SPECIAL care should be taken here
                             unsafe {
                                 (**(map_ref.as_ptr())).add_at(
-                                    *coker_id,
                                     final_id as usize,
+                                    *coker_id,
                                     *coact_val * *val,
                                 );
                             }
                         }
                     }
                 });
-                (*g, g_coaction)
+                (*g, g_coaction_transposed.transpose())
             })
             .collect();
 

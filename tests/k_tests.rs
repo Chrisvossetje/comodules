@@ -10,7 +10,8 @@ mod tests {
     };
     use itertools::Itertools;
 
-    #[allow(dead_code)]
+    #[test]
+    #[ignore]
     fn generate_sseq_jsons() {
         {
             let coalgebra = A0_coalgebra();

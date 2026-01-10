@@ -46,9 +46,7 @@ impl Abelian<F2> for F2Matrix {
         while let Some((pivot_domain, pivot_codomain)) = kernel.first_non_zero_entry() {
             pivots.push(pivot_domain);
             
-            for domain in 0..kernel.domain() {
-                kernel.set(domain, pivot_codomain, F2::zero());
-            }
+            kernel.set_row_zero(pivot_codomain);
             for codom in 0..kernel.codomain() {
                 kernel.set(pivot_domain, codom, F2::zero());
             }
